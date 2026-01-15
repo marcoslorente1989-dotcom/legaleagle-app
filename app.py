@@ -82,7 +82,7 @@ st.markdown("""
     }
     ul[data-baseweb="menu"] li { color: #000000 !important; background-color: #ffffff !important; }
 
-    /* 4. CAJA DE SUBIDA (TRADUCIDA - ESTILO PC) */
+    /* 4. CAJA DE SUBIDA */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
         border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
@@ -105,9 +105,6 @@ st.markdown("""
         font-weight: 600; width: 100%; font-size: 14px;
     }
 
-   /* 5. PESTAÑAS (CENTRADAS Y SIN LÍNEA ROJA) */
-    
-    /* Centrar el grupo de pestañas en la pantalla */
     /* 5. PESTAÑAS (CENTRADO + SIN LÍNEA ROJA) */
     div[data-baseweb="tab-list"] {
         justify-content: center !important;
@@ -130,7 +127,8 @@ st.markdown("""
         border-color: #60a5fa !important;
         transform: scale(1.05);
     }
-    /* 6. OPTIMIZACIÓN MÓVIL 📱 */
+
+    /* 6. MÓVIL */
     @media only screen and (max-width: 600px) {
         .block-container {
             padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2rem !important;
@@ -144,7 +142,7 @@ st.markdown("""
         [data-testid="stImage"] img { max-width: 80% !important; margin: auto; }
     }
 
-    /* 7. OTROS (CONTRATOS, CHAT, SIDEBAR, BOTONES) */
+    /* 7. OTROS */
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -166,40 +164,19 @@ st.markdown("""
         transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     }
 
-    /* --- 8. ZONA NUCLEAR (RESPALDO VISUAL) --- */
-    
-    /* Ocultar Barras y Menús Superiores */
-    header, [data-testid="stHeader"], [data-testid="stToolbar"] { 
-        display: none !important; 
-        visibility: hidden !important; 
-    }
-    
-    /* Ocultar Footer Estándar */
-    footer, [data-testid="stFooter"] { 
-        display: none !important; 
-        visibility: hidden !important; 
-        height: 0px !important;
-    }
-    
-    /* ELIMINAR VIEWER BADGE (Doble seguridad: CSS + JS) */
-    div[class*="viewerBadge"], [data-testid="stStatusWidget"] { 
-        visibility: hidden !important;
-        display: none !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-        z-index: -9999 !important;
-        width: 0px !important;
-        height: 0px !important;
-        position: fixed !important;
-        bottom: -100px !important;
-    }
+    /* 8. OCULTAR UI STREAMLIT */
+    header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
+    footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
+    #MainMenu { visibility: hidden !important; }
 
-    #MainMenu { visibility: hidden !important; display: none !important; }
-  /* 9. CONGELAR IMÁGENES (NO PANTALLA COMPLETA) */
-    button[title="View fullscreen"] { display: none !important; } /* Oculta el botón */
-    [data-testid="stImage"] { pointer-events: none !important; } /* Evita que se pueda clicar */
-    
+    /* 9. ANTI-FULLSCREEN (SOLUCIÓN DEFINITIVA) */
+    /* Oculta el botón usando su ID interno, no su nombre */
+    button[data-testid="StyledFullScreenButton"] { display: none !important; }
+    /* Desactiva los clics en la imagen */
+    [data-testid="stImage"] { pointer-events: none !important; }
 </style>
+""", unsafe_allow_html=True)
+
 """, unsafe_allow_html=True)
 # ==============================================================================
 # 3. LÓGICA & MOTOR IA
@@ -893,6 +870,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
