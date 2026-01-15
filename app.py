@@ -20,8 +20,10 @@ except:
     api_key = os.getenv("GROQ_API_KEY")
 
 # ==============================================================================
-# 1. CONFIGURACIÓN (V78: FUSIÓN TOTAL - ANTI-TRADUCTOR + ANTI-MARCA)
+# 1. CONFIGURACIÓN (V80: DEFENSA TOTAL - VIGILANTE + INYECCIÓN CSS)
 # ==============================================================================
+import streamlit.components.v1 as components # Aseguramos el import
+
 st.set_page_config(
     page_title="LegalEagle AI",
     page_icon="🦅",
@@ -29,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡LO MANTENEMOS!
+# A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡LO MANTENEMOS INTACTO!
 st.markdown("""
 <div style="display:none; visibility:hidden; height:0;">
     Hola, esto es una aplicación en español de España. Contrato laboral, nómina,
@@ -39,22 +41,42 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# B) SCRIPT "EL VIGILANTE 2.0" (PROTEGE IDIOMA + OCULTA MARCAS)
+# B) SCRIPT "EL VIGILANTE 3.0" (TU CÓDIGO + LA NUEVA INYECCIÓN DE ESTILOS)
 components.html("""
     <script>
         const doc = window.parent.document;
         const html = doc.documentElement;
 
-        // FUNCIÓN ÚNICA QUE IMPONE LA LEY (IDIOMA + LIMPIEZA VISUAL)
+        // --- NUEVO: CAPA 1 - INYECCIÓN CSS (Bloqueo visual instantáneo) ---
+        // Creamos una etiqueta <style> y la metemos en el cerebro de la página.
+        // Esto actúa antes que el script, evitando el "parpadeo" de la bolita.
+        const style = doc.createElement('style');
+        style.innerHTML = `
+            /* Ocultar elementos rebeldes por CSS puro */
+            header, [data-testid="stHeader"], [data-testid="stToolbar"],
+            footer, [data-testid="stFooter"],
+            [data-testid="stStatusWidget"], 
+            div[class*="viewerBadge"],
+            .viewerBadge_container__1QSob {
+                display: none !important;
+                visibility: hidden !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
+        `;
+        doc.head.appendChild(style);
+        console.log("🛡️ Capa 1: CSS de ocultación inyectado.");
+
+
+        // --- TU CÓDIGO: CAPA 2 - EL VIGILANTE (Protección Idioma + Respaldo) ---
         const imponerLey = () => {
             
-            // --- 1. POLÍTICA ANTI-TRADUCCIÓN ---
+            // 1. POLÍTICA ANTI-TRADUCCIÓN (Tu lógica original)
             if (html.getAttribute('translate') !== 'no') {
                 html.lang = 'es';
                 html.setAttribute('translate', 'no');
                 html.classList.add('notranslate');
                 
-                // Meta tag de refuerzo
                 let meta = doc.querySelector('meta[name="google"][content="notranslate"]');
                 if (!meta) {
                     meta = doc.createElement('meta');
@@ -64,24 +86,21 @@ components.html("""
                 }
             }
 
-            // --- 2. POLÍTICA DE LIMPIEZA (BORRAR BOLITA Y MENÚS) ---
-            // Buscamos y ocultamos elementos rebeldes de Streamlit
+            // 2. POLÍTICA DE LIMPIEZA (Tu lógica original de respaldo)
+            // Por si el CSS fallara, el JS busca y destruye.
             const elementosAborrar = [
-                'header',                           // Barra de colores superior
-                '[data-testid="stHeader"]',         // Header específico
-                '[data-testid="stToolbar"]',        // Botones derecha (GitHub/Settings)
-                'footer',                           // Footer "Made with..."
-                '[data-testid="stStatusWidget"]',   // La corona / estado
-                'div[class*="viewerBadge"]'         // LA BOLITA AZUL REBELDE
+                'header', '[data-testid="stHeader"]', '[data-testid="stToolbar"]',
+                'footer', '[data-testid="stStatusWidget"]', 'div[class*="viewerBadge"]'
             ];
 
             elementosAborrar.forEach(selector => {
                 const el = doc.querySelector(selector);
                 if (el) {
                     el.style.display = 'none';
+                    // Forzamos propiedades extra por seguridad
                     el.style.visibility = 'hidden';
                     el.style.opacity = '0';
-                    el.style.pointerEvents = 'none'; // Que no se pueda clicar
+                    el.style.pointerEvents = 'none';
                 }
             });
         };
@@ -90,16 +109,14 @@ components.html("""
         imponerLey();
 
         // EL VIGILANTE (MUTATION OBSERVER)
-        // Vigila cambios en el HTML (idioma) y en el cuerpo (elementos nuevos como la bolita)
         const observer = new MutationObserver(() => {
             imponerLey();
         });
         
-        // Observamos todo: atributos del html y nuevos hijos en el body
         observer.observe(html, { attributes: true });
         observer.observe(doc.body, { childList: true, subtree: true });
         
-        console.log("🦅 Vigilante V78 activo: Idioma protegido y Marcas eliminadas.");
+        console.log("🦅 Vigilante V80 activo: Doble capa de protección.");
     </script>
 """, height=0)
 
@@ -705,6 +722,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
