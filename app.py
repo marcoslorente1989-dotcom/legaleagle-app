@@ -11,6 +11,9 @@ from PIL import Image
 import base64
 import io
 import streamlit.components.v1 as components # <--- AÑADE ESTO ARRIBA CON LOS IMPORTS
+import json
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 # 1. Prioridad: Intentar leer de Variable de Entorno (Así funciona Render)
 api_key = os.getenv("GROQ_API_KEY")
@@ -286,12 +289,28 @@ def groq_engine(prompt, key, temp=0.1):
     except Exception as e: return f"Error AI: {str(e)}"
 
 def save_lead(email, action, details):
-    file="database_leads.csv"
-    exists=os.path.isfile(file)
-    with open(file, "a", newline="", encoding="utf-8") as f:
-        w=csv.writer(f)
-        if not exists: w.writerow(["Fecha","Email","Acción","Detalles"])
-        w.writerow([datetime.now().strftime("%Y-%m-%d %H:%M"), email, action, details])
+    """Guarda el lead en Google Sheets (Si falla, no rompe la app)"""
+    try:
+        # 1. Leemos credenciales de Render
+        json_creds = os.getenv("GOOGLE_CREDENTIALS")
+        
+        # 2. Conectamos
+        if json_creds:
+            creds_dict = json.loads(json_creds)
+            scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+            client = gspread.authorize(creds)
+            
+            # 3. Escribimos en la hoja "Base de Datos LegalEagle"
+            sheet = client.open("Base de Datos LegalEagle").sheet1 
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            sheet.append_row([timestamp, email, action, details])
+            print(f"✅ Guardado en Google: {email}")
+        else:
+            print("⚠️ No hay credenciales Google configuradas.")
+            
+    except Exception as e:
+        print(f"❌ Error Google Sheets: {e}")
 
 # ==============================================================================
 # 4. INTERFAZ PRINCIPAL
@@ -711,6 +730,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
