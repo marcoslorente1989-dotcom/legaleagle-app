@@ -195,6 +195,10 @@ st.markdown("""
     }
 
     #MainMenu { visibility: hidden !important; display: none !important; }
+  /* 9. CONGELAR IMÁGENES (NO PANTALLA COMPLETA) */
+    button[title="View fullscreen"] { display: none !important; } /* Oculta el botón */
+    [data-testid="stImage"] { pointer-events: none !important; } /* Evita que se pueda clicar */
+    
 </style>
 """, unsafe_allow_html=True)
 # ==============================================================================
@@ -889,6 +893,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
