@@ -11,24 +11,18 @@ import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# 1. Prioridad: Intentar leer de Variable de Entorno (Así funciona Render)
-api_key = os.getenv("GROQ_API_KEY")
+# ==============================================================================
+# 1. CONFIGURACIÓN Y CLAVES
+# ==============================================================================
 
-# 2. Si no la encuentra en el entorno, intentamos leer de st.secrets de forma segura
+# Intentar leer de Variable de Entorno (Render) o Secrets (Local)
+api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
     try:
-        # Usamos .get() dentro de un try para que NO falle si no existe el archivo secrets.toml
         from streamlit.runtime.secrets import secrets_singleton
         if secrets_singleton.load_if_present():
             api_key = st.secrets.get("GROQ_API_KEY")
-    except:
-        pass
-
-# 3. Si después de todo esto api_key sigue vacía, avisamos (pero no rompe la app)
-if not api_key:
-    # Puedes poner una clave por defecto vacía o gestionar el error más tarde
-    print("⚠️ ADVERTENCIA: No se ha encontrado la GROQ_API_KEY.")
-
+    except: pass
 
 st.set_page_config(
     page_title="LegalEagle AI",
@@ -37,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# SOLO MANTENEMOS EL TEXTO FANTASMA (PARA EL IDIOMA EN EDGE)
+# Textos ocultos para SEO/Idioma
 st.markdown("""
 <div style="display:none; visibility:hidden; height:0;">
     Hola, esto es una aplicación en español de España. Contrato laboral, nómina,
@@ -47,7 +41,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# SCRIPT SENCILLO SOLO PARA FORZAR EL ATRIBUTO DE IDIOMA
 components.html("""
     <script>
         const doc = window.parent.document;
@@ -56,8 +49,9 @@ components.html("""
         console.log("🦅 App lista en Render (Limpia).");
     </script>
 """, height=0)
+
 # ==============================================================================
-# 2. ESTILOS CSS (V78: DISEÑO COMPLETO + RESPALDO ANTI-MARCA)
+# 2. ESTILOS CSS (CORREGIDO Y LIMPIO)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -69,10 +63,10 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* 2. TEXTOS GENERALES: BLANCO */
+    /* 2. TEXTOS GENERALES */
     h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* 3. INPUTS: NEGRO */
+    /* 3. INPUTS */
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important; 
         color: #000000 !important;
@@ -170,16 +164,13 @@ st.markdown("""
     #MainMenu { visibility: hidden !important; }
 
     /* 9. ANTI-FULLSCREEN (SOLUCIÓN DEFINITIVA) */
-    /* Oculta el botón usando su ID interno, no su nombre */
     button[data-testid="StyledFullScreenButton"] { display: none !important; }
-    /* Desactiva los clics en la imagen */
     [data-testid="stImage"] { pointer-events: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
-""", unsafe_allow_html=True)
 # ==============================================================================
-# 3. LÓGICA & MOTOR IA
+# 3. LÓGICA & FUNCIONES
 # ==============================================================================
 
 keys = ["contract_text", "analysis_report", "generated_contract", "generated_claim", "generated_calc", "defense_text"]
@@ -188,7 +179,6 @@ for k in keys:
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
 
-# --- PROCESAMIENTO PDF ---
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -197,7 +187,6 @@ def extract_text_from_pdf(file):
             if extract: text += extract + "\n"
     return text
 
-# --- PROCESAMIENTO IMAGEN ---
 def analyze_image_groq(image_file, prompt_instruction, key):
     image_bytes = image_file.read()
     encoded_image = base64.b64encode(image_bytes).decode('utf-8')
@@ -219,7 +208,6 @@ def analyze_image_groq(image_file, prompt_instruction, key):
         return chat_completion.choices[0].message.content
     except Exception as e: return f"Error Vision AI: {str(e)}"
 
-# --- PDF ---
 class PDFReport(FPDF):
     def header(self):
         self.set_font('Helvetica', 'B', 15)
@@ -244,11 +232,11 @@ def create_pdf(content, title="Documento"):
     pdf.cell(0, 10, title, ln=True)
     pdf.ln(5)
     pdf.set_font("Times", size=11)
+    # Codificación segura para PDF
     safe_content = content.encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 6, safe_content)
     return pdf.output(dest='S').encode('latin-1')
 
-# --- MOTOR TEXTO ---
 def groq_engine(prompt, key, temp=0.1):
     client = Groq(api_key=key)
     try:
@@ -260,54 +248,45 @@ def groq_engine(prompt, key, temp=0.1):
     except Exception as e: return f"Error AI: {str(e)}"
 
 def save_lead(email, action, details):
-    """Guarda el lead en Google Sheets (Si falla, no rompe la app)"""
+    """Guarda el lead en Google Sheets"""
     try:
-        # 1. Leemos credenciales de Render
         json_creds = os.getenv("GOOGLE_CREDENTIALS")
-        
-        # 2. Conectamos
         if json_creds:
             creds_dict = json.loads(json_creds)
             scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
             client = gspread.authorize(creds)
             
-            # 3. Escribimos en la hoja "Base de Datos LegalEagle"
+            # Asegúrate de que esta hoja existe en tu Drive
             sheet = client.open("Base de Datos LegalEagle").sheet1 
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             sheet.append_row([timestamp, email, action, details])
             print(f"✅ Guardado en Google: {email}")
         else:
             print("⚠️ No hay credenciales Google configuradas.")
-            
     except Exception as e:
         print(f"❌ Error Google Sheets: {e}")
+
 # ==============================================================================
 # 4. INTERFAZ PRINCIPAL
 # ==============================================================================
 
-# --- CABECERA LOGO ---
-# Usamos columnas para centrar la imagen y que no ocupe el 100% del ancho (se vería enorme)
 c_logo1, c_logo2, c_logo3 = st.columns([3, 2, 3]) 
-
 with c_logo2:
     if os.path.isfile("logo.png"):
         st.image("logo.png", use_container_width=True)
     else:
-        # Fallback por si no encuentra la imagen
         st.markdown("<h1 style='text-align: center; color: white;'>🦅 LegalEagle AI</h1>", unsafe_allow_html=True)
 
-st.write("") # Espacio separador
-# ---------------------
+st.write("") 
 
 if not api_key:
-    st.error("⚠️ Falta API Key en secrets.toml")
+    st.error("⚠️ Falta API Key. Configura GROQ_API_KEY en Render.")
     st.stop()
 
 tabs = st.tabs(["🔍 1. ANALIZAR", "✍️ 2. CREAR CONTRATO", "🛡️ 3. RECLAMAR/RECURRIR", "🧮 4. IMPUESTOS"])
 
 # --- TAB 1: ANALIZADOR ---
-# --- TAB 1: ANALIZADOR (CON LA HERRAMIENTA DE CANCELACIÓN RECUPERADA) ---
 with tabs[0]:
     with st.container(border=True):
         st.markdown("### 📤 Analizador de Documentos")
@@ -334,14 +313,12 @@ with tabs[0]:
                         st.rerun()
             
             if st.session_state.analysis_done:
-                # 1. EL INFORME
                 with st.container(border=True): st.markdown(st.session_state.analysis_report)
                 pdf_bytes = create_pdf(st.session_state.analysis_report, "Informe Riesgos")
                 st.download_button("📄 Descargar Informe PDF", data=pdf_bytes, file_name="Informe_Legal.pdf", mime="application/pdf")
                 
                 st.write("")
                 
-                # --- HERRAMIENTA RECUPERADA: CANCELACIÓN ---
                 with st.expander("📅 GENERAR AVISO DE CANCELACIÓN / DESISTIMIENTO", expanded=False):
                     st.info("Crea un documento formal para cancelar este contrato basado en su contenido.")
                     c_cancel_mail, c_cancel_date = st.columns(2)
@@ -354,6 +331,7 @@ with tabs[0]:
                             Actúa como abogado. Basándote en el contrato analizado: "{st.session_state.contract_text[:3000]}..."
                             Redacta una CARTA FORMAL DE DESISTIMIENTO o NO RENOVACIÓN.
                             Remitente: {email_remitente}. Fecha efectos: {fecha_cancel}.
+                            El tono debe ser firme, legal y citando las cláusulas de terminación si existen en el texto.
                             """
                             aviso_texto = groq_engine(prompt_cancel, api_key)
                             st.markdown(f"<div class='contract-box'>{aviso_texto}</div>", unsafe_allow_html=True)
@@ -361,7 +339,6 @@ with tabs[0]:
                             save_lead(email_remitente, "CANCELACION_AUTO", "Desde Analizador")
                             st.download_button("⬇️ Descargar Carta PDF", data=pdf_cancel, file_name="Cancelacion.pdf", mime="application/pdf")
 
-                # 3. CHAT LEGAL
                 st.write("")
                 col_chat_title, col_chat_btn = st.columns([4, 1])
                 with col_chat_title: st.markdown("### 💬 Chat Legal")
@@ -379,7 +356,7 @@ with tabs[0]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun()
 
-# --- TAB 2: CREADOR (CONTRATO TRABAJO AVANZADO + VEHÍCULO + VIVIENDA + ARRAS) ---
+# --- TAB 2: CREADOR (DETALLADO) ---
 with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
@@ -389,7 +366,7 @@ with tabs[1]:
             tipo = st.selectbox("Documento", [
                 "Alquiler Vivienda", 
                 "Compraventa Vehículo", 
-                "Contrato Trabajo",  # <--- Lo he movido arriba para que lo veas rápido
+                "Contrato Trabajo",
                 "Servicios Freelance", 
                 "NDA (Confidencialidad)",
                 "Compraventa Vivienda (Piso/Casa)",
@@ -400,7 +377,6 @@ with tabs[1]:
             data_p = ""
             
             # --- LÓGICA DE CAMPOS ESPECÍFICOS ---
-            
             if "Alquiler" in tipo: 
                 st.caption("🏠 Datos del Alquiler")
                 prop = st.text_input('Propietario (Nombre y DNI/CIF)')
@@ -414,7 +390,6 @@ with tabs[1]:
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
                 comprador = st.text_input("Comprador (Nombre y DNI)")
-                
                 st.caption("🚗 Datos del Vehículo")
                 col_coche1, col_coche2 = st.columns(2)
                 with col_coche1:
@@ -423,35 +398,24 @@ with tabs[1]:
                 with col_coche2:
                     bastidor = st.text_input("Nº Bastidor (VIN)", help="Fundamental para la validez legal")
                     kms = st.number_input("Kilómetros", min_value=0, step=1000)
-                
                 precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
-                
                 data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
             
             elif "Contrato Trabajo" in tipo:
                 st.caption("👤 Las Partes")
                 empresa = st.text_input("Empresa (Nombre y CIF)")
                 trabajador = st.text_input("Trabajador (Nombre y DNI)")
-                
                 st.caption("💼 Condiciones Laborales")
-                # Tipo de contrato
                 modalidad = st.selectbox("Modalidad", ["Indefinido", "Temporal (Duración Determinada)", "Sustitución"])
-                
-                # Lógica condicional: Si no es indefinido, pedimos duración
                 duracion_txt = "Indefinida"
                 if modalidad != "Indefinido":
                     duracion_txt = st.text_input("Duración / Fecha Fin", placeholder="Ej: 6 meses / Hasta el 31 de Diciembre")
-                
-                # Salario
                 salario = st.number_input("Salario Bruto Anual (€)", min_value=15000.0, step=500.0)
-                
-                # Lógica condicional: Variable
                 tiene_variable = st.checkbox("¿Incluye Variable / Bonus?")
                 variable_txt = "Sin retribución variable."
                 if tiene_variable:
                     cantidad_var = st.text_input("Detalles del Variable", placeholder="Ej: 10% sobre objetivos o 3.000€")
                     variable_txt = f"Con retribución variable: {cantidad_var}."
-                
                 data_p = f"Contrato de Trabajo. Modalidad: {modalidad}. Empresa: {empresa}. Trabajador: {trabajador}. Duración: {duracion_txt}. Salario Fijo: {salario}€ Brutos/Año. Variable: {variable_txt}. Convenio aplicable: Según sector."
 
             elif "NDA" in tipo: 
@@ -483,18 +447,15 @@ with tabs[1]:
             elif "Cancelación" in tipo:
                 data_p = f"Acuerdo de Terminación. Contrato a cancelar: {st.text_input('¿Qué contrato?')}. Partes: {st.text_input('Partes implicadas (Nombres y DNI/CIF)')}. Fecha Efectiva: {st.date_input('Fecha Fin')}."
 
-            else: # Servicios / Freelance
+            else: 
                 data_p = f"{tipo}. Partes: {st.text_input('Partes (Nombres y DNI/CIF)')}. Detalles: {st.text_area('Detalles')}."
             
             st.write("")
-            
-            # --- CIUDAD Y BOTÓN ---
             ciudad = st.text_input("📍 Ciudad de firma", value="Madrid")
             
             if st.button("✨ REDACTAR"):
                 with st.spinner("Redactando..."):
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-                    
                     instruccion = f"""
                     Redacta un contrato legal formal en España de tipo: {tipo}.
                     LUGAR Y FECHA: En {ciudad}, a {fecha_hoy}.
@@ -509,7 +470,6 @@ with tabs[1]:
                     - Cita leyes vigentes (Estatuto Trabajadores, Código Civil, etc).
                     - Usa cláusulas claras y formato profesional.
                     """
-                    
                     st.session_state.generated_contract = groq_engine(instruccion, api_key, 0.3)
     
     with c2:
@@ -532,83 +492,65 @@ with tabs[2]:
     modo = st.radio("Opción:", ["✍️ Redactar Burofax / Reclamación", "🛡️ Responder/Recurrir (Subir PDF/Foto)"], horizontal=True)
     c_rec, c_doc = st.columns([1, 1.3])
     
-    # OPCIÓN A: REDACTAR RECLAMACIÓN DESDE CERO
     if "Redactar" in modo:
         with c_rec:
             with st.container(border=True):
                 st.subheader("📢 Iniciar Reclamación")
                 st.caption("Generador de Burofax Pre-Contencioso")
                 
-                # 1. DATOS DE LAS PARTES
                 remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)")
                 dest = st.text_input("Destinatario (Empresa/Persona y Dirección)")
-                
                 st.markdown("---")
                 
-                # 2. TIPO DE RECLAMACIÓN (Lógica condicional)
                 motivo = st.selectbox("Tipo de Reclamación", [
-                    "Cobro Indebido / Facturas", 
-                    "Seguros (Siniestros/Coberturas)", 
-                    "Devolución Fianza Alquiler", 
-                    "Banca (Comisiones/Tarjetas)",
-                    "Transporte (Vuelos/Equipaje)",
-                    "Otro / Genérico"
+                    "Cobro Indebido / Facturas", "Seguros (Siniestros/Coberturas)", 
+                    "Devolución Fianza Alquiler", "Banca (Comisiones/Tarjetas)",
+                    "Transporte (Vuelos/Equipaje)", "Otro / Genérico"
                 ])
                 
                 datos_clave = ""
-                
                 if "Facturas" in motivo:
                     c_fac1, c_fac2 = st.columns(2)
                     with c_fac1: num_fac = st.text_input("Nº Factura / Contrato")
                     with c_fac2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0)
                     fecha_fac = st.date_input("Fecha de la factura")
                     datos_clave = f"Reclamación de Cantidad. Factura Nº: {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}. Motivo: Cobro indebido o servicio no prestado."
-                
                 elif "Seguros" in motivo:
                     c_seg1, c_seg2 = st.columns(2)
                     with c_seg1: num_poliza = st.text_input("Nº Póliza (Obligatorio)")
                     with c_seg2: num_siniestro = st.text_input("Nº Siniestro (Opcional)")
                     fecha_sin = st.date_input("Fecha del Siniestro")
                     datos_clave = f"Reclamación a Aseguradora. Póliza Nº: {num_poliza}. Siniestro Nº: {num_siniestro}. Fecha Ocurrencia: {fecha_sin}. Exigencia de cumplimiento de contrato y cobertura."
-
                 elif "Fianza" in motivo:
                     direccion = st.text_input("Dirección del Inmueble alquilado")
                     fecha_llaves = st.date_input("Fecha devolución llaves")
                     importe_fianza = st.number_input("Importe Fianza (€)", min_value=0.0)
                     datos_clave = f"Reclamación de Fianza. Inmueble: {direccion}. Fecha fin contrato: {fecha_llaves}. Importe retenido: {importe_fianza}€. Aplicación de la LAU."
-
                 elif "Banca" in motivo:
                     producto = st.text_input("Producto (Cuenta/Tarjeta)")
                     concepto = st.text_input("Concepto reclamado (Ej: Comisión mantenimiento)")
                     importe = st.number_input("Importe (€)", min_value=0.0)
                     datos_clave = f"Reclamación Bancaria. Producto: {producto}. Concepto: {concepto}. Importe: {importe}€. Solicitud de retrocesión."
-                
                 elif "Transporte" in motivo:
                     vuelo = st.text_input("Nº Vuelo / Localizador")
                     incidencia = st.selectbox("Incidencia", ["Retraso > 3h", "Cancelación", "Pérdida Equipaje"])
                     datos_clave = f"Reclamación Transporte. Referencia: {vuelo}. Incidencia: {incidencia}. Solicitud de indemnización según Reglamento Europeo 261/2004."
-
-                else: # Otro
+                else: 
                     asunto = st.text_input("Asunto")
                     datos_clave = f"Reclamación Genérica. Asunto: {asunto}."
 
-                # 3. HECHOS (Común a todos)
                 st.write("")
                 hechos = st.text_area("Descripción detallada de los hechos", placeholder="Explica brevemente qué ha pasado y qué exiges...")
                 
-                # BOTÓN GENERAR
                 if st.button("🔥 GENERAR BUROFAX"):
                     with st.spinner("Redactando reclamación jurídica..."):
-                        # PROMPT JURÍDICO AVANZADO
                         prompt_claim = f"""
                         Actúa como abogado experto en derecho civil y mercantil español.
                         Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
-                        
                         REMITENTE: {remitente}
                         DESTINATARIO: {dest}
                         CONTEXTO: {datos_clave}
                         HECHOS DETALLADOS: {hechos}
-                        
                         INSTRUCCIONES:
                         1. Usa estructura formal de carta legal (Encabezado, Referencias, Cuerpo, Cierre).
                         2. Cita la legislación aplicable según el caso (Ej: Ley Contrato Seguro 50/1980, Ley General Defensa Consumidores, LAU, Reglamento Europeo, etc).
@@ -617,7 +559,6 @@ with tabs[2]:
                         """
                         st.session_state.generated_claim = groq_engine(prompt_claim, api_key)
 
-    # OPCIÓN B: RESPONDER (DEFENSA) - ESTO SE MANTIENE IGUAL
     else:
         with c_rec:
             with st.container(border=True):
@@ -640,17 +581,14 @@ with tabs[2]:
                             ---
                             {st.session_state.defense_text[:4000]}
                             ---
-                            
                             MIS ARGUMENTOS: {mis_argumentos}
                             MIS DATOS: {mis_datos}
-                            
                             TAREA: Redacta un PLIEGO DE DESCARGOS o CARTA DE OPOSICIÓN formal.
                             Busca defectos de forma, cita jurisprudencia o leyes que me beneficien y mantén un tono respetuoso pero firme en la defensa.
                             """
                             st.session_state.generated_claim = groq_engine(p_def, api_key)
                     else: st.warning("Por favor sube el archivo y rellena tus datos.")
 
-    # COLUMNA DERECHA (VISUALIZACIÓN Y PDF)
     with c_doc:
         if st.session_state.generated_claim:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
@@ -674,7 +612,6 @@ with tabs[3]:
             tipo_calc = st.selectbox("Trámite", ["Venta Inmueble (Plusvalía+IRPF)", "Sueldo Neto (Nómina)", "Gastos Compraventa", "IPC Alquiler", "Cuota Hipoteca"])            
             anio_actual = datetime.now().year
             
-            # 1. VENTA
             if "Venta" in tipo_calc:
                 st.caption("Plusvalía Municipal + IRPF")
                 f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015)
@@ -690,45 +627,35 @@ with tabs[3]:
                         p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
                         st.session_state.generated_calc = groq_engine(p, api_key)
             
-            # 2. SUELDO NETO (HÍBRIDO: IA DEFINE EL TIPO % + PYTHON CALCULA EL DINERO)
             elif "Sueldo" in tipo_calc:
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
-                
                 bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
                 edad = st.number_input("Edad", 18, 70, 30)
                 comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"])
                 movilidad = st.checkbox("¿Movilidad Geográfica?")
-                
                 st.markdown("---")
                 c_fam1, c_fam2 = st.columns(2)
                 with c_fam1: 
                     estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a"])
                     conyuge_cargo = False
-                    if estado == "Casado/a":
-                        conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?")
-                
+                    if estado == "Casado/a": conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?")
                 with c_fam2: discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
                 hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
                 hijos_menores_3 = 0
-                if hijos > 0:
-                    hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
+                if hijos > 0: hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
                 
-                # BOTÓN DE CALCULAR
                 if st.button("💶 CALCULAR NETO EXACTO"):
                     with st.spinner("Consultando normativa regional y calculando..."):
-                        
-                        # 1. PREGUNTAMOS A LA IA SOLO EL TIPO DE RETENCIÓN (EL % CORRECTO)
                         prompt_irpf = f"""
                         Actúa como experto fiscal en España 2025.
                         Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) para este perfil:
                         - Salario Bruto: {bruto}€
-                        - Región: {comunidad} (Aplica tablas autonómicas vigentes)
+                        - Región: {comunidad}
                         - Edad: {edad}
                         - Hijos: {hijos}
                         - Discapacidad: {discapacidad}
                         - Cónyuge a cargo: {conyuge_cargo}
                         - Hijos < 3 años: {hijos_menores_3}
-                        
                         IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
                         Ejemplo de respuesta válida: 14.20
                         NO escribas texto, ni símbolos de porcentaje, solo el número.
@@ -741,22 +668,17 @@ with tabs[3]:
                             else: tipo_irpf = 15.0
                         except: tipo_irpf = 15.0
 
-                        # 2. MATEMÁTICAS EN PYTHON (INFALIBLES)
-                        ss_anual = bruto * 0.0635  # Seguridad Social estandar (~6.35%)
+                        ss_anual = bruto * 0.0635
                         irpf_anual = bruto * (tipo_irpf / 100)
                         neto_anual = bruto - ss_anual - irpf_anual
-                        
-                        # Python divide, así que 12 pagas SIEMPRE será mayor que 14
                         mes_12 = neto_anual / 12
                         mes_14 = neto_anual / 14 
 
-                        # 3. FORMATO DE NÚMEROS
                         f_mes_12 = "{:,.2f}".format(mes_12).replace(",", "X").replace(".", ",").replace("X", ".")
                         f_mes_14 = "{:,.2f}".format(mes_14).replace(",", "X").replace(".", ",").replace("X", ".")
                         f_irpf_mensual = "{:,.2f}".format(irpf_anual/12).replace(",", "X").replace(".", ",").replace("X", ".")
                         f_tipo = "{:,.2f}".format(tipo_irpf).replace(",", "X").replace(".", ",").replace("X", ".")
 
-                        # 4. HTML VISUAL
                         html_nomina = f"""
                         <div style="background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #ffffff !important; padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; max-width: 500px; margin: auto;">
                             <div style="color: #94a3b8 !important; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Neto Mensual (12 pagas)</div>
@@ -781,14 +703,12 @@ with tabs[3]:
                         """
                         st.session_state.generated_calc = html_nomina
 
-                # --- BOTÓN DE RESET ---
                 if st.session_state.generated_calc:
                      st.write("")
                      if st.button("🔄 Calcular de nuevo", use_container_width=True):
                          st.session_state.generated_calc = ""
                          st.rerun()
 
-            # 3. GASTOS
             elif "Compraventa" in tipo_calc:
                 precio = st.number_input("Precio (€)", 150000.0)
                 ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"])
@@ -796,14 +716,12 @@ with tabs[3]:
                 if st.button("🧮 CALCULAR"):
                     st.session_state.generated_calc = groq_engine(f"Gastos compraventa {ccaa}. Precio {precio}. Tipo {tipo}.", api_key)
 
-            # 4. IPC
             elif "IPC" in tipo_calc:
                 renta = st.number_input("Renta (€)", 800.0)
                 mes = st.selectbox("Mes", ["Enero", "Febrero", "Marzo", "Abril"])
                 if st.button("🧮 CALCULAR"):
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
                     
-            # 5. HIPOTECA
             elif "Hipoteca" in tipo_calc:
                 st.caption("Calculadora Cuota Mensual")
                 capital = st.number_input("Capital Prestado (€)", value=200000.0)
@@ -814,14 +732,10 @@ with tabs[3]:
 
     with c_res:
         if st.session_state.generated_calc:
-            # LÓGICA INTELIGENTE:
-            # Si es el HTML visual (nómina oscura), lo mostramos directo para respetar su diseño.
-            # Si es texto plano (otras calculadoras), le ponemos la caja de papel blanca.
             if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
                 st.markdown(st.session_state.generated_calc, unsafe_allow_html=True)
             else:
                 st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
-            
             st.write("")
             with st.container(border=True):
                 ce3, cb3 = st.columns([2,1])
@@ -832,68 +746,21 @@ with tabs[3]:
                         save_lead(m3, "CALCULO", "Fiscalidad")
                         pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
                         st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
+
 # ==============================================================================
-# PANEL LATERAL (MODO ADMIN SECRETO)
+# PANEL ADMIN
 # ==============================================================================
 with st.sidebar:
-    # 1. Espacio vacío visual (CORREGIDO: Usamos un IF normal para que no imprima código raro)
     if os.path.isfile("logo.png"):
         st.image("logo.png", use_container_width=True)
-    
-    st.write("") # Espacio separador
-    
-    # 2. CANDADO DIGITAL: Solo tú sabes la clave
+    st.write("") 
     password = st.text_input("🔐", type="password", placeholder="Acceso Admin", label_visibility="collapsed")
-    
-    if password == "admin123":  # <--- CAMBIA ESTO POR TU CONTRASEÑA
+    if password == "admin123":
         st.success("Modo Admin")
         st.markdown("---")
-        
-        st.markdown("### ⚙️ Panel de Control")
+        st.info("La base de datos está conectada a Google Sheets.")
         if st.button("🔄 Reiniciar App"): 
             st.session_state.clear()
             st.rerun()
-        
-        st.markdown("---")
-        
-        if os.path.isfile("database_leads.csv"):
-            st.caption("📥 Base de Datos Leads")
-            df = pd.read_csv("database_leads.csv")
-            st.dataframe(df, height=150)
-            
-            with open("database_leads.csv", "rb") as f: 
-                st.download_button("Descargar CSV", f, "leads.csv", mime="text/csv")
-        else:
-            st.caption("📭 Base de datos vacía")
-            
     else:
-        # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
