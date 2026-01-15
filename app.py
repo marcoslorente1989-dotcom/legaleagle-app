@@ -15,21 +15,27 @@ import os
 import os  # <--- Asegúrate de tener este import arriba del todo
 
 # ==============================================================================
-# GESTIÓN DE CLAVES (MODO HÍBRIDO RENDER / STREAMLIT)
+# GESTIÓN DE CLAVES (COMPATIBLE CON RENDER Y STREAMLIT CLOUD)
 # ==============================================================================
-# 1. Primero intentamos leer de las Variables de Entorno (Así funciona Render)
+import os # <--- IMPRESCINDIBLE: Asegúrate de que esto está importado
+
+# 1. Prioridad: Intentar leer de Variable de Entorno (Así funciona Render)
 api_key = os.getenv("GROQ_API_KEY")
 
-# 2. Si no la encuentra (es None), intentamos leer de st.secrets (Por si usas Local/Streamlit Cloud)
+# 2. Si no la encuentra en el entorno, intentamos leer de st.secrets de forma segura
 if not api_key:
     try:
-        api_key = st.secrets["GROQ_API_KEY"]
+        # Usamos .get() dentro de un try para que NO falle si no existe el archivo secrets.toml
+        from streamlit.runtime.secrets import secrets_singleton
+        if secrets_singleton.load_if_present():
+            api_key = st.secrets.get("GROQ_API_KEY")
     except:
         pass
 
-# 3. Si sigue sin encontrarla, usamos una cadena vacía para que no rompa el código
+# 3. Si después de todo esto api_key sigue vacía, avisamos (pero no rompe la app)
 if not api_key:
-    api_key = ""
+    # Puedes poner una clave por defecto vacía o gestionar el error más tarde
+    print("⚠️ ADVERTENCIA: No se ha encontrado la GROQ_API_KEY.")
 
 # ==============================================================================
 # 1. CONFIGURACIÓN (V_FINAL: LIMPIA PARA RENDER - SIN SCRIPTS AGRESIVOS)
@@ -664,6 +670,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
