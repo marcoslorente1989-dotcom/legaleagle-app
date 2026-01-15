@@ -399,14 +399,13 @@ with tabs[0]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun()
 
-# --- TAB 2: CREADOR ---
+# --- TAB 2: CREADOR (CON CIUDAD DE FIRMA + DNI + FECHA) ---
 with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
         with st.container(border=True):
             st.subheader("🛠️ Generador")
             
-            # --- ACTUALIZADO: Lista completa con los nuevos contratos ---
             tipo = st.selectbox("Documento", [
                 "Alquiler Vivienda", 
                 "Compraventa Vehículo", 
@@ -420,31 +419,53 @@ with tabs[1]:
             
             data_p = ""
             
-            # --- LÓGICA DE CAMPOS ACTUALIZADA ---
+            # --- LÓGICA DE CAMPOS (CON DNI/NIE/CIF) ---
             if "Alquiler" in tipo: 
-                data_p = f"Alquiler. Propietario: {st.text_input('Propietario')}. Inquilino: {st.text_input('Inquilino')}. Piso: {st.text_input('Dirección')}. Renta: {st.number_input('Renta €')}."
+                data_p = f"Alquiler. Propietario: {st.text_input('Propietario (Nombre y DNI/CIF)')}. Inquilino: {st.text_input('Inquilino (Nombre y DNI/CIF)')}. Piso: {st.text_input('Dirección')}. Renta: {st.number_input('Renta €')}."
             
             elif "Vehículo" in tipo: 
-                data_p = f"Coche. Vendedor: {st.text_input('Vendedor')}. Comprador: {st.text_input('Comprador')}. Matrícula: {st.text_input('Matrícula')}. Precio: {st.number_input('Precio €')}."
+                data_p = f"Coche. Vendedor: {st.text_input('Vendedor (Nombre y DNI/CIF)')}. Comprador: {st.text_input('Comprador (Nombre y DNI/CIF)')}. Matrícula: {st.text_input('Matrícula')}. Precio: {st.number_input('Precio €')}."
             
-            elif "NDA" in tipo: # RECUPERADO ESPECÍFICO
-                data_p = f"Acuerdo Confidencialidad. Parte Reveladora: {st.text_input('Parte Reveladora')}. Parte Receptora: {st.text_input('Parte Receptora')}. Información a proteger: {st.text_area('Motivo/Información')}."
+            elif "NDA" in tipo: 
+                data_p = f"Acuerdo Confidencialidad. Parte Reveladora: {st.text_input('Parte Reveladora (Nombre y CIF/DNI)')}. Parte Receptora: {st.text_input('Parte Receptora (Nombre y CIF/DNI)')}. Información a proteger: {st.text_area('Motivo/Información')}."
             
-            elif "Compraventa Vivienda" in tipo: # AÑADIDO
-                data_p = f"Compraventa Inmueble. Vendedor: {st.text_input('Vendedor')}. Comprador: {st.text_input('Comprador')}. Inmueble: {st.text_input('Datos Inmueble')}. Precio: {st.number_input('Precio Venta €')}."
+            elif "Compraventa Vivienda" in tipo:
+                data_p = f"Compraventa Inmueble. Vendedor: {st.text_input('Vendedor (Nombre y DNI/CIF)')}. Comprador: {st.text_input('Comprador (Nombre y DNI/CIF)')}. Inmueble: {st.text_input('Datos Inmueble')}. Precio: {st.number_input('Precio Venta €')}."
             
-            elif "Arras" in tipo: # AÑADIDO
-                data_p = f"Contrato de Arras. Vendedor: {st.text_input('Vendedor')}. Comprador: {st.text_input('Comprador')}. Inmueble: {st.text_input('Inmueble')}. Precio Total: {st.number_input('Precio Total')}. Señal/Arras: {st.number_input('Señal €')}. Plazo Máximo: {st.date_input('Fecha Límite')}."
-
+            elif "Arras" in tipo:
+                data_p = f"Contrato de Arras. Vendedor: {st.text_input('Vendedor (Nombre y DNI/CIF)')}. Comprador: {st.text_input('Comprador (Nombre y DNI/CIF)')}. Inmueble: {st.text_input('Inmueble')}. Precio Total: {st.number_input('Precio Total')}. Señal/Arras: {st.number_input('Señal €')}. Plazo Máximo: {st.date_input('Fecha Límite')}."
+            
             elif "Cancelación" in tipo:
-                data_p = f"Acuerdo de Terminación de Contrato. Contrato Original: {st.text_input('¿Qué contrato cancelas?')}. Partes: {st.text_input('Partes implicadas')}. Motivo: {st.text_input('Motivo (Opcional)')}. Fecha efectiva: {st.date_input('Fecha Fin')}."
+                data_p = f"Acuerdo de Terminación. Contrato a cancelar: {st.text_input('¿Qué contrato?')}. Partes: {st.text_input('Partes implicadas (Nombres y DNI/CIF)')}. Fecha Efectiva: {st.date_input('Fecha Fin')}."
+
+            else: # Servicios / Trabajo / Otros
+                data_p = f"{tipo}. Partes: {st.text_input('Partes (Nombres y DNI/CIF)')}. Detalles: {st.text_area('Detalles')}."
             
-            else: # Servicios / Trabajo
-                data_p = f"{tipo}. Partes: {st.text_input('Partes')}. Detalles: {st.text_area('Detalles')}."
+            st.write("")
             
+            # --- NUEVO: CIUDAD DE FIRMA ---
+            ciudad = st.text_input("📍 Ciudad de firma", value="Madrid")
+            
+            # --- BOTÓN CON FECHA Y CIUDAD ---
             if st.button("✨ REDACTAR"):
                 with st.spinner("Redactando..."):
-                    st.session_state.generated_contract = groq_engine(f"Redacta contrato legal España {tipo}. Datos: {data_p}", api_key, 0.3)
+                    # 1. Capturamos la fecha real de hoy
+                    fecha_hoy = datetime.now().strftime("%d/%m/%Y")
+                    
+                    # 2. Instrucción completa para la IA
+                    instruccion = f"""
+                    Redacta un contrato legal formal en España de tipo: {tipo}.
+                    LUGAR Y FECHA: En {ciudad}, a {fecha_hoy}.
+                    DATOS: {data_p}
+                    
+                    IMPORTANTE:
+                    - Empieza indicando "En {ciudad}, a {fecha_hoy}".
+                    - Identifica a las partes con sus DNI/CIF.
+                    - Cita leyes vigentes (Código Civil, LAU, ET, etc).
+                    - Usa cláusulas claras y formato profesional.
+                    """
+                    
+                    st.session_state.generated_contract = groq_engine(instruccion, api_key, 0.3)
     
     with c2:
         if st.session_state.generated_contract:
@@ -719,6 +740,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
