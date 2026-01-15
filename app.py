@@ -85,7 +85,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V73: MÓVIL + PESTAÑAS + SIN GITHUB/MENÚ)
+# 2. ESTILOS CSS (V74: SIN BOLITA AZUL/CORONA NI MARCAS)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -118,13 +118,10 @@ st.markdown("""
     [data-testid="stFileUploader"] section > div > div > span, 
     [data-testid="stFileUploader"] section > div > div > small { display: none !important; }
 
-    /* Texto largo por defecto (PC) */
     [data-testid="stFileUploader"] section > div > div::before {
         content: "📂 Arrastra tu PDF aquí para analizar";
         display: block; text-align: center; color: #334155; font-weight: 600; margin-bottom: 10px;
     }
-    
-    /* Botón "Browse" camuflado */
     [data-testid="stFileUploader"] button {
         border-radius: 20px !important; border: 1px solid #94a3b8 !important;
         background-color: #e2e8f0 !important; color: transparent !important;
@@ -142,14 +139,14 @@ st.markdown("""
         color: #ffffff !important; 
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 30px !important;
-        padding: 10px 30px !important; /* Aire en PC */
+        padding: 10px 30px !important;
         margin-right: 8px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important;
     }
 
-    /* --- 6. OPTIMIZACIÓN MÓVIL 📱 --- */
+    /* 6. OPTIMIZACIÓN MÓVIL 📱 */
     @media only screen and (max-width: 600px) {
         .block-container {
             padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2rem !important;
@@ -186,24 +183,26 @@ st.markdown("""
         transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     }
 
-    /* --- 10. OCULTAR GATITO GITHUB Y MENÚ SUPERIOR (NUEVO) --- */
-    /* Oculta la barra de herramientas superior (Deploy, tres puntos, GitHub) */
-    [data-testid="stToolbar"] { 
-        visibility: hidden !important; 
+    /* 10. OCULTAR GATITO GITHUB Y MENÚ SUPERIOR */
+    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
+    [data-testid="stHeader"] { visibility: hidden !important; display: none !important; }
+    
+    /* --- 11. LIMPIEZA TOTAL DEL FOOTER (CORONA Y BOLA AZUL) --- */
+    
+    /* Oculta el footer estándar "Made with Streamlit" */
+    footer { visibility: hidden !important; display: none !important; }
+    
+    /* Oculta el Viewer Badge (La bolita azul de abajo a la derecha) */
+    div[class*="viewerBadge"] {
+        visibility: hidden !important;
         display: none !important;
     }
-    /* Oculta la decoración del header (la línea de colores de Streamlit) */
-    [data-testid="stHeader"] { 
-        visibility: hidden !important; 
+    /* Selector de refuerzo por si acaso cambia el nombre de la clase */
+    [data-testid="stStatusWidget"] {
+        visibility: hidden !important;
         display: none !important;
     }
-    /* Oculta el footer "Made with Streamlit" si aparece */
-    footer { 
-        visibility: hidden !important; 
-        display: none !important;
-    }
-    #MainMenu { visibility: hidden !important; }
-    /* --------------------------------------------------------- */
+    /* ---------------------------------------------------------- */
 </style>
 """, unsafe_allow_html=True)
 # ==============================================================================
@@ -679,5 +678,6 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
