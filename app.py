@@ -1,16 +1,12 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pdfplumber
 from groq import Groq
-import urllib.parse
-from datetime import datetime
-import csv
 import os
 import pandas as pd
 from fpdf import FPDF
-from PIL import Image
 import base64
-import io
-import streamlit.components.v1 as components # <--- AÑADE ESTO ARRIBA CON LOS IMPORTS
+from datetime import datetime
 import json
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -112,34 +108,28 @@ st.markdown("""
    /* 5. PESTAÑAS (CENTRADAS Y SIN LÍNEA ROJA) */
     
     /* Centrar el grupo de pestañas en la pantalla */
+    /* 5. PESTAÑAS (CENTRADO + SIN LÍNEA ROJA) */
     div[data-baseweb="tab-list"] {
         justify-content: center !important;
-        gap: 10px; /* Un poco de espacio entre ellas */
+        gap: 10px;
     }
-
-    /* Quitar la línea roja/azul que se mueve debajo */
     div[data-baseweb="tab-highlight"] {
         display: none !important;
     }
-
-    /* Estilo del botón de la pestaña */
     button[data-baseweb="tab"] {
         background-color: rgba(255, 255, 255, 0.15) !important;
         color: #ffffff !important; 
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 30px !important;
         padding: 10px 30px !important;
-        margin-right: 0px !important; /* El margen lo gestiona el gap de arriba */
+        margin-right: 0px !important;
     }
-
-    /* Estilo cuando la pestaña está activa (seleccionada) */
     button[data-baseweb="tab"][aria-selected="true"] {
         background-color: #3b82f6 !important; 
         font-weight: bold !important; 
         border-color: #60a5fa !important;
-        transform: scale(1.05); /* Pequeño efecto pop al seleccionar */
+        transform: scale(1.05);
     }
-
     /* 6. OPTIMIZACIÓN MÓVIL 📱 */
     @media only screen and (max-width: 600px) {
         .block-container {
@@ -371,31 +361,22 @@ with tabs[0]:
                 
                 st.write("")
                 
-                # 2. HERRAMIENTA RECUPERADA: AVISO DE CANCELACIÓN AUTOMÁTICO
+                # --- HERRAMIENTA RECUPERADA: CANCELACIÓN ---
                 with st.expander("📅 GENERAR AVISO DE CANCELACIÓN / DESISTIMIENTO", expanded=False):
                     st.info("Crea un documento formal para cancelar este contrato basado en su contenido.")
                     c_cancel_mail, c_cancel_date = st.columns(2)
-                    with c_cancel_mail:
-                        email_remitente = st.text_input("Tu Email / Identificación", key="email_cancel")
-                    with c_cancel_date:
-                        fecha_cancel = st.date_input("Fecha efectiva de la baja", key="date_cancel")
+                    with c_cancel_mail: email_remitente = st.text_input("Tu Email / Identificación", key="email_cancel")
+                    with c_cancel_date: fecha_cancel = st.date_input("Fecha efectiva de la baja", key="date_cancel")
                     
                     if st.button("✉️ Generar Carta de Cancelación"):
                         with st.spinner("Redactando aviso legal..."):
                             prompt_cancel = f"""
-                            Actúa como abogado. Basándote en el contrato analizado:
-                            "{st.session_state.contract_text[:3000]}..."
-                            
-                            Redacta una CARTA FORMAL DE DESISTIMIENTO o NO RENOVACIÓN para enviar a la otra parte.
-                            Remitente: {email_remitente}
-                            Fecha de efectos: {fecha_cancel}
-                            
-                            El tono debe ser firme, legal y citando las cláusulas de terminación si existen en el texto.
+                            Actúa como abogado. Basándote en el contrato analizado: "{st.session_state.contract_text[:3000]}..."
+                            Redacta una CARTA FORMAL DE DESISTIMIENTO o NO RENOVACIÓN.
+                            Remitente: {email_remitente}. Fecha efectos: {fecha_cancel}.
                             """
                             aviso_texto = groq_engine(prompt_cancel, api_key)
                             st.markdown(f"<div class='contract-box'>{aviso_texto}</div>", unsafe_allow_html=True)
-                            
-                            # Botón para descargar la cancelación
                             pdf_cancel = create_pdf(aviso_texto, "Carta Cancelacion")
                             save_lead(email_remitente, "CANCELACION_AUTO", "Desde Analizador")
                             st.download_button("⬇️ Descargar Carta PDF", data=pdf_cancel, file_name="Cancelacion.pdf", mime="application/pdf")
@@ -565,65 +546,98 @@ with tabs[3]:
                         st.session_state.generated_calc = groq_engine(p, api_key)
             
            # 2. SUELDO NETO (V66: CÓNYUGE + LIMPIEZA NUCLEAR)
-            elif "Sueldo" in tipo_calc:
-                st.caption("Simulador Nómina 2025 (Gráfico)")
+           elif "Sueldo" in tipo_calc:
+                st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
+                
                 bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
                 edad = st.number_input("Edad", 18, 70, 30)
-                comunidad = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"])
+                comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"])
                 movilidad = st.checkbox("¿Movilidad Geográfica?")
                 
                 st.markdown("---")
                 c_fam1, c_fam2 = st.columns(2)
                 with c_fam1: 
                     estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a"])
-                    # --- NUEVO: PREGUNTA CÓNYUGE ---
                     conyuge_cargo = False
                     if estado == "Casado/a":
-                        conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?", help="Marcar si el cónyuge obtiene rentas inferiores a 1.500€ anuales (excluidas exentas).")
-                    # -------------------------------
+                        conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?")
                 
                 with c_fam2: discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
-                
                 hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
-                hijos_menores_3 = 0
-                if hijos > 0:
-                    hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
                 
+                # BOTÓN DE CALCULAR
                 if st.button("💶 CALCULAR NETO EXACTO"):
-                    with st.spinner("Procesando datos fiscales..."):
-                        p_nomina = f"""
-                        Eres una API calculadora de nóminas. NO CHATBOT. SALIDA SOLO HTML.
-                        Datos: Bruto {bruto}, Edad {edad}, {estado}, Cónyuge a cargo (<1500€): {conyuge_cargo}, Hijos {hijos}, Región {comunidad}.
+                    with st.spinner("Consultando normativa regional y calculando..."):
                         
-                        LÓGICA:
-                        1. Calcula Seguridad Social (~6.35%).
-                        2. Calcula IRPF 2025 (Tablas reales, aplica reducción por cónyuge si corresponde).
-                        3. Neto = Bruto - SS - IRPF.
+                        # 1. PREGUNTAMOS A LA IA SOLO EL TIPO DE RETENCIÓN (EL % CORRECTO)
+                        prompt_irpf = f"""
+                        Actúa como experto fiscal en España 2025.
+                        Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) para este perfil:
+                        - Salario Bruto: {bruto}€
+                        - Región: {comunidad} (Aplica tablas autonómicas vigentes)
+                        - Edad: {edad}
+                        - Hijos: {hijos}
+                        - Discapacidad: {discapacidad}
+                        - Cónyuge a cargo: {conyuge_cargo}
                         
-                        PLANTILLA HTML OBLIGATORIA (Rellena las X):
+                        IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
+                        Ejemplo de respuesta válida: 14.20
+                        NO escribas texto, ni símbolos de porcentaje, solo el número.
+                        """
+                        try:
+                            respuesta_ia = groq_engine(prompt_irpf, api_key, temp=0.0)
+                            import re
+                            match = re.search(r"(\d+[.,]\d+)", respuesta_ia)
+                            if match: tipo_irpf = float(match.group(1).replace(",", "."))
+                            else: tipo_irpf = 15.0
+                        except: tipo_irpf = 15.0
+
+                        # 2. MATEMÁTICAS EN PYTHON (INFALIBLES)
+                        ss_anual = bruto * 0.0635  # Seguridad Social estandar (~6.35%)
+                        irpf_anual = bruto * (tipo_irpf / 100)
+                        neto_anual = bruto - ss_anual - irpf_anual
+                        
+                        # Python divide, así que 12 pagas SIEMPRE será mayor que 14
+                        mes_12 = neto_anual / 12
+                        mes_14 = neto_anual / 14 
+
+                        # 3. FORMATO DE NÚMEROS
+                        f_mes_12 = "{:,.2f}".format(mes_12).replace(",", "X").replace(".", ",").replace("X", ".")
+                        f_mes_14 = "{:,.2f}".format(mes_14).replace(",", "X").replace(".", ",").replace("X", ".")
+                        f_irpf_mensual = "{:,.2f}".format(irpf_anual/12).replace(",", "X").replace(".", ",").replace("X", ".")
+                        f_tipo = "{:,.2f}".format(tipo_irpf).replace(",", "X").replace(".", ",").replace("X", ".")
+
+                        # 4. HTML VISUAL
+                        html_nomina = f"""
                         <div style="background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #ffffff !important; padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; max-width: 500px; margin: auto;">
                             <div style="color: #94a3b8 !important; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Neto Mensual (12 pagas)</div>
-                            <div style="color: #38bdf8 !important; font-size: 48px; font-weight: 900; margin: 10px 0; line-height: 1; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);">X.XXX €</div>
+                            <div style="color: #38bdf8 !important; font-size: 48px; font-weight: 900; margin: 10px 0; line-height: 1; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);">{f_mes_12} €</div>
                             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2);">
                                 <div style="color: #94a3b8 !important; font-size: 14px; font-weight: bold;">Neto Mensual (14 pagas)</div>
-                                <div style="color: #f1f5f9 !important; font-size: 28px; font-weight: 700;">X.XXX €</div>
+                                <div style="color: #f1f5f9 !important; font-size: 28px; font-weight: 700;">{f_mes_14} €</div>
                             </div>
                             <div style="background-color: rgba(0, 0, 0, 0.3); margin-top: 25px; padding: 15px; border-radius: 10px; display: flex; justify-content: space-between; border: 1px solid rgba(255,255,255,0.05);">
                                 <div style="text-align: center; width: 48%;">
                                     <div style="color: #cbd5e1 !important; font-size: 11px; font-weight: bold;">RETENCIÓN IRPF</div>
-                                    <div style="color: #f87171 !important; font-size: 16px; font-weight: bold;">- X.XXX €/mes</div>
+                                    <div style="color: #f87171 !important; font-size: 16px; font-weight: bold;">- {f_irpf_mensual} €/mes</div>
                                 </div>
                                 <div style="width: 1px; background-color: rgba(255, 255, 255, 0.2);"></div>
                                 <div style="text-align: center; width: 48%;">
                                     <div style="color: #cbd5e1 !important; font-size: 11px; font-weight: bold;">TIPO APLICADO</div>
-                                    <div style="color: #f87171 !important; font-size: 16px; font-weight: bold;">XX,XX %</div>
+                                    <div style="color: #f87171 !important; font-size: 16px; font-weight: bold;">{f_tipo} %</div>
                                 </div>
                             </div>
-                            <div style="margin-top: 10px; font-size: 10px; color: #64748b !important;">*Cálculo estimado IRPF 2025</div>
+                            <div style="margin-top: 10px; font-size: 10px; color: #64748b !important;">*Cálculo basado en normativa autonómica de {comunidad}.</div>
                         </div>
                         """
-                        
-                        raw_response = groq_engine(p_nomina, api_key, temp=0.0)
+                        st.session_state.generated_calc = html_nomina
+
+                # --- BOTÓN DE RESET ---
+                if st.session_state.generated_calc:
+                     st.write("")
+                     if st.button("🔄 Calcular de nuevo", use_container_width=True):
+                         st.session_state.generated_calc = ""
+                         st.rerun()
                         
                         # --- LIMPIEZA NUCLEAR (SOLUCIÓN DEFINITIVA) ---
                         # 1. Eliminar comillas markdown
@@ -731,6 +745,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
