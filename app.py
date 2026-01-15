@@ -85,7 +85,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V72: FINAL MÓVIL - PESTAÑAS COMPACTAS + TEXTO CORTO)
+# 2. ESTILOS CSS (V73: MÓVIL + PESTAÑAS + SIN GITHUB/MENÚ)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -149,30 +149,19 @@ st.markdown("""
         background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important;
     }
 
-    /* --- 6. OPTIMIZACIÓN MÓVIL (AQUÍ ESTÁ LA MAGIA) 📱 --- */
+    /* --- 6. OPTIMIZACIÓN MÓVIL 📱 --- */
     @media only screen and (max-width: 600px) {
-        /* A) Ajustar márgenes de la app */
         .block-container {
             padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2rem !important;
         }
-        
-        /* B) PESTAÑAS COMPACTAS: Reducimos padding y letra para que quepan */
         button[data-baseweb="tab"] {
-            padding: 6px 10px !important; /* Mucho más estrechas */
-            font-size: 11px !important;   /* Letra más pequeña */
-            margin-right: 2px !important;
-            flex: 1 1 auto; /* Intentar que ocupen el espacio disponible equitativamente */
+            padding: 6px 10px !important; font-size: 11px !important; margin-right: 2px !important; flex: 1 1 auto;
         }
-
-        /* C) TEXTO UPLOADER CORTO: Cambiamos la frase larga por una corta */
         [data-testid="stFileUploader"] section > div > div::before {
-            content: "📂 Subir PDF" !important; /* <--- CAMBIO CLAVE */
+            content: "📂 Subir PDF" !important; 
         }
-        
-        /* D) Logo más pequeño */
         [data-testid="stImage"] img { max-width: 80% !important; margin: auto; }
     }
-    /* ----------------------------------------------------- */
 
     /* 7. CAJA DE CONTRATOS */
     .contract-box {
@@ -197,7 +186,24 @@ st.markdown("""
         transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     }
 
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+    /* --- 10. OCULTAR GATITO GITHUB Y MENÚ SUPERIOR (NUEVO) --- */
+    /* Oculta la barra de herramientas superior (Deploy, tres puntos, GitHub) */
+    [data-testid="stToolbar"] { 
+        visibility: hidden !important; 
+        display: none !important;
+    }
+    /* Oculta la decoración del header (la línea de colores de Streamlit) */
+    [data-testid="stHeader"] { 
+        visibility: hidden !important; 
+        display: none !important;
+    }
+    /* Oculta el footer "Made with Streamlit" si aparece */
+    footer { 
+        visibility: hidden !important; 
+        display: none !important;
+    }
+    #MainMenu { visibility: hidden !important; }
+    /* --------------------------------------------------------- */
 </style>
 """, unsafe_allow_html=True)
 # ==============================================================================
@@ -673,4 +679,5 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
