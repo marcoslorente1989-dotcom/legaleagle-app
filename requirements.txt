@@ -4,4 +4,6 @@ groq
 python-dotenv
 pdfplumber
 fpdf
+gspread
+oauth2client
 
