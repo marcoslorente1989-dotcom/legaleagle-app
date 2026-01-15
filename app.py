@@ -26,7 +26,7 @@ st.set_page_config(
     page_title="LegalEagle AI",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed" # <--- ESTO LA MANTIENE CERRADA AL INICIO
 )
 
 # A) TEXTO FANTASMA (SEÑUELO PARA EDGE)
@@ -85,7 +85,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V68: TRADUCCIÓN TOTAL BOTÓN BROWSE)
+# 2. ESTILOS CSS (V71: TRADUCCIÓN + MÓVIL + PESTAÑAS ANCHAS)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -100,6 +100,18 @@ st.markdown("""
     /* 2. TEXTOS GENERALES: BLANCO */
     h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown { color: #ffffff !important; }
 
+    /* --- NUEVO: OPTIMIZACIÓN MÓVIL 📱 --- */
+    /* Elimina márgenes gigantes en pantallas pequeñas */
+    @media only screen and (max-width: 600px) {
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            padding-top: 2rem !important;
+        }
+        [data-testid="stImage"] img { max-width: 85% !important; margin: auto; }
+    }
+    /* ------------------------------------- */
+
     /* 3. INPUTS: NEGRO */
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important; 
@@ -110,51 +122,28 @@ st.markdown("""
     }
     ul[data-baseweb="menu"] li { color: #000000 !important; background-color: #ffffff !important; }
 
-    /* --- 4. TRADUCCIÓN FORZADA DEL UPLOADER (HACK CSS) --- */
-    
-    /* A) Estilo del contenedor */
+    /* 4. TRADUCCIÓN FORZADA DEL UPLOADER (TU CÓDIGO V68 INTACTO) */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
-        border: 2px dashed #cbd5e1;
-        border-radius: 15px;
-        padding: 20px;
+        border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
     }
-
-    /* B) Ocultamos los textos en inglés originales del contenedor */
     [data-testid="stFileUploader"] section > div > div > span, 
-    [data-testid="stFileUploader"] section > div > div > small {
-        display: none !important;
-    }
+    [data-testid="stFileUploader"] section > div > div > small { display: none !important; }
 
-    /* C) Ponemos texto ESPAÑOL encima del área */
     [data-testid="stFileUploader"] section > div > div::before {
         content: "📂 Arrastra tu PDF aquí para analizar";
         display: block; text-align: center; color: #334155; font-weight: 600; margin-bottom: 10px;
     }
-
-    /* D) EL BOTÓN "BROWSE FILES" - TRUCO DE INVISIBILIDAD */
     [data-testid="stFileUploader"] button {
-        border-radius: 20px !important;
-        border: 1px solid #94a3b8 !important;
-        background-color: #e2e8f0 !important;
-        color: transparent !important; /* <--- TEXTO ORIGINAL INVISIBLE */
-        position: relative;
-        width: 160px; /* Forzamos anchura para que quepa el texto nuevo */
-        height: 40px;
+        border-radius: 20px !important; border: 1px solid #94a3b8 !important;
+        background-color: #e2e8f0 !important; color: transparent !important;
+        position: relative; width: 160px; height: 40px;
     }
-    
-    /* E) TEXTO NUEVO ENCIMA DEL BOTÓN */
     [data-testid="stFileUploader"] button::after {
-        content: "📄 Buscar Archivo"; /* <--- TU TEXTO EN ESPAÑOL */
-        color: #0f172a !important; /* Color visible */
-        position: absolute;
-        left: 50%; top: 50%;
-        transform: translate(-50%, -50%); /* Centrado perfecto */
-        font-weight: 600;
-        width: 100%;
-        font-size: 14px;
+        content: "📄 Buscar Archivo"; color: #0f172a !important;
+        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+        font-weight: 600; width: 100%; font-size: 14px;
     }
-    /* ----------------------------------------------------- */
 
     /* 5. CAJA DE CONTRATOS */
     .contract-box {
@@ -163,14 +152,19 @@ st.markdown("""
     }
     .contract-box, .contract-box * { color: #000000 !important; }
 
-    /* 6. PESTAÑAS (TABS) */
+    /* 6. PESTAÑAS (TABS) - ¡¡AQUÍ ESTÁ LA MEJORA VISUAL!! 🌬️ */
     button[data-baseweb="tab"] {
         background-color: rgba(255, 255, 255, 0.15) !important;
-        color: #ffffff !important; border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 20px !important;
+        color: #ffffff !important; 
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        border-radius: 30px !important; /* Más redondeadas */
+        padding: 10px 30px !important; /* <--- MÁS RELLENO LATERAL (AIRE) */
+        margin-right: 8px !important;  /* Separación entre ellas */
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important;
+        background-color: #3b82f6 !important; 
+        font-weight: bold !important; 
+        border-color: #60a5fa !important;
     }
 
     /* 7. CHAT Y SIDEBAR */
@@ -629,18 +623,42 @@ with tabs[3]:
                         pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
                         st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
 
-# PANEL LATERAL
+# ==============================================================================
+# PANEL LATERAL (MODO ADMIN SECRETO)
+# ==============================================================================
 with st.sidebar:
-    st.markdown("### ⚙️ Panel de Control")
-    if st.button("🔄 Reiniciar App"): st.session_state.clear(); st.rerun()
+    # 1. Espacio vacío visual para el cliente
+    st.image("logo.png", use_container_width=True) if os.path.isfile("logo.png") else None
+    st.write("")
     
-    st.markdown("---")
+    # 2. CANDADO DIGITAL: Solo tú sabes la clave
+    # Para el cliente será solo una cajita vacía que ignorará.
+    password = st.text_input("🔐", type="password", placeholder="Acceso Admin", label_visibility="collapsed")
     
-    if os.path.isfile("database_leads.csv"):
-        st.caption("📥 Base de Datos")
-        df = pd.read_csv("database_leads.csv")
-        st.dataframe(df, height=150)
-        with open("database_leads.csv", "rb") as f: st.download_button("Descargar CSV", f, "leads.csv")
+    if password == "admin123":  # <--- CAMBIA ESTA CONTRASEÑA SI QUIERES
+        st.success("Modo Administrador Activo")
+        st.markdown("---")
+        
+        st.markdown("### ⚙️ Panel de Control")
+        if st.button("🔄 Reiniciar App"): 
+            st.session_state.clear()
+            st.rerun()
+        
+        st.markdown("---")
+        
+        if os.path.isfile("database_leads.csv"):
+            st.caption("📥 Base de Datos Leads")
+            df = pd.read_csv("database_leads.csv")
+            st.dataframe(df, height=150)
+            
+            # Botón de descarga
+            with open("database_leads.csv", "rb") as f: 
+                st.download_button("Descargar CSV", f, "leads.csv", mime="text/csv")
+        else:
+            st.caption("📭 Base de datos vacía")
+            
     else:
+        # Lo que ve el cliente (NADA, o un mensaje de copyright)
+        st.caption("© 2026 LegalEagle AI")
+        st.caption("Dpto. Legal Automatizado")
 
-        st.caption("📭 Base de datos vacía")
