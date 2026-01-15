@@ -559,6 +559,9 @@ with tabs[3]:
                 
                 with c_fam2: discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
                 hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
+                hijos_menores_3 = 0
+                if hijos > 0:
+                    hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
                 
                 # BOTÓN DE CALCULAR
                 if st.button("💶 CALCULAR NETO EXACTO"):
@@ -574,6 +577,7 @@ with tabs[3]:
                         - Hijos: {hijos}
                         - Discapacidad: {discapacidad}
                         - Cónyuge a cargo: {conyuge_cargo}
+                        - Hijos < 3 años: {hijos_menores_3}
                         
                         IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
                         Ejemplo de respuesta válida: 14.20
@@ -660,7 +664,14 @@ with tabs[3]:
 
     with c_res:
         if st.session_state.generated_calc:
-            st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
+            # LÓGICA INTELIGENTE:
+            # Si es el HTML visual (nómina oscura), lo mostramos directo para respetar su diseño.
+            # Si es texto plano (otras calculadoras), le ponemos la caja de papel blanca.
+            if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
+                st.markdown(st.session_state.generated_calc, unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
+            
             st.write("")
             with st.container(border=True):
                 ce3, cb3 = st.columns([2,1])
@@ -708,6 +719,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
