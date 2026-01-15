@@ -85,7 +85,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V71: TRADUCCIÓN + MÓVIL + PESTAÑAS ANCHAS)
+# 2. ESTILOS CSS (V72: FINAL MÓVIL - PESTAÑAS COMPACTAS + TEXTO CORTO)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -100,18 +100,6 @@ st.markdown("""
     /* 2. TEXTOS GENERALES: BLANCO */
     h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown { color: #ffffff !important; }
 
-    /* --- NUEVO: OPTIMIZACIÓN MÓVIL 📱 --- */
-    /* Elimina márgenes gigantes en pantallas pequeñas */
-    @media only screen and (max-width: 600px) {
-        .block-container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            padding-top: 2rem !important;
-        }
-        [data-testid="stImage"] img { max-width: 85% !important; margin: auto; }
-    }
-    /* ------------------------------------- */
-
     /* 3. INPUTS: NEGRO */
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important; 
@@ -122,7 +110,7 @@ st.markdown("""
     }
     ul[data-baseweb="menu"] li { color: #000000 !important; background-color: #ffffff !important; }
 
-    /* 4. TRADUCCIÓN FORZADA DEL UPLOADER (TU CÓDIGO V68 INTACTO) */
+    /* 4. CAJA DE SUBIDA (BASE - ESTILO PC) */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
         border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
@@ -130,10 +118,13 @@ st.markdown("""
     [data-testid="stFileUploader"] section > div > div > span, 
     [data-testid="stFileUploader"] section > div > div > small { display: none !important; }
 
+    /* Texto largo por defecto (PC) */
     [data-testid="stFileUploader"] section > div > div::before {
         content: "📂 Arrastra tu PDF aquí para analizar";
         display: block; text-align: center; color: #334155; font-weight: 600; margin-bottom: 10px;
     }
+    
+    /* Botón "Browse" camuflado */
     [data-testid="stFileUploader"] button {
         border-radius: 20px !important; border: 1px solid #94a3b8 !important;
         background-color: #e2e8f0 !important; color: transparent !important;
@@ -145,35 +136,58 @@ st.markdown("""
         font-weight: 600; width: 100%; font-size: 14px;
     }
 
-    /* 5. CAJA DE CONTRATOS */
+    /* 5. PESTAÑAS (BASE - ESTILO PC) */
+    button[data-baseweb="tab"] {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important; 
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        border-radius: 30px !important;
+        padding: 10px 30px !important; /* Aire en PC */
+        margin-right: 8px !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important;
+    }
+
+    /* --- 6. OPTIMIZACIÓN MÓVIL (AQUÍ ESTÁ LA MAGIA) 📱 --- */
+    @media only screen and (max-width: 600px) {
+        /* A) Ajustar márgenes de la app */
+        .block-container {
+            padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2rem !important;
+        }
+        
+        /* B) PESTAÑAS COMPACTAS: Reducimos padding y letra para que quepan */
+        button[data-baseweb="tab"] {
+            padding: 6px 10px !important; /* Mucho más estrechas */
+            font-size: 11px !important;   /* Letra más pequeña */
+            margin-right: 2px !important;
+            flex: 1 1 auto; /* Intentar que ocupen el espacio disponible equitativamente */
+        }
+
+        /* C) TEXTO UPLOADER CORTO: Cambiamos la frase larga por una corta */
+        [data-testid="stFileUploader"] section > div > div::before {
+            content: "📂 Subir PDF" !important; /* <--- CAMBIO CLAVE */
+        }
+        
+        /* D) Logo más pequeño */
+        [data-testid="stImage"] img { max-width: 80% !important; margin: auto; }
+    }
+    /* ----------------------------------------------------- */
+
+    /* 7. CAJA DE CONTRATOS */
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     .contract-box, .contract-box * { color: #000000 !important; }
 
-    /* 6. PESTAÑAS (TABS) - ¡¡AQUÍ ESTÁ LA MEJORA VISUAL!! 🌬️ */
-    button[data-baseweb="tab"] {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: #ffffff !important; 
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 30px !important; /* Más redondeadas */
-        padding: 10px 30px !important; /* <--- MÁS RELLENO LATERAL (AIRE) */
-        margin-right: 8px !important;  /* Separación entre ellas */
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #3b82f6 !important; 
-        font-weight: bold !important; 
-        border-color: #60a5fa !important;
-    }
-
-    /* 7. CHAT Y SIDEBAR */
+    /* 8. CHAT Y SIDEBAR */
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
     section[data-testid="stSidebar"] { background-color: #0f172a; border-right: 1px solid #1e293b; }
     section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { color: #e2e8f0 !important; }
 
-    /* 8. BOTONES GENERALES */
+    /* 9. BOTONES GENERALES */
     div.stButton > button {
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
         color: white !important; border: none; border-radius: 25px !important; 
@@ -186,7 +200,6 @@ st.markdown("""
     #MainMenu {visibility: hidden;} footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
-
 # ==============================================================================
 # 3. LÓGICA & MOTOR IA
 # ==============================================================================
@@ -660,3 +673,4 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
