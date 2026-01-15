@@ -399,7 +399,7 @@ with tabs[0]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun()
 
-# --- TAB 2: CREADOR (CON CIUDAD DE FIRMA + DNI + FECHA) ---
+# --- TAB 2: CREADOR (VEHÍCULO DETALLADO + CIUDAD + FECHA) ---
 with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
@@ -419,12 +419,29 @@ with tabs[1]:
             
             data_p = ""
             
-            # --- LÓGICA DE CAMPOS (CON DNI/NIE/CIF) ---
+            # --- LÓGICA DE CAMPOS ESPECÍFICOS ---
+            
             if "Alquiler" in tipo: 
-                data_p = f"Alquiler. Propietario: {st.text_input('Propietario (Nombre y DNI/CIF)')}. Inquilino: {st.text_input('Inquilino (Nombre y DNI/CIF)')}. Piso: {st.text_input('Dirección')}. Renta: {st.number_input('Renta €')}."
+                data_p = f"Alquiler. Propietario: {st.text_input('Propietario (Nombre y DNI/CIF)')}. Inquilino: {st.text_input('Inquilino (Nombre y DNI/CIF)')}. Piso: {st.text_input('Dirección completa')}. Referencia Catastral: {st.text_input('Ref. Catastral (Opcional)')}. Renta: {st.number_input('Renta Mensual €')}."
             
             elif "Vehículo" in tipo: 
-                data_p = f"Coche. Vendedor: {st.text_input('Vendedor (Nombre y DNI/CIF)')}. Comprador: {st.text_input('Comprador (Nombre y DNI/CIF)')}. Matrícula: {st.text_input('Matrícula')}. Precio: {st.number_input('Precio €')}."
+                st.caption("👤 Intervinientes")
+                vendedor = st.text_input("Vendedor (Nombre y DNI)")
+                comprador = st.text_input("Comprador (Nombre y DNI)")
+                
+                st.caption("🚗 Datos del Vehículo")
+                col_coche1, col_coche2 = st.columns(2)
+                with col_coche1:
+                    marca = st.text_input("Marca y Modelo", placeholder="Ej: Ford Focus 1.5 TDCi")
+                    matricula = st.text_input("Matrícula")
+                with col_coche2:
+                    bastidor = st.text_input("Nº Bastidor (VIN)", help="Fundamental para la validez legal")
+                    kms = st.number_input("Kilómetros", min_value=0, step=1000)
+                
+                precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
+                
+                # Construimos el string de datos completo
+                data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
             
             elif "NDA" in tipo: 
                 data_p = f"Acuerdo Confidencialidad. Parte Reveladora: {st.text_input('Parte Reveladora (Nombre y CIF/DNI)')}. Parte Receptora: {st.text_input('Parte Receptora (Nombre y CIF/DNI)')}. Información a proteger: {st.text_area('Motivo/Información')}."
@@ -443,16 +460,15 @@ with tabs[1]:
             
             st.write("")
             
-            # --- NUEVO: CIUDAD DE FIRMA ---
+            # --- CIUDAD Y BOTÓN ---
             ciudad = st.text_input("📍 Ciudad de firma", value="Madrid")
             
-            # --- BOTÓN CON FECHA Y CIUDAD ---
             if st.button("✨ REDACTAR"):
                 with st.spinner("Redactando..."):
-                    # 1. Capturamos la fecha real de hoy
+                    # 1. Fecha real
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                     
-                    # 2. Instrucción completa para la IA
+                    # 2. Instrucción completa
                     instruccion = f"""
                     Redacta un contrato legal formal en España de tipo: {tipo}.
                     LUGAR Y FECHA: En {ciudad}, a {fecha_hoy}.
@@ -461,6 +477,7 @@ with tabs[1]:
                     IMPORTANTE:
                     - Empieza indicando "En {ciudad}, a {fecha_hoy}".
                     - Identifica a las partes con sus DNI/CIF.
+                    - Para vehículos: Incluye cláusula de 'vicios ocultos' según Código Civil y declara el kilometraje y bastidor.
                     - Cita leyes vigentes (Código Civil, LAU, ET, etc).
                     - Usa cláusulas claras y formato profesional.
                     """
@@ -740,6 +757,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
