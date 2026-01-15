@@ -399,7 +399,7 @@ with tabs[0]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun()
 
-# --- TAB 2: CREADOR (VEHÍCULO DETALLADO + CIUDAD + FECHA) ---
+# --- TAB 2: CREADOR (CON REF. CATASTRAL, VEHÍCULO DETALLADO, DNI Y FECHA) ---
 with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
@@ -422,7 +422,13 @@ with tabs[1]:
             # --- LÓGICA DE CAMPOS ESPECÍFICOS ---
             
             if "Alquiler" in tipo: 
-                data_p = f"Alquiler. Propietario: {st.text_input('Propietario (Nombre y DNI/CIF)')}. Inquilino: {st.text_input('Inquilino (Nombre y DNI/CIF)')}. Piso: {st.text_input('Dirección completa')}. Referencia Catastral: {st.text_input('Ref. Catastral (Opcional)')}. Renta: {st.number_input('Renta Mensual €')}."
+                st.caption("🏠 Datos del Alquiler")
+                prop = st.text_input('Propietario (Nombre y DNI/CIF)')
+                inq = st.text_input('Inquilino (Nombre y DNI/CIF)')
+                dir_piso = st.text_input('Dirección completa')
+                ref_cat = st.text_input('Referencia Catastral (Opcional)')
+                renta = st.number_input('Renta Mensual (€)')
+                data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
             
             elif "Vehículo" in tipo: 
                 st.caption("👤 Intervinientes")
@@ -432,7 +438,7 @@ with tabs[1]:
                 st.caption("🚗 Datos del Vehículo")
                 col_coche1, col_coche2 = st.columns(2)
                 with col_coche1:
-                    marca = st.text_input("Marca y Modelo", placeholder="Ej: Ford Focus 1.5 TDCi")
+                    marca = st.text_input("Marca y Modelo", placeholder="Ej: Ford Focus 1.5")
                     matricula = st.text_input("Matrícula")
                 with col_coche2:
                     bastidor = st.text_input("Nº Bastidor (VIN)", help="Fundamental para la validez legal")
@@ -440,17 +446,39 @@ with tabs[1]:
                 
                 precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
                 
-                # Construimos el string de datos completo
                 data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
             
             elif "NDA" in tipo: 
                 data_p = f"Acuerdo Confidencialidad. Parte Reveladora: {st.text_input('Parte Reveladora (Nombre y CIF/DNI)')}. Parte Receptora: {st.text_input('Parte Receptora (Nombre y CIF/DNI)')}. Información a proteger: {st.text_area('Motivo/Información')}."
             
             elif "Compraventa Vivienda" in tipo:
-                data_p = f"Compraventa Inmueble. Vendedor: {st.text_input('Vendedor (Nombre y DNI/CIF)')}. Comprador: {st.text_input('Comprador (Nombre y DNI/CIF)')}. Inmueble: {st.text_input('Datos Inmueble')}. Precio: {st.number_input('Precio Venta €')}."
+                st.caption("👤 Intervinientes")
+                vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
+                comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
+                
+                st.caption("🏠 Inmueble")
+                inmueble = st.text_input('Dirección Completa')
+                ref_catastral = st.text_input('Referencia Catastral', help="Código de 20 caracteres (XX00000XX...)")
+                precio = st.number_input('Precio Venta (€)', step=1000.0)
+                
+                data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas y gravámenes."
             
             elif "Arras" in tipo:
-                data_p = f"Contrato de Arras. Vendedor: {st.text_input('Vendedor (Nombre y DNI/CIF)')}. Comprador: {st.text_input('Comprador (Nombre y DNI/CIF)')}. Inmueble: {st.text_input('Inmueble')}. Precio Total: {st.number_input('Precio Total')}. Señal/Arras: {st.number_input('Señal €')}. Plazo Máximo: {st.date_input('Fecha Límite')}."
+                st.caption("📝 Datos para Arras")
+                vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
+                comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
+                
+                st.caption("🏠 Inmueble y Condiciones")
+                inmueble = st.text_input('Dirección Inmueble')
+                ref_catastral = st.text_input('Referencia Catastral')
+                
+                col_arras1, col_arras2 = st.columns(2)
+                with col_arras1: precio = st.number_input('Precio Total Venta (€)', step=1000.0)
+                with col_arras2: senal = st.number_input('Señal/Arras (€)', step=500.0)
+                
+                plazo = st.date_input('Fecha Límite Escritura')
+                
+                data_p = f"Contrato de Arras. Vendedor: {vendedor}. Comprador: {comprador}. Inmueble: {inmueble}. Ref. Catastral: {ref_catastral}. Precio Total: {precio}. Señal entregada: {senal}. Fecha límite: {plazo}. Tipo: Arras Penitenciales (Art 1454 CC)."
             
             elif "Cancelación" in tipo:
                 data_p = f"Acuerdo de Terminación. Contrato a cancelar: {st.text_input('¿Qué contrato?')}. Partes: {st.text_input('Partes implicadas (Nombres y DNI/CIF)')}. Fecha Efectiva: {st.date_input('Fecha Fin')}."
@@ -477,7 +505,8 @@ with tabs[1]:
                     IMPORTANTE:
                     - Empieza indicando "En {ciudad}, a {fecha_hoy}".
                     - Identifica a las partes con sus DNI/CIF.
-                    - Para vehículos: Incluye cláusula de 'vicios ocultos' según Código Civil y declara el kilometraje y bastidor.
+                    - Para inmuebles: Incluye OBLIGATORIAMENTE la Referencia Catastral.
+                    - Para vehículos: Incluye Bastidor y Kilómetros.
                     - Cita leyes vigentes (Código Civil, LAU, ET, etc).
                     - Usa cláusulas claras y formato profesional.
                     """
@@ -757,6 +786,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
