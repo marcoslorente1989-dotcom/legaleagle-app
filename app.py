@@ -85,7 +85,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V75: MODALIDAD "NINJA" - SIN RASTRO DE STREAMLIT)
+# 2. ESTILOS CSS (V76: TODO INCLUIDO + ANTI-MARCA NUCLEAR)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -183,34 +183,33 @@ st.markdown("""
         transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     }
 
-    /* --- 10. OCULTACIÓN TOTAL (EL GATITO, LA CORONA Y EL FOOTER) --- */
+    /* --- 10. ZONA NUCLEAR (MODIFICADO AQUÍ PARA QUE DESAPAREZCA TODO) --- */
     
-    /* Ocultar el Header superior (la línea de colores y el menú hamburguesa) */
-    header, [data-testid="stHeader"] { 
+    /* A) Ocultar Barras y Menús Superiores */
+    header, [data-testid="stHeader"], [data-testid="stToolbar"] { 
         display: none !important; 
         visibility: hidden !important; 
     }
     
-    /* Ocultar la Toolbar (botones de arriba a la derecha: GitHub, Settings...) */
-    [data-testid="stToolbar"] { 
-        display: none !important; 
-        visibility: hidden !important; 
-    }
-    
-    /* Ocultar Footer estándar */
+    /* B) Ocultar Footer Estándar */
     footer, [data-testid="stFooter"] { 
         display: none !important; 
         visibility: hidden !important; 
         height: 0px !important;
     }
     
-    /* Ocultar la BOLITA AZUL / CORONA (Status Widget & Viewer Badge) */
-    /* Atacamos por ID y por Clase para asegurar que desaparece */
-    [data-testid="stStatusWidget"], 
-    div[class*="viewerBadge"] { 
-        display: none !important; 
-        visibility: hidden !important; 
+    /* C) ELIMINAR VIEWER BADGE (La bolita rebelde y la corona) */
+    /* Usamos opacidad, z-index negativo y posición fuera de pantalla */
+    div[class*="viewerBadge"], [data-testid="stStatusWidget"] { 
+        visibility: hidden !important;
+        display: none !important;
         opacity: 0 !important;
+        pointer-events: none !important; /* Que no se pueda ni clicar */
+        z-index: -9999 !important;      /* Enviarlo detrás del fondo */
+        width: 0px !important;
+        height: 0px !important;
+        position: fixed !important;
+        bottom: -100px !important;      /* Enviarlo fuera de la pantalla */
     }
 
     #MainMenu { visibility: hidden !important; display: none !important; }
@@ -690,6 +689,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
