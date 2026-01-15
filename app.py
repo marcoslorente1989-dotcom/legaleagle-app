@@ -20,18 +20,16 @@ except:
     api_key = os.getenv("GROQ_API_KEY")
 
 # ==============================================================================
-# 1. CONFIGURACIÓN (V69: ESTRATEGIA "TEXTO FANTASMA" + VIGILANTE)
+# 1. CONFIGURACIÓN (V78: FUSIÓN TOTAL - ANTI-TRADUCTOR + ANTI-MARCA)
 # ==============================================================================
 st.set_page_config(
     page_title="LegalEagle AI",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="collapsed" # <--- ESTO LA MANTIENE CERRADA AL INICIO
+    initial_sidebar_state="collapsed"
 )
 
-# A) TEXTO FANTASMA (SEÑUELO PARA EDGE)
-# Inyectamos palabras clave en español ocultas. Edge leerá esto, verá que es español
-# y bajará la guardia.
+# A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡LO MANTENEMOS!
 st.markdown("""
 <div style="display:none; visibility:hidden; height:0;">
     Hola, esto es una aplicación en español de España. Contrato laboral, nómina,
@@ -41,17 +39,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# B) SCRIPT "EL VIGILANTE" (MUTATION OBSERVER)
-# Este script vigila activamente. Si Edge intenta quitar el 'translate=no', 
-# el script se lo vuelve a poner en milisegundos.
+# B) SCRIPT "EL VIGILANTE 2.0" (PROTEGE IDIOMA + OCULTA MARCAS)
 components.html("""
     <script>
-        // 1. Apuntar al documento padre
         const doc = window.parent.document;
         const html = doc.documentElement;
-        
-        // 2. Función que impone la ley
-        const imponerEspanol = () => {
+
+        // FUNCIÓN ÚNICA QUE IMPONE LA LEY (IDIOMA + LIMPIEZA VISUAL)
+        const imponerLey = () => {
+            
+            // --- 1. POLÍTICA ANTI-TRADUCCIÓN ---
             if (html.getAttribute('translate') !== 'no') {
                 html.lang = 'es';
                 html.setAttribute('translate', 'no');
@@ -66,26 +63,48 @@ components.html("""
                     doc.head.appendChild(meta);
                 }
             }
+
+            // --- 2. POLÍTICA DE LIMPIEZA (BORRAR BOLITA Y MENÚS) ---
+            // Buscamos y ocultamos elementos rebeldes de Streamlit
+            const elementosAborrar = [
+                'header',                           // Barra de colores superior
+                '[data-testid="stHeader"]',         // Header específico
+                '[data-testid="stToolbar"]',        // Botones derecha (GitHub/Settings)
+                'footer',                           // Footer "Made with..."
+                '[data-testid="stStatusWidget"]',   // La corona / estado
+                'div[class*="viewerBadge"]'         // LA BOLITA AZUL REBELDE
+            ];
+
+            elementosAborrar.forEach(selector => {
+                const el = doc.querySelector(selector);
+                if (el) {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.style.opacity = '0';
+                    el.style.pointerEvents = 'none'; // Que no se pueda clicar
+                }
+            });
         };
 
-        // 3. Ejecutar inmediatamente
-        imponerEspanol();
+        // EJECUCIÓN INMEDIATA
+        imponerLey();
 
-        // 4. Crear un "Vigilante" (Observer)
-        // Si algo o alguien cambia los atributos del HTML, el vigilante salta.
+        // EL VIGILANTE (MUTATION OBSERVER)
+        // Vigila cambios en el HTML (idioma) y en el cuerpo (elementos nuevos como la bolita)
         const observer = new MutationObserver(() => {
-            imponerEspanol();
+            imponerLey();
         });
         
-        // Empezar a vigilar
-        observer.observe(html, { attributes: true, childList: false, subtree: false });
+        // Observamos todo: atributos del html y nuevos hijos en el body
+        observer.observe(html, { attributes: true });
+        observer.observe(doc.body, { childList: true, subtree: true });
         
-        console.log("👮‍♂️ Vigilante de idioma activo: Edge controlado.");
+        console.log("🦅 Vigilante V78 activo: Idioma protegido y Marcas eliminadas.");
     </script>
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V76: TODO INCLUIDO + ANTI-MARCA NUCLEAR)
+# 2. ESTILOS CSS (V78: DISEÑO COMPLETO + RESPALDO ANTI-MARCA)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -110,7 +129,7 @@ st.markdown("""
     }
     ul[data-baseweb="menu"] li { color: #000000 !important; background-color: #ffffff !important; }
 
-    /* 4. CAJA DE SUBIDA (BASE - ESTILO PC) */
+    /* 4. CAJA DE SUBIDA (TRADUCIDA - ESTILO PC) */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
         border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
@@ -160,20 +179,19 @@ st.markdown("""
         [data-testid="stImage"] img { max-width: 80% !important; margin: auto; }
     }
 
-    /* 7. CAJA DE CONTRATOS */
+    /* 7. OTROS (CONTRATOS, CHAT, SIDEBAR, BOTONES) */
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
     .contract-box, .contract-box * { color: #000000 !important; }
 
-    /* 8. CHAT Y SIDEBAR */
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
+    
     section[data-testid="stSidebar"] { background-color: #0f172a; border-right: 1px solid #1e293b; }
     section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { color: #e2e8f0 !important; }
 
-    /* 9. BOTONES GENERALES */
     div.stButton > button {
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
         color: white !important; border: none; border-radius: 25px !important; 
@@ -183,37 +201,35 @@ st.markdown("""
         transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     }
 
-    /* --- 10. ZONA NUCLEAR (MODIFICADO AQUÍ PARA QUE DESAPAREZCA TODO) --- */
+    /* --- 8. ZONA NUCLEAR (RESPALDO VISUAL) --- */
     
-    /* A) Ocultar Barras y Menús Superiores */
+    /* Ocultar Barras y Menús Superiores */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { 
         display: none !important; 
         visibility: hidden !important; 
     }
     
-    /* B) Ocultar Footer Estándar */
+    /* Ocultar Footer Estándar */
     footer, [data-testid="stFooter"] { 
         display: none !important; 
         visibility: hidden !important; 
         height: 0px !important;
     }
     
-    /* C) ELIMINAR VIEWER BADGE (La bolita rebelde y la corona) */
-    /* Usamos opacidad, z-index negativo y posición fuera de pantalla */
+    /* ELIMINAR VIEWER BADGE (Doble seguridad: CSS + JS) */
     div[class*="viewerBadge"], [data-testid="stStatusWidget"] { 
         visibility: hidden !important;
         display: none !important;
         opacity: 0 !important;
-        pointer-events: none !important; /* Que no se pueda ni clicar */
-        z-index: -9999 !important;      /* Enviarlo detrás del fondo */
+        pointer-events: none !important;
+        z-index: -9999 !important;
         width: 0px !important;
         height: 0px !important;
         position: fixed !important;
-        bottom: -100px !important;      /* Enviarlo fuera de la pantalla */
+        bottom: -100px !important;
     }
 
     #MainMenu { visibility: hidden !important; display: none !important; }
-    /* ---------------------------------------------------------- */
 </style>
 """, unsafe_allow_html=True)
 # ==============================================================================
@@ -689,6 +705,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
