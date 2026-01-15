@@ -515,13 +515,12 @@ with tabs[2]:
                         pdf_claim = create_pdf(st.session_state.generated_claim, "Carta Legal")
                         st.download_button("⬇️ Bajar PDF", data=pdf_claim, file_name="Defensa.pdf", mime="application/pdf")
 
-# --- TAB 4: IMPUESTOS (PLUSVALÍA + SUELDO NETO CORREGIDO) ---
+# --- TAB 4: IMPUESTOS ---
 with tabs[3]:
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
         with st.container(border=True):
             st.subheader("🧮 Calculadora Fiscal")
-            # AÑADIDA "Cuota Hipoteca" AL FINAL DE LA LISTA
             tipo_calc = st.selectbox("Trámite", ["Venta Inmueble (Plusvalía+IRPF)", "Sueldo Neto (Nómina)", "Gastos Compraventa", "IPC Alquiler", "Cuota Hipoteca"])            
             anio_actual = datetime.now().year
             
@@ -534,19 +533,15 @@ with tabs[3]:
                 p_venta = st.number_input("Precio Venta (€)", min_value=0.0)
                 municipio = st.text_input("Municipio")
                 v_suelo = st.number_input("Valor Catastral SUELO (€)", min_value=0.0)
-                
                 if st.button("🧮 CALCULAR IMPUESTOS"):
                     if v_suelo > 0:
                         anios = anio_actual - f_compra
                         ganancia = p_venta - p_compra
-                        p = f"""Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}.
-                        1. Plusvalía Municipal (Método Objetivo coeficientes estándar vs Real).
-                        2. IRPF Ahorro (19-28%).
-                        Muestra totales."""
+                        p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
                         st.session_state.generated_calc = groq_engine(p, api_key)
             
-           # 2. SUELDO NETO (V66: CÓNYUGE + LIMPIEZA NUCLEAR)
-           elif "Sueldo" in tipo_calc:
+            # 2. SUELDO NETO (HÍBRIDO: IA DEFINE EL TIPO % + PYTHON CALCULA EL DINERO)
+            elif "Sueldo" in tipo_calc:
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                 
                 bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
@@ -638,26 +633,6 @@ with tabs[3]:
                      if st.button("🔄 Calcular de nuevo", use_container_width=True):
                          st.session_state.generated_calc = ""
                          st.rerun()
-                        
-                        # --- LIMPIEZA NUCLEAR (SOLUCIÓN DEFINITIVA) ---
-                        # 1. Eliminar comillas markdown
-                        clean_text = raw_response.replace("```html", "").replace("```", "").strip()
-                        
-                        # 2. Buscar quirúrgicamente el HTML
-                        start_idx = clean_text.find("<div") # Donde empieza el dibujo
-                        end_idx = clean_text.rfind("</div>") # Donde acaba el dibujo
-                        
-                        if start_idx != -1 and end_idx != -1:
-                            # Cortamos todo lo que sobre antes y después
-                            final_html = clean_text[start_idx : end_idx + 6]
-                        else:
-                            # Si no encuentra divs, enseñamos lo que haya (pero limpio)
-                            final_html = clean_text
-                        
-                        # 3. Renderizar
-                        st.markdown(final_html, unsafe_allow_html=True)
-                        st.toast("✅ Cálculo completado")
-                        st.session_state.generated_calc = "Resultado visual mostrado."
 
             # 3. GASTOS
             elif "Compraventa" in tipo_calc:
@@ -674,25 +649,14 @@ with tabs[3]:
                 if st.button("🧮 CALCULAR"):
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
                     
-            # 5. HIPOTECA (NUEVO)
+            # 5. HIPOTECA
             elif "Hipoteca" in tipo_calc:
-                st.caption("Calculadora Cuota Mensual (Sistema Francés)")
-                capital = st.number_input("Capital Prestado (€)", value=200000.0, step=1000.0)
-                interes = st.number_input("Interés Anual (%)", value=3.5, step=0.1)
-                plazo = st.number_input("Plazo (Años)", value=30, step=1)
-                
+                st.caption("Calculadora Cuota Mensual")
+                capital = st.number_input("Capital Prestado (€)", value=200000.0)
+                interes = st.number_input("Interés Anual (%)", value=3.5)
+                plazo = st.number_input("Plazo (Años)", value=30)
                 if st.button("🧮 CALCULAR CUOTA"):
-                    # Fórmula IA para desglose completo
-                    prompt_hip = f"""
-                    Actúa como matemático financiero. Calcula la CUOTA MENSUAL de una hipoteca.
-                    Datos: Capital {capital}€, Interés {interes}%, Plazo {plazo} años.
-                    
-                    TAREA:
-                    1. Calcula la cuota mensual exacta.
-                    2. Calcula el total de intereses pagados al final del préstamo.
-                    3. Muestra una pequeña tabla con el desglose del primer año (cuánto es interés y cuánto amortización).
-                    """
-                    st.session_state.generated_calc = groq_engine(prompt_hip, api_key)
+                    st.session_state.generated_calc = groq_engine(f"Calcula hipoteca. Capital {capital}. Interés {interes}. Plazo {plazo}. Tabla amortización año 1.", api_key)
 
     with c_res:
         if st.session_state.generated_calc:
@@ -707,7 +671,6 @@ with tabs[3]:
                         save_lead(m3, "CALCULO", "Fiscalidad")
                         pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
                         st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
-
 # ==============================================================================
 # PANEL LATERAL (MODO ADMIN SECRETO)
 # ==============================================================================
@@ -745,6 +708,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
