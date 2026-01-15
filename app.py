@@ -282,7 +282,6 @@ def save_lead(email, action, details):
             
     except Exception as e:
         print(f"❌ Error Google Sheets: {e}")
-
 # ==============================================================================
 # 4. INTERFAZ PRINCIPAL
 # ==============================================================================
@@ -870,6 +869,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
