@@ -627,16 +627,17 @@ with tabs[3]:
 # PANEL LATERAL (MODO ADMIN SECRETO)
 # ==============================================================================
 with st.sidebar:
-    # 1. Espacio vacío visual para el cliente
-    st.image("logo.png", use_container_width=True) if os.path.isfile("logo.png") else None
-    st.write("")
+    # 1. Espacio vacío visual (CORREGIDO: Usamos un IF normal para que no imprima código raro)
+    if os.path.isfile("logo.png"):
+        st.image("logo.png", use_container_width=True)
+    
+    st.write("") # Espacio separador
     
     # 2. CANDADO DIGITAL: Solo tú sabes la clave
-    # Para el cliente será solo una cajita vacía que ignorará.
     password = st.text_input("🔐", type="password", placeholder="Acceso Admin", label_visibility="collapsed")
     
-    if password == "admin123":  # <--- CAMBIA ESTA CONTRASEÑA SI QUIERES
-        st.success("Modo Administrador Activo")
+    if password == "admin123":  # <--- CAMBIA ESTO POR TU CONTRASEÑA
+        st.success("Modo Admin")
         st.markdown("---")
         
         st.markdown("### ⚙️ Panel de Control")
@@ -651,14 +652,11 @@ with st.sidebar:
             df = pd.read_csv("database_leads.csv")
             st.dataframe(df, height=150)
             
-            # Botón de descarga
             with open("database_leads.csv", "rb") as f: 
                 st.download_button("Descargar CSV", f, "leads.csv", mime="text/csv")
         else:
             st.caption("📭 Base de datos vacía")
             
     else:
-        # Lo que ve el cliente (NADA, o un mensaje de copyright)
+        # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
-        st.caption("Dpto. Legal Automatizado")
-
