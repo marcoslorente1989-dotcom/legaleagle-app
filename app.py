@@ -397,6 +397,7 @@ with tabs[0]:
                             
                             # Botón para descargar la cancelación
                             pdf_cancel = create_pdf(aviso_texto, "Carta Cancelacion")
+                            save_lead(email_remitente, "CANCELACION_AUTO", "Desde Analizador")
                             st.download_button("⬇️ Descargar Carta PDF", data=pdf_cancel, file_name="Cancelacion.pdf", mime="application/pdf")
 
                 # 3. CHAT LEGAL
@@ -730,6 +731,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
