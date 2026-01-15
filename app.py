@@ -399,7 +399,7 @@ with tabs[0]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun()
 
-# --- TAB 2: CREADOR (CON REF. CATASTRAL, VEHÍCULO DETALLADO, DNI Y FECHA) ---
+# --- TAB 2: CREADOR (CONTRATO TRABAJO AVANZADO + VEHÍCULO + VIVIENDA + ARRAS) ---
 with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
@@ -409,8 +409,8 @@ with tabs[1]:
             tipo = st.selectbox("Documento", [
                 "Alquiler Vivienda", 
                 "Compraventa Vehículo", 
+                "Contrato Trabajo",  # <--- Lo he movido arriba para que lo veas rápido
                 "Servicios Freelance", 
-                "Contrato Trabajo", 
                 "NDA (Confidencialidad)",
                 "Compraventa Vivienda (Piso/Casa)",
                 "Contrato de Arras",
@@ -448,6 +448,32 @@ with tabs[1]:
                 
                 data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
             
+            elif "Contrato Trabajo" in tipo:
+                st.caption("👤 Las Partes")
+                empresa = st.text_input("Empresa (Nombre y CIF)")
+                trabajador = st.text_input("Trabajador (Nombre y DNI)")
+                
+                st.caption("💼 Condiciones Laborales")
+                # Tipo de contrato
+                modalidad = st.selectbox("Modalidad", ["Indefinido", "Temporal (Duración Determinada)", "Sustitución"])
+                
+                # Lógica condicional: Si no es indefinido, pedimos duración
+                duracion_txt = "Indefinida"
+                if modalidad != "Indefinido":
+                    duracion_txt = st.text_input("Duración / Fecha Fin", placeholder="Ej: 6 meses / Hasta el 31 de Diciembre")
+                
+                # Salario
+                salario = st.number_input("Salario Bruto Anual (€)", min_value=15000.0, step=500.0)
+                
+                # Lógica condicional: Variable
+                tiene_variable = st.checkbox("¿Incluye Variable / Bonus?")
+                variable_txt = "Sin retribución variable."
+                if tiene_variable:
+                    cantidad_var = st.text_input("Detalles del Variable", placeholder="Ej: 10% sobre objetivos o 3.000€")
+                    variable_txt = f"Con retribución variable: {cantidad_var}."
+                
+                data_p = f"Contrato de Trabajo. Modalidad: {modalidad}. Empresa: {empresa}. Trabajador: {trabajador}. Duración: {duracion_txt}. Salario Fijo: {salario}€ Brutos/Año. Variable: {variable_txt}. Convenio aplicable: Según sector."
+
             elif "NDA" in tipo: 
                 data_p = f"Acuerdo Confidencialidad. Parte Reveladora: {st.text_input('Parte Reveladora (Nombre y CIF/DNI)')}. Parte Receptora: {st.text_input('Parte Receptora (Nombre y CIF/DNI)')}. Información a proteger: {st.text_area('Motivo/Información')}."
             
@@ -455,35 +481,29 @@ with tabs[1]:
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
                 comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
-                
                 st.caption("🏠 Inmueble")
                 inmueble = st.text_input('Dirección Completa')
-                ref_catastral = st.text_input('Referencia Catastral', help="Código de 20 caracteres (XX00000XX...)")
+                ref_catastral = st.text_input('Referencia Catastral', help="Código de 20 caracteres")
                 precio = st.number_input('Precio Venta (€)', step=1000.0)
-                
-                data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas y gravámenes."
+                data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas."
             
             elif "Arras" in tipo:
                 st.caption("📝 Datos para Arras")
                 vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
                 comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
-                
                 st.caption("🏠 Inmueble y Condiciones")
                 inmueble = st.text_input('Dirección Inmueble')
                 ref_catastral = st.text_input('Referencia Catastral')
-                
                 col_arras1, col_arras2 = st.columns(2)
                 with col_arras1: precio = st.number_input('Precio Total Venta (€)', step=1000.0)
                 with col_arras2: senal = st.number_input('Señal/Arras (€)', step=500.0)
-                
                 plazo = st.date_input('Fecha Límite Escritura')
-                
                 data_p = f"Contrato de Arras. Vendedor: {vendedor}. Comprador: {comprador}. Inmueble: {inmueble}. Ref. Catastral: {ref_catastral}. Precio Total: {precio}. Señal entregada: {senal}. Fecha límite: {plazo}. Tipo: Arras Penitenciales (Art 1454 CC)."
             
             elif "Cancelación" in tipo:
                 data_p = f"Acuerdo de Terminación. Contrato a cancelar: {st.text_input('¿Qué contrato?')}. Partes: {st.text_input('Partes implicadas (Nombres y DNI/CIF)')}. Fecha Efectiva: {st.date_input('Fecha Fin')}."
 
-            else: # Servicios / Trabajo / Otros
+            else: # Servicios / Freelance
                 data_p = f"{tipo}. Partes: {st.text_input('Partes (Nombres y DNI/CIF)')}. Detalles: {st.text_area('Detalles')}."
             
             st.write("")
@@ -493,10 +513,8 @@ with tabs[1]:
             
             if st.button("✨ REDACTAR"):
                 with st.spinner("Redactando..."):
-                    # 1. Fecha real
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                     
-                    # 2. Instrucción completa
                     instruccion = f"""
                     Redacta un contrato legal formal en España de tipo: {tipo}.
                     LUGAR Y FECHA: En {ciudad}, a {fecha_hoy}.
@@ -505,9 +523,10 @@ with tabs[1]:
                     IMPORTANTE:
                     - Empieza indicando "En {ciudad}, a {fecha_hoy}".
                     - Identifica a las partes con sus DNI/CIF.
-                    - Para inmuebles: Incluye OBLIGATORIAMENTE la Referencia Catastral.
-                    - Para vehículos: Incluye Bastidor y Kilómetros.
-                    - Cita leyes vigentes (Código Civil, LAU, ET, etc).
+                    - Para LABORAL: Especifica modalidad, salario y si hay variable.
+                    - Para INMUEBLES: Incluye Referencia Catastral.
+                    - Para VEHÍCULOS: Incluye Bastidor y Kilómetros.
+                    - Cita leyes vigentes (Estatuto Trabajadores, Código Civil, etc).
                     - Usa cláusulas claras y formato profesional.
                     """
                     
@@ -786,6 +805,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
