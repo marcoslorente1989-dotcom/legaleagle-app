@@ -11,6 +11,13 @@ from PIL import Image
 import base64
 import io
 import streamlit.components.v1 as components # <--- AÑADE ESTO ARRIBA CON LOS IMPORTS
+import os
+try:
+    # Intenta leer de los secretos de Streamlit (Nube)
+    api_key = st.secrets["GROQ_API_KEY"]
+except:
+    # Si falla (estás en local), intenta leer de variable de entorno o ponla manual
+    api_key = os.getenv("GROQ_API_KEY")
 
 # ==============================================================================
 # 1. CONFIGURACIÓN (V69: ESTRATEGIA "TEXTO FANTASMA" + VIGILANTE)
@@ -635,4 +642,5 @@ with st.sidebar:
         st.dataframe(df, height=150)
         with open("database_leads.csv", "rb") as f: st.download_button("Descargar CSV", f, "leads.csv")
     else:
+
         st.caption("📭 Base de datos vacía")
