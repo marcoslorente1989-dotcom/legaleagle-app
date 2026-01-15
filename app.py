@@ -20,7 +20,7 @@ except:
     api_key = os.getenv("GROQ_API_KEY")
 
 # ==============================================================================
-# 1. CONFIGURACIÓN (V82: DEFENSA TOTAL - FANTASMA + VIGILANTE + MARTILLO)
+# 1. CONFIGURACIÓN (V83: ESTRATEGIA "FANTASMA" - OPACIDAD 0 + OFF-SCREEN)
 # ==============================================================================
 import streamlit.components.v1 as components 
 
@@ -28,10 +28,10 @@ st.set_page_config(
     page_title="LegalEagle AI",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="collapsed" 
+    initial_sidebar_state="collapsed"
 )
 
-# A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡LO MANTENEMOS INTACTO!
+# A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡INTACTO!
 st.markdown("""
 <div style="display:none; visibility:hidden; height:0;">
     Hola, esto es una aplicación en español de España. Contrato laboral, nómina,
@@ -41,34 +41,40 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# B) SCRIPT "EL MARTILLO 4.0" (CSS + REMOVE + BUCLE)
+# B) SCRIPT "EL FANTASMA" (EN LUGAR DE BORRAR, LA HACEMOS INVISIBLE)
 components.html("""
     <script>
         const doc = window.parent.document;
         const html = doc.documentElement;
 
-        // --- CAPA 1: INYECCIÓN CSS (OCULTACIÓN PREVENTIVA) ---
-        // Esto evita que la bolita "parpadee" al cargar.
+        // 1. INYECCIÓN CSS (TÁCTICA: TRANSPARENCIA Y DESPLAZAMIENTO)
         const style = doc.createElement('style');
         style.innerHTML = `
-            header, [data-testid="stHeader"], [data-testid="stToolbar"],
-            footer, [data-testid="stFooter"],
-            [data-testid="stStatusWidget"], 
-            div[class*="viewerBadge"],
+            /* En lugar de 'display:none', usamos opacidad 0 */
+            div[class*="viewerBadge"], 
+            [data-testid="stStatusWidget"],
             .viewerBadge_container__1QSob {
+                opacity: 0 !important;           /* Invisible */
+                pointer-events: none !important; /* No se puede clicar */
+                position: fixed !important;      /* La fijamos */
+                top: -9999px !important;         /* La mandamos al espacio */
+                left: -9999px !important;        /* La mandamos al espacio */
+                width: 0px !important;
+                height: 0px !important;
+                z-index: -1 !important;          /* Detrás de todo */
+            }
+            
+            /* Ocultar header y footer estándar (estos sí suelen dejarse borrar) */
+            header, [data-testid="stHeader"], [data-testid="stToolbar"],
+            footer, [data-testid="stFooter"] {
                 display: none !important;
-                visibility: hidden !important;
-                opacity: 0 !important;
-                pointer-events: none !important;
             }
         `;
         doc.head.appendChild(style);
 
 
-        // --- CAPA 2: EL MARTILLO (LÓGICA DE LIMPIEZA) ---
-        const aplicarJusticia = () => {
-            
-            // 1. POLÍTICA ANTI-TRADUCCIÓN (Tu código original)
+        // 2. REFUERZO DE IDIOMA (Tu código original)
+        const protegerIdioma = () => {
             if (html.getAttribute('translate') !== 'no') {
                 html.lang = 'es';
                 html.setAttribute('translate', 'no');
@@ -77,47 +83,22 @@ components.html("""
                 let meta = doc.querySelector('meta[name="google"][content="notranslate"]');
                 if (!meta) {
                     meta = doc.createElement('meta');
-                    meta.name = "google";
-                    meta.content = "notranslate";
+                    meta.name = "google"; meta.content = "notranslate";
                     doc.head.appendChild(meta);
                 }
             }
-
-            // 2. POLÍTICA DE EXTERMINIO (ELIMINACIÓN FÍSICA)
-            // En lugar de ocultar, buscamos y BORRAMOS del código (remove).
-            const selectores = [
-                'header', '[data-testid="stHeader"]', '[data-testid="stToolbar"]',
-                'footer', '[data-testid="stStatusWidget"]', 'div[class*="viewerBadge"]',
-                '.viewerBadge_container__1QSob'
-            ];
-
-            selectores.forEach(selector => {
-                const elementos = doc.querySelectorAll(selector);
-                elementos.forEach(el => {
-                    el.remove(); // <--- AQUÍ ESTÁ EL MARTILLO: SE BORRA, NO SE OCULTA
-                });
-            });
         };
 
-        // --- CAPA 3: EJECUCIÓN CONSTANTE (BUCLE) ---
-        
-        // A) Ejecutar al inicio
-        aplicarJusticia();
-
-        // B) Ejecutar si algo cambia (Vigilante)
+        // 3. EJECUCIÓN (OBSERVER)
+        protegerIdioma();
         const observer = new MutationObserver(() => {
-            aplicarJusticia();
+            protegerIdioma();
         });
-        observer.observe(doc.body, { childList: true, subtree: true });
-
-        // C) EL MARTILLO NEUMÁTICO (Intervalo)
-        // Ejecutar cada 50ms por si Streamlit intenta volver a poner la bolita
-        setInterval(aplicarJusticia, 50);
+        observer.observe(html, { attributes: true });
         
-        console.log("🦅 V82: Martillo activado. Elementos eliminados permanentemente.");
+        console.log("🦅 V83: Modo Fantasma. La marca existe pero es invisible.");
     </script>
 """, height=0)
-
 # ==============================================================================
 # 2. ESTILOS CSS (V78: DISEÑO COMPLETO + RESPALDO ANTI-MARCA)
 # ==============================================================================
@@ -720,6 +701,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
