@@ -3,4 +3,5 @@ pandas
 groq
 python-dotenv
 pdfplumber
+fpdf
 
