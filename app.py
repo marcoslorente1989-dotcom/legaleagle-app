@@ -300,6 +300,7 @@ if not api_key:
 tabs = st.tabs(["🔍 1. ANALIZAR", "✍️ 2. CREAR CONTRATO", "🛡️ 3. RECLAMAR/RECURRIR", "🧮 4. IMPUESTOS"])
 
 # --- TAB 1: ANALIZADOR ---
+# --- TAB 1: ANALIZADOR (CON LA HERRAMIENTA DE CANCELACIÓN RECUPERADA) ---
 with tabs[0]:
     with st.container(border=True):
         st.markdown("### 📤 Analizador de Documentos")
@@ -326,23 +327,54 @@ with tabs[0]:
                         st.rerun()
             
             if st.session_state.analysis_done:
+                # 1. EL INFORME
                 with st.container(border=True): st.markdown(st.session_state.analysis_report)
                 pdf_bytes = create_pdf(st.session_state.analysis_report, "Informe Riesgos")
                 st.download_button("📄 Descargar Informe PDF", data=pdf_bytes, file_name="Informe_Legal.pdf", mime="application/pdf")
                 
-                # --- CABECERA CHAT CON BOTÓN BORRAR ---
+                st.write("")
+                
+                # 2. HERRAMIENTA RECUPERADA: AVISO DE CANCELACIÓN AUTOMÁTICO
+                with st.expander("📅 GENERAR AVISO DE CANCELACIÓN / DESISTIMIENTO", expanded=False):
+                    st.info("Crea un documento formal para cancelar este contrato basado en su contenido.")
+                    c_cancel_mail, c_cancel_date = st.columns(2)
+                    with c_cancel_mail:
+                        email_remitente = st.text_input("Tu Email / Identificación", key="email_cancel")
+                    with c_cancel_date:
+                        fecha_cancel = st.date_input("Fecha efectiva de la baja", key="date_cancel")
+                    
+                    if st.button("✉️ Generar Carta de Cancelación"):
+                        with st.spinner("Redactando aviso legal..."):
+                            prompt_cancel = f"""
+                            Actúa como abogado. Basándote en el contrato analizado:
+                            "{st.session_state.contract_text[:3000]}..."
+                            
+                            Redacta una CARTA FORMAL DE DESISTIMIENTO o NO RENOVACIÓN para enviar a la otra parte.
+                            Remitente: {email_remitente}
+                            Fecha de efectos: {fecha_cancel}
+                            
+                            El tono debe ser firme, legal y citando las cláusulas de terminación si existen en el texto.
+                            """
+                            aviso_texto = groq_engine(prompt_cancel, api_key)
+                            st.markdown(f"<div class='contract-box'>{aviso_texto}</div>", unsafe_allow_html=True)
+                            
+                            # Botón para descargar la cancelación
+                            pdf_cancel = create_pdf(aviso_texto, "Carta Cancelacion")
+                            st.download_button("⬇️ Descargar Carta PDF", data=pdf_cancel, file_name="Cancelacion.pdf", mime="application/pdf")
+
+                # 3. CHAT LEGAL
+                st.write("")
                 col_chat_title, col_chat_btn = st.columns([4, 1])
                 with col_chat_title: st.markdown("### 💬 Chat Legal")
                 with col_chat_btn: 
                     if st.button("🗑️ Borrar", help="Limpia solo el chat"):
                         st.session_state.chat_history = []
                         st.rerun()
-                # --------------------------------------
 
                 for m in st.session_state.chat_history:
                     css = "chat-user" if m["role"]=="user" else "chat-bot"
                     st.markdown(f"<div class='{css}'>{m['content']}</div>", unsafe_allow_html=True)
-                if q:=st.chat_input("Pregunta..."):
+                if q:=st.chat_input("Pregunta sobre el contrato..."):
                     st.session_state.chat_history.append({"role":"user","content":q})
                     ans = groq_engine(f"Contexto: {st.session_state.contract_text}. Pregunta: {q}", api_key)
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
@@ -363,7 +395,8 @@ with tabs[1]:
                 "Contrato Trabajo", 
                 "NDA (Confidencialidad)",
                 "Compraventa Vivienda (Piso/Casa)",
-                "Contrato de Arras"
+                "Contrato de Arras",
+                "Desistimiento / Cancelación"
             ])
             
             data_p = ""
@@ -383,6 +416,9 @@ with tabs[1]:
             
             elif "Arras" in tipo: # AÑADIDO
                 data_p = f"Contrato de Arras. Vendedor: {st.text_input('Vendedor')}. Comprador: {st.text_input('Comprador')}. Inmueble: {st.text_input('Inmueble')}. Precio Total: {st.number_input('Precio Total')}. Señal/Arras: {st.number_input('Señal €')}. Plazo Máximo: {st.date_input('Fecha Límite')}."
+
+            elif "Cancelación" in tipo:
+                data_p = f"Acuerdo de Terminación de Contrato. Contrato Original: {st.text_input('¿Qué contrato cancelas?')}. Partes: {st.text_input('Partes implicadas')}. Motivo: {st.text_input('Motivo (Opcional)')}. Fecha efectiva: {st.date_input('Fecha Fin')}."
             
             else: # Servicios / Trabajo
                 data_p = f"{tipo}. Partes: {st.text_input('Partes')}. Detalles: {st.text_area('Detalles')}."
@@ -657,6 +693,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
