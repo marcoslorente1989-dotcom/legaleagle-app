@@ -12,12 +12,24 @@ import base64
 import io
 import streamlit.components.v1 as components # <--- AÑADE ESTO ARRIBA CON LOS IMPORTS
 import os
-try:
-    # Intenta leer de los secretos de Streamlit (Nube)
-    api_key = st.secrets["GROQ_API_KEY"]
-except:
-    # Si falla (estás en local), intenta leer de variable de entorno o ponla manual
-    api_key = os.getenv("GROQ_API_KEY")
+import os  # <--- Asegúrate de tener este import arriba del todo
+
+# ==============================================================================
+# GESTIÓN DE CLAVES (MODO HÍBRIDO RENDER / STREAMLIT)
+# ==============================================================================
+# 1. Primero intentamos leer de las Variables de Entorno (Así funciona Render)
+api_key = os.getenv("GROQ_API_KEY")
+
+# 2. Si no la encuentra (es None), intentamos leer de st.secrets (Por si usas Local/Streamlit Cloud)
+if not api_key:
+    try:
+        api_key = st.secrets["GROQ_API_KEY"]
+    except:
+        pass
+
+# 3. Si sigue sin encontrarla, usamos una cadena vacía para que no rompa el código
+if not api_key:
+    api_key = ""
 
 # ==============================================================================
 # 1. CONFIGURACIÓN (V_FINAL: LIMPIA PARA RENDER - SIN SCRIPTS AGRESIVOS)
@@ -652,6 +664,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
