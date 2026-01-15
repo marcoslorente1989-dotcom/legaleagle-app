@@ -11,13 +11,6 @@ from PIL import Image
 import base64
 import io
 import streamlit.components.v1 as components # <--- AÑADE ESTO ARRIBA CON LOS IMPORTS
-import os
-import os  # <--- Asegúrate de tener este import arriba del todo
-
-# ==============================================================================
-# GESTIÓN DE CLAVES (COMPATIBLE CON RENDER Y STREAMLIT CLOUD)
-# ==============================================================================
-import os # <--- IMPRESCINDIBLE: Asegúrate de que esto está importado
 
 # 1. Prioridad: Intentar leer de Variable de Entorno (Así funciona Render)
 api_key = os.getenv("GROQ_API_KEY")
@@ -37,10 +30,6 @@ if not api_key:
     # Puedes poner una clave por defecto vacía o gestionar el error más tarde
     print("⚠️ ADVERTENCIA: No se ha encontrado la GROQ_API_KEY.")
 
-# ==============================================================================
-# 1. CONFIGURACIÓN (V_FINAL: LIMPIA PARA RENDER - SIN SCRIPTS AGRESIVOS)
-# ==============================================================================
-import streamlit.components.v1 as components 
 
 st.set_page_config(
     page_title="LegalEagle AI",
@@ -200,8 +189,6 @@ st.markdown("""
 # ==============================================================================
 # 3. LÓGICA & MOTOR IA
 # ==============================================================================
-api_key = None
-if "GROQ_API_KEY" in st.secrets: api_key = st.secrets["GROQ_API_KEY"]
 
 keys = ["contract_text", "analysis_report", "generated_contract", "generated_claim", "generated_calc", "defense_text"]
 for k in keys:
@@ -670,6 +657,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
