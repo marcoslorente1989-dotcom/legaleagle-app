@@ -85,7 +85,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V74: SIN BOLITA AZUL/CORONA NI MARCAS)
+# 2. ESTILOS CSS (V75: MODALIDAD "NINJA" - SIN RASTRO DE STREAMLIT)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -183,25 +183,37 @@ st.markdown("""
         transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
     }
 
-    /* 10. OCULTAR GATITO GITHUB Y MENÚ SUPERIOR */
-    [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
-    [data-testid="stHeader"] { visibility: hidden !important; display: none !important; }
+    /* --- 10. OCULTACIÓN TOTAL (EL GATITO, LA CORONA Y EL FOOTER) --- */
     
-    /* --- 11. LIMPIEZA TOTAL DEL FOOTER (CORONA Y BOLA AZUL) --- */
-    
-    /* Oculta el footer estándar "Made with Streamlit" */
-    footer { visibility: hidden !important; display: none !important; }
-    
-    /* Oculta el Viewer Badge (La bolita azul de abajo a la derecha) */
-    div[class*="viewerBadge"] {
-        visibility: hidden !important;
-        display: none !important;
+    /* Ocultar el Header superior (la línea de colores y el menú hamburguesa) */
+    header, [data-testid="stHeader"] { 
+        display: none !important; 
+        visibility: hidden !important; 
     }
-    /* Selector de refuerzo por si acaso cambia el nombre de la clase */
-    [data-testid="stStatusWidget"] {
-        visibility: hidden !important;
-        display: none !important;
+    
+    /* Ocultar la Toolbar (botones de arriba a la derecha: GitHub, Settings...) */
+    [data-testid="stToolbar"] { 
+        display: none !important; 
+        visibility: hidden !important; 
     }
+    
+    /* Ocultar Footer estándar */
+    footer, [data-testid="stFooter"] { 
+        display: none !important; 
+        visibility: hidden !important; 
+        height: 0px !important;
+    }
+    
+    /* Ocultar la BOLITA AZUL / CORONA (Status Widget & Viewer Badge) */
+    /* Atacamos por ID y por Clase para asegurar que desaparece */
+    [data-testid="stStatusWidget"], 
+    div[class*="viewerBadge"] { 
+        display: none !important; 
+        visibility: hidden !important; 
+        opacity: 0 !important;
+    }
+
+    #MainMenu { visibility: hidden !important; display: none !important; }
     /* ---------------------------------------------------------- */
 </style>
 """, unsafe_allow_html=True)
@@ -678,6 +690,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
