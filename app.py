@@ -106,17 +106,35 @@ st.markdown("""
         font-weight: 600; width: 100%; font-size: 14px;
     }
 
-    /* 5. PESTAÑAS (BASE - ESTILO PC) */
+   /* 5. PESTAÑAS (CENTRADAS Y SIN LÍNEA ROJA) */
+    
+    /* Centrar el grupo de pestañas en la pantalla */
+    div[data-baseweb="tab-list"] {
+        justify-content: center !important;
+        gap: 10px; /* Un poco de espacio entre ellas */
+    }
+
+    /* Quitar la línea roja/azul que se mueve debajo */
+    div[data-baseweb="tab-highlight"] {
+        display: none !important;
+    }
+
+    /* Estilo del botón de la pestaña */
     button[data-baseweb="tab"] {
         background-color: rgba(255, 255, 255, 0.15) !important;
         color: #ffffff !important; 
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 30px !important;
         padding: 10px 30px !important;
-        margin-right: 8px !important;
+        margin-right: 0px !important; /* El margen lo gestiona el gap de arriba */
     }
+
+    /* Estilo cuando la pestaña está activa (seleccionada) */
     button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important;
+        background-color: #3b82f6 !important; 
+        font-weight: bold !important; 
+        border-color: #60a5fa !important;
+        transform: scale(1.05); /* Pequeño efecto pop al seleccionar */
     }
 
     /* 6. OPTIMIZACIÓN MÓVIL 📱 */
@@ -693,6 +711,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
