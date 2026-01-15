@@ -20,7 +20,7 @@ except:
     api_key = os.getenv("GROQ_API_KEY")
 
 # ==============================================================================
-# 1. CONFIGURACIÓN (V83: ESTRATEGIA "FANTASMA" - OPACIDAD 0 + OFF-SCREEN)
+# 1. CONFIGURACIÓN (V_FINAL: LIMPIA PARA RENDER - SIN SCRIPTS AGRESIVOS)
 # ==============================================================================
 import streamlit.components.v1 as components 
 
@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡INTACTO!
+# SOLO MANTENEMOS EL TEXTO FANTASMA (PARA EL IDIOMA EN EDGE)
 st.markdown("""
 <div style="display:none; visibility:hidden; height:0;">
     Hola, esto es una aplicación en español de España. Contrato laboral, nómina,
@@ -41,62 +41,13 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# B) SCRIPT "EL FANTASMA" (EN LUGAR DE BORRAR, LA HACEMOS INVISIBLE)
+# SCRIPT SENCILLO SOLO PARA FORZAR EL ATRIBUTO DE IDIOMA
 components.html("""
     <script>
         const doc = window.parent.document;
-        const html = doc.documentElement;
-
-        // 1. INYECCIÓN CSS (TÁCTICA: TRANSPARENCIA Y DESPLAZAMIENTO)
-        const style = doc.createElement('style');
-        style.innerHTML = `
-            /* En lugar de 'display:none', usamos opacidad 0 */
-            div[class*="viewerBadge"], 
-            [data-testid="stStatusWidget"],
-            .viewerBadge_container__1QSob {
-                opacity: 0 !important;           /* Invisible */
-                pointer-events: none !important; /* No se puede clicar */
-                position: fixed !important;      /* La fijamos */
-                top: -9999px !important;         /* La mandamos al espacio */
-                left: -9999px !important;        /* La mandamos al espacio */
-                width: 0px !important;
-                height: 0px !important;
-                z-index: -1 !important;          /* Detrás de todo */
-            }
-            
-            /* Ocultar header y footer estándar (estos sí suelen dejarse borrar) */
-            header, [data-testid="stHeader"], [data-testid="stToolbar"],
-            footer, [data-testid="stFooter"] {
-                display: none !important;
-            }
-        `;
-        doc.head.appendChild(style);
-
-
-        // 2. REFUERZO DE IDIOMA (Tu código original)
-        const protegerIdioma = () => {
-            if (html.getAttribute('translate') !== 'no') {
-                html.lang = 'es';
-                html.setAttribute('translate', 'no');
-                html.classList.add('notranslate');
-                
-                let meta = doc.querySelector('meta[name="google"][content="notranslate"]');
-                if (!meta) {
-                    meta = doc.createElement('meta');
-                    meta.name = "google"; meta.content = "notranslate";
-                    doc.head.appendChild(meta);
-                }
-            }
-        };
-
-        // 3. EJECUCIÓN (OBSERVER)
-        protegerIdioma();
-        const observer = new MutationObserver(() => {
-            protegerIdioma();
-        });
-        observer.observe(html, { attributes: true });
-        
-        console.log("🦅 V83: Modo Fantasma. La marca existe pero es invisible.");
+        doc.documentElement.lang = 'es';
+        doc.documentElement.setAttribute('translate', 'no');
+        console.log("🦅 App lista en Render (Limpia).");
     </script>
 """, height=0)
 # ==============================================================================
@@ -701,6 +652,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
