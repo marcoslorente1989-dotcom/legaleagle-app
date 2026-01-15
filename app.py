@@ -20,15 +20,15 @@ except:
     api_key = os.getenv("GROQ_API_KEY")
 
 # ==============================================================================
-# 1. CONFIGURACIÓN (V80: DEFENSA TOTAL - VIGILANTE + INYECCIÓN CSS)
+# 1. CONFIGURACIÓN (V82: DEFENSA TOTAL - FANTASMA + VIGILANTE + MARTILLO)
 # ==============================================================================
-import streamlit.components.v1 as components # Aseguramos el import
+import streamlit.components.v1 as components 
 
 st.set_page_config(
     page_title="LegalEagle AI",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed" 
 )
 
 # A) TEXTO FANTASMA (SEÑUELO PARA EDGE) - ¡LO MANTENEMOS INTACTO!
@@ -41,18 +41,16 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# B) SCRIPT "EL VIGILANTE 3.0" (TU CÓDIGO + LA NUEVA INYECCIÓN DE ESTILOS)
+# B) SCRIPT "EL MARTILLO 4.0" (CSS + REMOVE + BUCLE)
 components.html("""
     <script>
         const doc = window.parent.document;
         const html = doc.documentElement;
 
-        // --- NUEVO: CAPA 1 - INYECCIÓN CSS (Bloqueo visual instantáneo) ---
-        // Creamos una etiqueta <style> y la metemos en el cerebro de la página.
-        // Esto actúa antes que el script, evitando el "parpadeo" de la bolita.
+        // --- CAPA 1: INYECCIÓN CSS (OCULTACIÓN PREVENTIVA) ---
+        // Esto evita que la bolita "parpadee" al cargar.
         const style = doc.createElement('style');
         style.innerHTML = `
-            /* Ocultar elementos rebeldes por CSS puro */
             header, [data-testid="stHeader"], [data-testid="stToolbar"],
             footer, [data-testid="stFooter"],
             [data-testid="stStatusWidget"], 
@@ -65,13 +63,12 @@ components.html("""
             }
         `;
         doc.head.appendChild(style);
-        console.log("🛡️ Capa 1: CSS de ocultación inyectado.");
 
 
-        // --- TU CÓDIGO: CAPA 2 - EL VIGILANTE (Protección Idioma + Respaldo) ---
-        const imponerLey = () => {
+        // --- CAPA 2: EL MARTILLO (LÓGICA DE LIMPIEZA) ---
+        const aplicarJusticia = () => {
             
-            // 1. POLÍTICA ANTI-TRADUCCIÓN (Tu lógica original)
+            // 1. POLÍTICA ANTI-TRADUCCIÓN (Tu código original)
             if (html.getAttribute('translate') !== 'no') {
                 html.lang = 'es';
                 html.setAttribute('translate', 'no');
@@ -86,37 +83,38 @@ components.html("""
                 }
             }
 
-            // 2. POLÍTICA DE LIMPIEZA (Tu lógica original de respaldo)
-            // Por si el CSS fallara, el JS busca y destruye.
-            const elementosAborrar = [
+            // 2. POLÍTICA DE EXTERMINIO (ELIMINACIÓN FÍSICA)
+            // En lugar de ocultar, buscamos y BORRAMOS del código (remove).
+            const selectores = [
                 'header', '[data-testid="stHeader"]', '[data-testid="stToolbar"]',
-                'footer', '[data-testid="stStatusWidget"]', 'div[class*="viewerBadge"]'
+                'footer', '[data-testid="stStatusWidget"]', 'div[class*="viewerBadge"]',
+                '.viewerBadge_container__1QSob'
             ];
 
-            elementosAborrar.forEach(selector => {
-                const el = doc.querySelector(selector);
-                if (el) {
-                    el.style.display = 'none';
-                    // Forzamos propiedades extra por seguridad
-                    el.style.visibility = 'hidden';
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                }
+            selectores.forEach(selector => {
+                const elementos = doc.querySelectorAll(selector);
+                elementos.forEach(el => {
+                    el.remove(); // <--- AQUÍ ESTÁ EL MARTILLO: SE BORRA, NO SE OCULTA
+                });
             });
         };
 
-        // EJECUCIÓN INMEDIATA
-        imponerLey();
+        // --- CAPA 3: EJECUCIÓN CONSTANTE (BUCLE) ---
+        
+        // A) Ejecutar al inicio
+        aplicarJusticia();
 
-        // EL VIGILANTE (MUTATION OBSERVER)
+        // B) Ejecutar si algo cambia (Vigilante)
         const observer = new MutationObserver(() => {
-            imponerLey();
+            aplicarJusticia();
         });
-        
-        observer.observe(html, { attributes: true });
         observer.observe(doc.body, { childList: true, subtree: true });
+
+        // C) EL MARTILLO NEUMÁTICO (Intervalo)
+        // Ejecutar cada 50ms por si Streamlit intenta volver a poner la bolita
+        setInterval(aplicarJusticia, 50);
         
-        console.log("🦅 Vigilante V80 activo: Doble capa de protección.");
+        console.log("🦅 V82: Martillo activado. Elementos eliminados permanentemente.");
     </script>
 """, height=0)
 
@@ -722,6 +720,7 @@ with st.sidebar:
     else:
         # Lo que ve el cliente
         st.caption("© 2026 LegalEagle AI")
+
 
 
 
