@@ -253,12 +253,13 @@ st.markdown("""
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
    /* --- BOTÓN WHATSAPP (VERDE) --- */
    /* --- BOTÓN WHATSAPP VERDE PROFESIONAL --- */
-   div.stLinkButton a[href*="wa.me"]::before {
+   /* --- BOTÓN WHATSAPP VERDE PROFESIONAL CON ICONO --- */
+    div.stLinkButton a[href*="wa.me"]::before {
         content: '\f232'; /* Código del icono de WhatsApp */
-        font-family: 'Font Awesome 6 Brands';
-        margin-right: 10px;
-        font-size: 20px;
-        vertical-align: middle;
+        font-family: 'Font Awesome 6 Brands' !important;
+        margin-right: 12px !important;
+        font-size: 22px !important;
+        display: inline-block !important;
     }
 
     div.stLinkButton a[href*="wa.me"] {
@@ -273,6 +274,7 @@ st.markdown("""
         justify-content: center !important;
         align-items: center !important;
         text-decoration: none !important;
+        min-height: 45px !important;
     }
 
     /* --- BOTÓN CONTACTAR Y OTROS (AZUL) --- */
@@ -319,20 +321,6 @@ st.markdown("""
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
-    }
-
-    /* Estilo para que los botones de enlace (WhatsApp/Contacto) sean visibles */
-    .stLinkButton a {
-        background: linear-gradient(90deg, #25d366 0%, #128c7e 100%) !important; /* Verde WhatsApp */
-        color: white !important;
-        border-radius: 30px !important;
-        border: none !important;
-        font-weight: bold !important;
-        text-decoration: none !important;
-        padding: 10px 20px !important;
-        display: flex !important;
-        justify-content: center !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
     }
 
 </style>
@@ -473,9 +461,6 @@ with tabs[0]:
     st.subheader("Bienvenido a legalapp.es")
     st.caption("Tu asistente jurídico inteligente disponible las 24 horas.")
     
-    # Ilustración visual de los pasos
-    
-    
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -491,17 +476,17 @@ with tabs[0]:
         st.write("Descarga un informe detallado, redacta una respuesta legal o calcula tus impuestos al instante.")
 
     st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado para trámites judiciales.")
-  # --- BOTÓN DE COMPARTIR ---
-    st.write(""); st.write("") # Un poco de espacio
+    
+    # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
+    st.write(""); st.write("") 
     mensaje_share = "¡Mira esta herramienta legal con IA! Analiza contratos y redacta documentos al instante: https://legalapp.es"
     url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
 
-# Centramos el botón en el medio
-col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
-with col_wa_2:
-    # El CSS buscará el "wa.me" dentro del link para ponerlo verde
-    st.link_button("Compartir por WhatsApp", url_wa, use_container_width=True)
-
+    # Centramos el botón en el medio (todo dentro del with tabs[0])
+    col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
+    with col_wa_2:
+        st.link_button("Compartir por WhatsApp", url_wa, use_container_width=True)
+        
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
     with st.container(border=False):
@@ -1002,6 +987,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
