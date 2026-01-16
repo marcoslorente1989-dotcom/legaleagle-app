@@ -77,18 +77,24 @@ st.markdown("""
     }
 
     /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
-    @media only screen and (max-width: 600px) {
+   @media only screen and (max-width: 600px) {
         div[data-baseweb="tab-list"] {
             display: grid !important;
-            grid-template-columns: 1fr 1fr !important; /* Fuerza las 2 columnas */
+            /* La primera pestaña (Inicio) ocupa las 2 columnas, las demás se reparten */
+            grid-template-columns: 1fr 1fr !important; 
             gap: 8px !important;
-            justify-content: center !important;
+        }
+
+        /* Hacemos que la primera pestaña (INICIO) sea a lo ancho */
+        button[data-baseweb="tab"]:first-child {
+            grid-column: span 2 !important;
+            width: 100% !important;
         }
         
         button[data-baseweb="tab"] {
             width: 100% !important;
-            padding: 8px 4px !important;
-            font-size: 10px !important; /* Un pelín más pequeño para que quepa bien */
+            padding: 10px 4px !important;
+            font-size: 11px !important;
             margin: 0 !important;
         }
 
@@ -954,6 +960,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
