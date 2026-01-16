@@ -969,7 +969,7 @@ with st.container():
         # EL TRUCO: Un botón "popover" que solo muestra el candado.
         # Al hacer clic, se abre el formulario flotante.
         # El CSS V95 se encargará de que las letras aquí dentro sean NEGRAS.
-    with st.popover("🔐", help="Acceso Administrador"):
+        with st.popover("🔐", help="Acceso Administrador"):
             st.markdown("### Panel Admin")
             pass_admin = st.text_input("Clave", type="password", key="admin_pass_footer")
             
@@ -986,6 +986,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
