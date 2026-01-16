@@ -98,11 +98,19 @@ st.markdown("""
         }
     }
         @media only screen and (max-width: 600px) {
-        /* Acortamos el texto del analizador para que no se salga */
+        /* Texto para PC */
         [data-testid="stFileUploader"] section > div > div::before {
-            content: "📂 Pulsa para subir PDF" !important;
-            font-size: 14px !important;
-        }
+        content: "📂 Arrastra tu PDF aquí para analizar";
+        display: block; text-align: center; color: #334155 !important; font-weight: 600; margin-bottom: 10px;
+}
+
+        /* Ajuste para móvil: Texto corto */
+        @media only screen and (max-width: 600px) {
+        [data-testid="stFileUploader"] section > div > div::before {
+        content: "📂 Pulsa para subir PDF" !important;
+        font-size: 14px !important;
+    }
+}
 
         /* Eliminamos los márgenes/paddings laterales excesivos en móvil */
         .block-container {
@@ -218,15 +226,42 @@ st.markdown("""
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
     div.stButton > button {
-        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
-        color: white !important; border: none; border-radius: 25px !important; 
-        padding: 0.6rem 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    }
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+    color: white !important;
+    border: none;
+    border-radius: 25px !important; 
+    padding: 0.6rem 1.5rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    /* Márgenes añadidos */
+    margin-top: 15px !important;
+    margin-bottom: 15px !important;
+}
     
     /* 9. OCULTAR UI NATIVA */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
     section[data-testid="stSidebar"] { display: none !important; }
+
+    /* AÑADIR: Color blanco para el nombre del archivo subido */
+    [data-testid="stFileUploaderFileName"] {
+        color: #ffffff !important;
+    }
+
+    /* AÑADIR: Quitar bordes de cajas en el móvil para que no se vea el rastro blanco */
+    @media only screen and (max-width: 600px) {
+        [data-testid="stVerticalBlockBorderWrapper"] {
+            border: none !important;
+            padding: 0 !important;
+        }
+        .block-container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        div[data-testid="stVerticalBlock"] > div {
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+    }
 
 </style>
 """, unsafe_allow_html=True)
@@ -872,6 +907,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
