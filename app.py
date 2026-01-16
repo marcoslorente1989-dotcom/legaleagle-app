@@ -78,24 +78,29 @@ st.markdown("""
 
     /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
    @media only screen and (max-width: 600px) {
+        /* Contenedor de las pestañas */
         div[data-baseweb="tab-list"] {
             display: grid !important;
-            /* La primera pestaña (Inicio) ocupa las 2 columnas, las demás se reparten */
-            grid-template-columns: 1fr 1fr !important; 
-            gap: 8px !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 10px !important;
+            padding: 0 10px !important; /* Margen lateral para que no toque los bordes */
         }
 
-        /* Hacemos que la primera pestaña (INICIO) sea a lo ancho */
+        /* Ajuste específico para el botón de INICIO */
         button[data-baseweb="tab"]:first-child {
             grid-column: span 2 !important;
-            width: 100% !important;
+            /* Reducimos un poco el ancho para que no sea gigante */
+            width: 85% !important; 
+            margin: 0 auto 10px auto !important; /* Lo centramos y damos espacio abajo */
+            border-radius: 30px !important; /* Forzamos el ovalado */
+            font-size: 14px !important; /* Texto un poco más legible */
         }
         
+        /* Resto de botones (2x2) */
         button[data-baseweb="tab"] {
-            width: 100% !important;
-            padding: 10px 4px !important;
-            font-size: 11px !important;
-            margin: 0 !important;
+            border-radius: 20px !important; /* Ovalados también */
+            padding: 12px 5px !important;
+            background-color: rgba(255, 255, 255, 0.1) !important;
         }
 
         /* Ajuste de logo en móvil para que no coma pantalla */
@@ -960,6 +965,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
