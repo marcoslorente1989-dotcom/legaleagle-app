@@ -80,55 +80,57 @@ st.markdown("""
   /* ==============================================================================
        AJUSTES EXCLUSIVOS PARA MÓVIL (Todo en un solo bloque)
        ============================================================================== */
-   @media only screen and (max-width: 600px) {
+  @media only screen and (max-width: 600px) {
         
-        /* 1. BLOQUEO TOTAL DE SCROLL LATERAL */
+        /* Bloqueo total de movimiento lateral y sombras externas */
         .stApp { 
             overflow-x: hidden !important; 
-            width: 100vw !important; /* Fuerza el ancho de la pantalla */
+            width: 100vw !important;
         }
 
-        /* 2. Ajuste del contenedor de pestañas para que no "empuje" hacia afuera */
+        /* Contenedor de pestañas: Ajuste de ancho exacto */
         div[data-baseweb="tab-list"] {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
-            gap: 10px !important;
-            padding: 5px !important;
-            width: 100% !important; /* No puede ser más ancho que su padre */
-            box-sizing: border-box !important; /* Incluye el padding en el cálculo del ancho */
+            gap: 8px !important;
+            padding: 8px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
 
-        /* 3. El botón de INICIO con margen de seguridad */
+        /* Botón INICIO: Ovalado, centrado y sin sombras negras */
         button[data-baseweb="tab"]:first-child {
             grid-column: span 2 !important;
-            width: 92% !important; /* Dejamos un margen para que la sombra no toque el borde */
-            margin: 0 auto 10px auto !important;
+            width: 90% !important; 
+            margin: 0 auto 12px auto !important;
             border-radius: 30px !important;
             box-shadow: none !important; 
             outline: none !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            height: 45px !important;
+            overflow: hidden !important;
         }
 
-        /* Resto de pestañas ajustadas */
+        /* Botones 2x2: Ovalados y limpios */
         button[data-baseweb="tab"] {
-            border-radius: 20px !important;
-            padding: 12px 5px !important;
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            box-shadow: none !important; /* Quitamos sombras que puedan ensuciar el lateral */
+            border-radius: 25px !important;
+            padding: 10px 5px !important;
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
         }
 
-        /* 5. Texto corto en el subidor de archivos */
+        /* Ajustes de Logo y Texto */
+        [data-testid="stImage"] img { max-width: 80% !important; }
+        
         [data-testid="stFileUploader"] section > div > div::before {
             content: "📂 Pulsa para subir PDF" !important;
             font-size: 14px !important;
         }
 
-        /* 6. Logo y Contenedores */
-        [data-testid="stImage"] img { max-width: 75% !important; }
-        
         .block-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 0.5rem !important;
+            padding: 0.5rem !important;
         }
 
         div[data-testid="stVerticalBlock"] > div {
@@ -966,6 +968,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
