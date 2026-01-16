@@ -332,6 +332,7 @@ for k in keys:
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
 
+@st.cache_data(show_spinner=False)
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -390,7 +391,7 @@ def create_pdf(content, title="Documento"):
     pdf.multi_cell(0, 6, safe_content)
     return pdf.output(dest='S').encode('latin-1')
 
-def groq_engine(prompt, key, temp=0.1):
+def groq_engine(prompt, key, temp=0.2):
     client = Groq(api_key=key)
     try:
         sys_msg = "Eres LegalEagle, abogado y asesor fiscal experto en España. Responde de forma directa, compacta y profesional. Cita leyes."
@@ -480,7 +481,7 @@ with tabs[0]:
     url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
 
     # Centramos el botón en el medio (todo dentro del with tabs[0])
-    col_wa_1, col_wa_2, col_wa_3 = st.columns([2, 2, 2])
+    col_wa_1, col_wa_2, col_wa_3 = st.columns([3, 2, 3])
     with col_wa_2:
         st.link_button("📲Compartir por WhatsApp", url_wa, use_container_width=True)
         
@@ -984,6 +985,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
