@@ -77,59 +77,54 @@ st.markdown("""
     }
 
     /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
-   @media only screen and (max-width: 600px) {
-        /* Contenedor de las pestañas */
+  /* ==============================================================================
+       AJUSTES EXCLUSIVOS PARA MÓVIL (Todo en un solo bloque)
+       ============================================================================== */
+    @media only screen and (max-width: 600px) {
+        
+        /* 1. Evitar sombras raras y cortes laterales en toda la App */
+        .stApp { overflow-x: hidden !important; }
+
+        /* 2. El Contenedor de Pestañas */
         div[data-baseweb="tab-list"] {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
             gap: 10px !important;
-            padding: 0 10px !important; /* Margen lateral para que no toque los bordes */
+            padding: 5px !important; /* Aire para que no se corte por arriba */
         }
 
-        /* Ajuste específico para el botón de INICIO */
+        /* 3. Pestaña INICIO (Ocupa las 2 columnas y es ovalada) */
         button[data-baseweb="tab"]:first-child {
             grid-column: span 2 !important;
-            /* Reducimos un poco el ancho para que no sea gigante */
-            width: 85% !important; 
-            margin: 0 auto 10px auto !important; /* Lo centramos y damos espacio abajo */
-            border-radius: 30px !important; /* Forzamos el ovalado */
-            font-size: 14px !important; /* Texto un poco más legible */
+            width: 90% !important; 
+            margin: 0 auto 10px auto !important;
+            border-radius: 30px !important;
+            box-shadow: none !important; /* Quita la mancha negra lateral */
+            font-size: 14px !important;
         }
-        
-        /* Resto de botones (2x2) */
+
+        /* 4. Resto de Pestañas (2x2) */
         button[data-baseweb="tab"] {
-            border-radius: 20px !important; /* Ovalados también */
+            border-radius: 20px !important;
             padding: 12px 5px !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
         }
 
-        /* Ajuste de logo en móvil para que no coma pantalla */
-        [data-testid="stImage"] img {
-            max-width: 70% !important;
+        /* 5. Texto corto en el subidor de archivos */
+        [data-testid="stFileUploader"] section > div > div::before {
+            content: "📂 Pulsa para subir PDF" !important;
+            font-size: 14px !important;
         }
-    }
-        @media only screen and (max-width: 600px) {
-        /* Texto para PC */
-        [data-testid="stFileUploader"] section > div > div::before {
-        content: "📂 Arrastra tu PDF aquí para analizar";
-        display: block; text-align: center; color: #334155 !important; font-weight: 600; margin-bottom: 10px;
-}
 
-        /* Ajuste para móvil: Texto corto */
-        @media only screen and (max-width: 600px) {
-        [data-testid="stFileUploader"] section > div > div::before {
-        content: "📂 Pulsa para subir PDF" !important;
-        font-size: 14px !important;
-    }
-}
-
-        /* Eliminamos los márgenes/paddings laterales excesivos en móvil */
+        /* 6. Logo y Contenedores */
+        [data-testid="stImage"] img { max-width: 75% !important; }
+        
         .block-container {
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
+            padding-top: 0.5rem !important;
         }
 
-        /* Forzamos que las cajas ocupen todo el ancho sin bordes extra */
         div[data-testid="stVerticalBlock"] > div {
             padding-left: 0px !important;
             padding-right: 0px !important;
@@ -965,6 +960,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
