@@ -80,34 +80,40 @@ st.markdown("""
   /* ==============================================================================
        AJUSTES EXCLUSIVOS PARA MÓVIL (Todo en un solo bloque)
        ============================================================================== */
-    @media only screen and (max-width: 600px) {
+   @media only screen and (max-width: 600px) {
         
-        /* 1. Evitar sombras raras y cortes laterales en toda la App */
-        .stApp { overflow-x: hidden !important; }
+        /* 1. BLOQUEO TOTAL DE SCROLL LATERAL */
+        .stApp { 
+            overflow-x: hidden !important; 
+            width: 100vw !important; /* Fuerza el ancho de la pantalla */
+        }
 
-        /* 2. El Contenedor de Pestañas */
+        /* 2. Ajuste del contenedor de pestañas para que no "empuje" hacia afuera */
         div[data-baseweb="tab-list"] {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
             gap: 10px !important;
-            padding: 5px !important; /* Aire para que no se corte por arriba */
+            padding: 5px !important;
+            width: 100% !important; /* No puede ser más ancho que su padre */
+            box-sizing: border-box !important; /* Incluye el padding en el cálculo del ancho */
         }
 
-        /* 3. Pestaña INICIO (Ocupa las 2 columnas y es ovalada) */
+        /* 3. El botón de INICIO con margen de seguridad */
         button[data-baseweb="tab"]:first-child {
             grid-column: span 2 !important;
-            width: 90% !important; 
+            width: 92% !important; /* Dejamos un margen para que la sombra no toque el borde */
             margin: 0 auto 10px auto !important;
             border-radius: 30px !important;
-            box-shadow: none !important; /* Quita la mancha negra lateral */
-            font-size: 14px !important;
+            box-shadow: none !important; 
+            outline: none !important;
         }
 
-        /* 4. Resto de Pestañas (2x2) */
+        /* Resto de pestañas ajustadas */
         button[data-baseweb="tab"] {
             border-radius: 20px !important;
             padding: 12px 5px !important;
             background-color: rgba(255, 255, 255, 0.1) !important;
+            box-shadow: none !important; /* Quitamos sombras que puedan ensuciar el lateral */
         }
 
         /* 5. Texto corto en el subidor de archivos */
@@ -960,6 +966,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
