@@ -56,6 +56,19 @@ components.html("""
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+
+    /* --- NUEVO: OCULTAR LA BARRA DE SCROLL LATERAL --- */
+    /* Esto la hace invisible pero permite seguir bajando con el ratón/dedo */
+    
+    /* Para Chrome, Safari y Edge */
+    ::-webkit-scrollbar {
+        display: none;
+    }
+    /* Para Firefox */
+    .stApp {
+        scrollbar-width: none;
+        -ms-overflow-style: none;  /* IE y Edge antiguo */
+    }
     
     /* 1. FONDO GENERAL */
     .stApp { 
@@ -810,6 +823,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
