@@ -249,9 +249,7 @@ st.markdown("""
     .contract-box * { color: #000000 !important; }
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
-    /* ESTO HARÁ QUE TUS BOTONES SEAN OVALADOS Y AZULES */
    /* --- BOTÓN WHATSAPP (VERDE) --- */
-    /* Este selector es más fuerte y asegura el color verde */
     div.stLinkButton a[href*="wa.me"] {
         background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
         color: white !important;
@@ -266,16 +264,8 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* Evitar que cambie de color al pasar el ratón o hacer clic */
-    div.stLinkButton a[href*="wa.me"]:hover, 
-    div.stLinkButton a[href*="wa.me"]:active, 
-    div.stLinkButton a[href*="wa.me"]:focus {
-        color: white !important;
-        background: linear-gradient(90deg, #128C7E 0%, #075E54 100%) !important;
-    }
-
-    /* --- BOTONES DE ACCIÓN (AZULES) --- */
-    /* Sustituye tu regla de div.stButton > button por esta */
+    /* --- BOTÓN CONTACTAR Y OTROS (AZUL) --- */
+    /* Usamos :not para que esta regla no afecte al de WhatsApp */
     div.stButton > button, .stLinkButton a:not([href*="wa.me"]) {
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
         color: white !important;
@@ -332,11 +322,6 @@ st.markdown("""
         display: flex !important;
         justify-content: center !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
-    }
-
-    /* Si prefieres que el de Contactar sea azul y el de WhatsApp verde, usa esto: */
-    div[data-testid="stHorizontalBlock"] .stLinkButton a {
-        background: #2563eb !important; /* Azul para el footer */
     }
 
 </style>
@@ -496,9 +481,9 @@ with tabs[0]:
 
     st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado para trámites judiciales.")
   # --- BOTÓN DE COMPARTIR ---
-st.write(""); st.write("") # Un poco de espacio
-mensaje_share = "¡Mira esta herramienta legal con IA! Analiza contratos y redacta documentos al instante: https://legalapp.es"
-url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
+    st.write(""); st.write("") # Un poco de espacio
+    mensaje_share = "¡Mira esta herramienta legal con IA! Analiza contratos y redacta documentos al instante: https://legalapp.es"
+    url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
 
 # Centramos el botón en el medio
 col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
@@ -1006,6 +991,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
