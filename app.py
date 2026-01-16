@@ -251,17 +251,7 @@ st.markdown("""
     .contract-box * { color: #000000 !important; }
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
-   /* --- BOTÓN WHATSAPP (VERDE) --- */
    /* --- BOTÓN WHATSAPP VERDE PROFESIONAL --- */
-   /* --- BOTÓN WHATSAPP VERDE PROFESIONAL CON ICONO --- */
-    div.stLinkButton a[href*="wa.me"]::before {
-        content: '\f232'; /* Código del icono de WhatsApp */
-        font-family: 'Font Awesome 6 Brands' !important;
-        margin-right: 12px !important;
-        font-size: 22px !important;
-        display: inline-block !important;
-    }
-
     div.stLinkButton a[href*="wa.me"] {
         background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
         color: white !important;
@@ -274,7 +264,14 @@ st.markdown("""
         justify-content: center !important;
         align-items: center !important;
         text-decoration: none !important;
-        min-height: 45px !important;
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Estilo específico para el icono dentro del texto */
+    .fa-whatsapp-icon {
+        font-family: "Font Awesome 6 Brands" !important;
+        margin-right: 10px;
+        font-size: 20px;
     }
 
     /* --- BOTÓN CONTACTAR Y OTROS (AZUL) --- */
@@ -485,7 +482,7 @@ with tabs[0]:
     # Centramos el botón en el medio (todo dentro del with tabs[0])
     col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
     with col_wa_2:
-        st.link_button("Compartir por WhatsApp", url_wa, use_container_width=True)
+        st.link_button("📲Compartir por WhatsApp", url_wa, use_container_width=True)
         
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
@@ -987,6 +984,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
