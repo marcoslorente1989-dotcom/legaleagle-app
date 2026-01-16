@@ -80,48 +80,55 @@ st.markdown("""
   /* ==============================================================================
        AJUSTES EXCLUSIVOS PARA MÓVIL (Todo en un solo bloque)
        ============================================================================== */
-  @media only screen and (max-width: 600px) {
+ /* ==============================================================================
+       AJUSTES FINALES MÓVIL: BLOQUEO LATERAL Y ELIMINACIÓN DE SOMBRAS
+       ============================================================================== */
+    @media only screen and (max-width: 600px) {
         
-        /* Bloqueo total de movimiento lateral y sombras externas */
-        .stApp { 
+        /* 1. Bloqueo total de movimiento lateral en la raíz y contenedores */
+        .stApp, .main, .block-container { 
             overflow-x: hidden !important; 
             width: 100vw !important;
+            max-width: 100vw !important;
         }
 
-        /* Contenedor de pestañas: Ajuste de ancho exacto */
+        /* 2. Contenedor de pestañas: Ajuste de ancho exacto al 100% real */
         div[data-baseweb="tab-list"] {
             display: grid !important;
             grid-template-columns: 1fr 1fr !important;
-            gap: 8px !important;
-            padding: 8px !important;
+            gap: 10px !important;
+            padding: 10px !important;
             width: 100% !important;
             box-sizing: border-box !important;
+            overflow: hidden !important; /* Evita que las pestañas "empujen" hacia afuera */
         }
 
-        /* Botón INICIO: Ovalado, centrado y sin sombras negras */
+        /* 3. Botón INICIO: Forzamos limpieza de sombras y bordes */
         button[data-baseweb="tab"]:first-child {
             grid-column: span 2 !important;
-            width: 90% !important; 
-            margin: 0 auto 12px auto !important;
+            width: 92% !important; 
+            margin: 0 auto 10px auto !important;
             border-radius: 30px !important;
+            /* Eliminamos la sombra/brillo que causa la mancha negra lateral */
             box-shadow: none !important; 
             outline: none !important;
-            border: 1px solid rgba(255,255,255,0.3) !important;
+            -webkit-tap-highlight-color: transparent !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
             height: 45px !important;
-            overflow: hidden !important;
         }
 
-        /* Botones 2x2: Ovalados y limpios */
+        /* 4. Botones 2x2: Ovalados y limpios */
         button[data-baseweb="tab"] {
             border-radius: 25px !important;
-            padding: 10px 5px !important;
-            background-color: rgba(255, 255, 255, 0.15) !important;
+            padding: 12px 5px !important;
+            background-color: rgba(255, 255, 255, 0.12) !important;
             box-shadow: none !important;
+            outline: none !important;
             font-size: 11px !important;
             border: 1px solid rgba(255,255,255,0.1) !important;
         }
 
-        /* Ajustes de Logo y Texto */
+        /* 5. Ajustes de Logo y Texto de Subida */
         [data-testid="stImage"] img { max-width: 80% !important; }
         
         [data-testid="stFileUploader"] section > div > div::before {
@@ -129,8 +136,11 @@ st.markdown("""
             font-size: 14px !important;
         }
 
+        /* 6. Eliminación de márgenes de bloque que provocan desbordamiento */
         .block-container {
-            padding: 0.5rem !important;
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+            padding-top: 0.5rem !important;
         }
 
         div[data-testid="stVerticalBlock"] > div {
@@ -452,6 +462,14 @@ with tabs[0]:
         st.write("Descarga un informe detallado, redacta una respuesta legal o calcula tus impuestos al instante.")
 
     st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado para trámites judiciales.")
+    # --- BOTÓN DE COMPARTIR ---
+st.write("---") # Una línea divisoria sutil
+mensaje_share = "¡Mira esta herramienta legal con IA! Analiza contratos y redacta documentos al instante: https://legalapp.es"
+url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
+
+col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 2, 1])
+with col_wa_2:
+    st.link_button("📢 Compartir por WhatsApp", url_wa, use_container_width=True)
 
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
@@ -934,7 +952,7 @@ with st.container():
         st.caption("⚖️ **Aviso Legal:** Herramienta de orientación legal basada en IA. No sustituye el asesoramiento de un abogado colegiado.")
         
         # Desplegable CON LOS CAMPOS RECUPERADOS
-        with st.expander("📜 Ver Aviso Legal y Privacidad"):
+    with st.expander("📜 Ver Aviso Legal y Privacidad"):
             st.caption("""
             **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
             **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
@@ -951,7 +969,7 @@ with st.container():
         # EL TRUCO: Un botón "popover" que solo muestra el candado.
         # Al hacer clic, se abre el formulario flotante.
         # El CSS V95 se encargará de que las letras aquí dentro sean NEGRAS.
-        with st.popover("🔐", help="Acceso Administrador"):
+    with st.popover("🔐", help="Acceso Administrador"):
             st.markdown("### Panel Admin")
             pass_admin = st.text_input("Clave", type="password", key="admin_pass_footer")
             
@@ -968,6 +986,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
