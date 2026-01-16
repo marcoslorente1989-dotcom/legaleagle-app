@@ -250,28 +250,34 @@ st.markdown("""
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
     /* ESTO HARÁ QUE TUS BOTONES SEAN OVALADOS Y AZULES */
-    div.stButton > button {
-        /* 1. Fondo azul con degradado (Igual al de la pestaña activa) */
-        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
-        
-        /* 2. Texto en blanco y negrita */
+    /* --- BOTÓN WHATSAPP (VERDE) --- */
+    /* Sustituye cualquier regla anterior de botones de enlace por esta */
+    a[href*="wa.me"] {
+        background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
         color: white !important;
-        font-weight: bold !important;
-        
-        /* 3. Forma ovalada (Border-radius alto) */
-        border-radius: 30px !important; 
-        
-        /* 4. Sombra para dar profundidad */
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-        
-        /* 5. Espaciado interno (Para que no se vea pegado el texto) */
-        padding: 10px 25px !important;
-        
-        /* 6. Quitar bordes feos por defecto */
+        border-radius: 30px !important;
         border: none !important;
-        
-        /* 7. Margen para que no esté pegado a lo de arriba */
-        margin-top: 20px !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+        font-weight: bold !important;
+        text-decoration: none !important;
+        display: flex !important;
+        justify-content: center !important;
+        padding: 12px 20px !important;
+        margin: 10px auto !important;
+    }
+
+    /* --- BOTONES DE ACCIÓN (AZULES) --- */
+    /* Sustituye tu regla de div.stButton > button por esta */
+    div.stButton > button, .stLinkButton a:not([href*="wa.me"]) {
+        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: white !important;
+        border-radius: 30px !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        font-weight: bold !important;
+        text-decoration: none !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
     /* Efecto al pasar el ratón (opcional pero recomendado) */
@@ -304,6 +310,25 @@ st.markdown("""
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
+    }
+
+    /* Estilo para que los botones de enlace (WhatsApp/Contacto) sean visibles */
+    .stLinkButton a {
+        background: linear-gradient(90deg, #25d366 0%, #128c7e 100%) !important; /* Verde WhatsApp */
+        color: white !important;
+        border-radius: 30px !important;
+        border: none !important;
+        font-weight: bold !important;
+        text-decoration: none !important;
+        padding: 10px 20px !important;
+        display: flex !important;
+        justify-content: center !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+    }
+
+    /* Si prefieres que el de Contactar sea azul y el de WhatsApp verde, usa esto: */
+    div[data-testid="stHorizontalBlock"] .stLinkButton a {
+        background: #2563eb !important; /* Azul para el footer */
     }
 
 </style>
@@ -936,57 +961,41 @@ with tabs[4]:
                         st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
 
 # ==============================================================================
-# 5. FOOTER (LEGAL & ADMIN OCULTO)
+# 5. FOOTER (LEGAL & CONTACTO & ADMIN)
 # ==============================================================================
-st.write(""); st.write(""); st.write("") # Espacio para separar del contenido
+st.write(""); st.write(""); st.write("") 
 
-# Contenedor final
 with st.container():
-    st.markdown("---") # Línea separadora sutil
+    st.markdown("---") 
     
-    # Creamos columnas: Izquierda (Legal) - Derecha (Admin discreto)
-    c_legal, c_admin = st.columns([6, 1])
+    # SOLUCIÓN AL NameError: Añadimos c_contact a la creación de columnas
+    c_legal, c_contact, c_admin = st.columns([4, 2, 1])
     
-with c_legal:
-        # Texto legal obligatorio pero discreto
-        st.caption("⚖️ **Aviso Legal:** Herramienta de orientación legal basada en IA. No sustituye el asesoramiento de un abogado colegiado.")
-        
-        # Desplegable CON LOS CAMPOS RECUPERADOS
-with st.expander("📜 Ver Aviso Legal y Privacidad"):
+    with c_legal:
+        st.caption("⚖️ **legalapp.es** | Herramienta de orientación legal basada en IA.")
+        with st.expander("📜 Ver Aviso Legal y Privacidad"):
             st.caption("""
             **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
-            **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
+            **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA en legalapp.es.
             **3. Legitimación:** Consentimiento del usuario al usar la herramienta.
-            **4. Destinatarios:** Los datos se procesan a través de APIs de terceros (Groq) de forma anónima y no se usan para entrenar modelos.
-            **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente@legalapp.es.
+            **4. Destinatarios:** Los datos se procesan a través de APIs de terceros (Groq) de forma anónima.
+            **5. Derechos:** Puede escribir a **marcoslorente@legalapp.es**.
             """)
 
-with c_contact:
-        # Botón de contacto directo
+    with c_contact:
+        # Ahora c_contact sí existe y funcionará
         st.link_button("✉️ Contactar", "mailto:marcoslorente@legalapp.es")
             
-with c_admin:
-        # EL TRUCO: Un botón "popover" que solo muestra el candado.
-        # Al hacer clic, se abre el formulario flotante.
-        # El CSS V95 se encargará de que las letras aquí dentro sean NEGRAS.
+    with c_admin:
         with st.popover("🔐", help="Acceso Administrador"):
             st.markdown("### Panel Admin")
             pass_admin = st.text_input("Clave", type="password", key="admin_pass_footer")
             
-            if pass_admin == "admin123": # <--- CAMBIA ESTO POR TU CLAVE
+            if pass_admin == "admin123": 
                 st.success("Acceso OK")
-                
-                if st.button("📂 Descargar CSV Leads"):
-                    if os.path.isfile("database_leads.csv"):
-                        df_leads = pd.read_csv("database_leads.csv")
-                        st.dataframe(df_leads)
-                    else:
-                        st.warning("No hay datos aún.")
-                        
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
-
 
 
 
