@@ -97,6 +97,25 @@ st.markdown("""
             max-width: 70% !important;
         }
     }
+        @media only screen and (max-width: 600px) {
+        /* Acortamos el texto del analizador para que no se salga */
+        [data-testid="stFileUploader"] section > div > div::before {
+            content: "📂 Pulsa para subir PDF" !important;
+            font-size: 14px !important;
+        }
+
+        /* Eliminamos los márgenes/paddings laterales excesivos en móvil */
+        .block-container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+
+        /* Forzamos que las cajas ocupen todo el ancho sin bordes extra */
+        div[data-testid="stVerticalBlock"] > div {
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+    }
     
     /* 1. FONDO GENERAL */
     .stApp { 
@@ -344,7 +363,7 @@ tabs = st.tabs(["🔍 1. ANALIZAR", "✍️ 2. CREAR CONTRATO", "🛡️ 3. RECL
 
 # --- TAB 1: ANALIZADOR ---
 with tabs[0]:
-    with st.container(border=True):
+    with st.container(border=False):
         st.subheader("Analizador de Documentos")
         st.caption("Sube un contrato (PDF o Foto) y la IA detectará riesgos, cláusulas abusivas y fechas clave automáticamente.")
         uploaded_file = st.file_uploader(" ", type=["pdf", "jpg", "png", "jpeg"], label_visibility="collapsed", key="u1")
@@ -369,7 +388,7 @@ with tabs[0]:
                         st.rerun()
             
             if st.session_state.analysis_done:
-                with st.container(border=True): st.markdown(st.session_state.analysis_report)
+                with st.container(border=False): st.markdown(st.session_state.analysis_report)
                 pdf_bytes = create_pdf(st.session_state.analysis_report, "Informe Riesgos")
                 st.download_button("📄 Descargar Informe PDF", data=pdf_bytes, file_name="Informe_Legal.pdf", mime="application/pdf")
                 
@@ -416,7 +435,7 @@ with tabs[0]:
 with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
-        with st.container(border=True):
+        with st.container(border=False):
             st.subheader("Generador de Contratos")
             st.caption("Selecciona el tipo de contrato y rellena los datos. La IA redactará un documento legal válido en España y listo para firmar.")
             
@@ -533,7 +552,7 @@ with tabs[1]:
         if st.session_state.generated_contract:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
             st.write("")
-            with st.container(border=True):
+            with st.container(border=False):
                 ce, cb = st.columns([2,1])
                 with ce: m = st.text_input("Email", key="mc")
                 with cb: 
@@ -551,7 +570,7 @@ with tabs[2]:
     
     if "Redactar" in modo:
         with c_rec:
-            with st.container(border=True):
+            with st.container(border=False):
                 st.subheader("Iniciar Reclamación")
                 st.caption("Generador de Burofax y cartas certificadas con terminología jurídica para reclamar impagos o incidencias.")
                 
@@ -618,7 +637,7 @@ with tabs[2]:
 
     else:
         with c_rec:
-            with st.container(border=True):
+            with st.container(border=False):
                 st.subheader("Generar Defensa")
                 st.caption("Sube la multa o notificación que has recibido. Analizaremos los defectos de forma y redactaremos tu defensa.")
                 st.info("Sube la carta o multa que has recibido.")
@@ -651,7 +670,7 @@ with tabs[2]:
         if st.session_state.generated_claim:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
             st.write("")
-            with st.container(border=True):
+            with st.container(border=False):
                 ce2, cb2 = st.columns([2,1])
                 with ce2: m2 = st.text_input("Email", key="mr")
                 with cb2:
@@ -665,7 +684,7 @@ with tabs[2]:
 with tabs[3]:
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
-        with st.container(border=True):
+        with st.container(border=False):
             st.subheader("Calculadora Fiscal")
             st.caption("Calcula con precisión tu sueldo neto real, los impuestos por venta de vivienda o tu cuota hipotecaria actual.")
             tipo_calc = st.selectbox("Trámite", ["Venta Inmueble (Plusvalía+IRPF)", "Sueldo Neto (Nómina)", "Gastos Compraventa", "IPC Alquiler", "Cuota Hipoteca"])            
@@ -796,7 +815,7 @@ with tabs[3]:
             else:
                 st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
             st.write("")
-            with st.container(border=True):
+            with st.container(border=False):
                 ce3, cb3 = st.columns([2,1])
                 with ce3: m3 = st.text_input("Email", key="mf")
                 with cb3: 
@@ -853,6 +872,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
