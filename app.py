@@ -163,9 +163,27 @@ st.markdown("""
     footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
     #MainMenu { visibility: hidden !important; }
 
-    /* 9. ANTI-FULLSCREEN (SOLUCIÓN DEFINITIVA) */
-    button[data-testid="StyledFullScreenButton"] { display: none !important; }
-    [data-testid="stImage"] { pointer-events: none !important; }
+    /* 9. ANTI-FULLSCREEN (NIVEL NUCLEAR) */
+    
+    /* A) Oculta cualquier botón dentro de una imagen */
+    [data-testid="stImage"] button { 
+        display: none !important; 
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    
+    /* B) Oculta el botón por su ID específico (Fullscreen) */
+    [data-testid="StyledFullScreenButton"] { 
+        display: none !important; 
+    }
+    
+    /* C) Desactiva los eventos de ratón en el contenedor y en la imagen (Evita el hover) */
+    [data-testid="stImage"] { 
+        pointer-events: none !important; 
+    }
+    [data-testid="stImage"] img { 
+        pointer-events: none !important; 
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -750,17 +768,59 @@ with tabs[3]:
 # ==============================================================================
 # PANEL ADMIN
 # ==============================================================================
+# ==============================================================================
+# PANEL LATERAL (ADMIN + LEGAL)
+# ==============================================================================
 with st.sidebar:
+    # 1. LOGO
     if os.path.isfile("logo.png"):
         st.image("logo.png", use_container_width=True)
+    
     st.write("") 
-    password = st.text_input("🔐", type="password", placeholder="Acceso Admin", label_visibility="collapsed")
-    if password == "admin123":
-        st.success("Modo Admin")
-        st.markdown("---")
-        st.info("La base de datos está conectada a Google Sheets.")
-        if st.button("🔄 Reiniciar App"): 
+    
+    # 2. SECCIÓN LEGAL (NUEVO - IMPRESCINDIBLE)
+    st.markdown("### ⚖️ Legal & Info")
+    
+    with st.expander("📜 Aviso Legal y Privacidad"):
+        st.caption("""
+        **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
+        **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
+        **3. Legitimación:** Consentimiento del usuario al usar la herramienta.
+        **4. Destinatarios:** Los datos (texto de contratos) se procesan a través de APIs de terceros (Groq/OpenAI) de forma anónima y no se usan para entrenar modelos.
+        **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente1989@gmail.com.
+        """)
+    
+    with st.expander("🤖 Términos de Uso (IA)"):
+        st.caption("""
+        **IMPORTANTE:** Esta herramienta utiliza Inteligencia Artificial para generar borradores.
+        **NO SUSTITUYE A UN ABOGADO.**
+        
+        1. El usuario es el único responsable de revisar la veracidad y legalidad de los documentos generados antes de firmarlos.
+        2. LegalEagle AI no se hace responsable de errores de cálculo, alucinaciones de la IA o cambios legislativos recientes no actualizados.
+        3. El uso de esta herramienta es meramente orientativo.
+        """)
+        
+    st.markdown("---")
+
+    # 3. ZONA ADMIN (CANDADO)
+    password = st.text_input("🔐 Acceso Admin", type="password", label_visibility="collapsed")
+    
+    if password == "admin123":  # <--- TU CONTRASEÑA
+        st.success("Modo Admin Activo")
+        st.info("🟢 Base de Datos: Conectada")
+        
+        if st.button("🔄 Reiniciar Servidor"): 
             st.session_state.clear()
             st.rerun()
+        
+        st.write("")
+        if os.path.isfile("database_leads.csv"):
+            st.caption("📥 Copia de Seguridad Local")
+            with open("database_leads.csv", "rb") as f: 
+                st.download_button("Bajar CSV Backup", f, "leads.csv", mime="text/csv")
+    
     else:
+        # Pie de página para usuarios normales
         st.caption("© 2026 LegalEagle AI")
+        st.caption("Desarrollado en España 🇪🇸")
+
