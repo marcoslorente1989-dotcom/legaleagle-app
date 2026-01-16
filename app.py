@@ -250,18 +250,22 @@ st.markdown("""
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
    /* --- BOTÓN WHATSAPP (VERDE) --- */
+   /* --- BOTÓN WHATSAPP VERDE PROFESIONAL --- */
     div.stLinkButton a[href*="wa.me"] {
         background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
         color: white !important;
         border-radius: 30px !important;
         border: none !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4) !important;
+        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4) !important; /* Sombra verde */
         font-weight: bold !important;
-        text-decoration: none !important;
-        display: flex !important;
-        justify-content: center !important;
+        font-size: 16px !important;
         padding: 12px 20px !important;
-        width: 100% !important;
+        transition: transform 0.2s ease !important;
+    }
+
+    div.stLinkButton a[href*="wa.me"]:hover {
+        transform: scale(1.03) !important;
+        background: linear-gradient(90deg, #20ba5a 0%, #0e7368 100%) !important;
     }
 
     /* --- BOTÓN CONTACTAR Y OTROS (AZUL) --- */
@@ -489,7 +493,7 @@ with tabs[0]:
 col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
 with col_wa_2:
     # El CSS buscará el "wa.me" dentro del link para ponerlo verde
-    st.link_button("📢 Compartir por WhatsApp", url_wa, use_container_width=True)
+    st.link_button("🟢 Compartir por WhatsApp", url_wa, use_container_width=True)
 
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
@@ -991,6 +995,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
