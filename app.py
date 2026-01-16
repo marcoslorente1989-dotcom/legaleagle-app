@@ -51,7 +51,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V105: NUCLEAR - CANDADO TRANSPARENTE Y LOGO BLOQUEADO)
+# 2. ESTILOS CSS (V110: SOLUCIÓN FINAL CANDADO Y COLORES)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -66,61 +66,40 @@ st.markdown("""
     /* 2. TEXTOS GENERALES */
     h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stCaption { color: #ffffff !important; }
 
-    /* 3. --- ARREGLO DEL CANDADO (TRANSPARENCIA TOTAL) --- */
-    
-    /* Atacamos el botón específico del popover para quitarle TODO el estilo de caja */
-    [data-testid="stPopover"] > button {
-        background: transparent !important;
-        background-color: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: rgba(255, 255, 255, 0.5) !important; /* Icono grisáceo sutil */
-        padding: 0 !important;
-        width: auto !important;
+    /* 3. --- EL CANDADO (TRANSPARENCIA FORZADA) --- */
+    /* Quitamos fondo, borde y sombra al botón del candado */
+    button[kind="secondary"] {
+         background: transparent !important;
+         border: none !important;
+         box-shadow: none !important;
     }
-    /* Efecto al pasar el ratón por el candado */
-    [data-testid="stPopover"] > button:hover {
-        color: #ffffff !important;
+    div[data-testid="stPopover"] button {
         background-color: transparent !important;
+        border: 0px solid transparent !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+    /* Al pasar el ratón */
+    div[data-testid="stPopover"] button:hover {
+        background-color: transparent !important;
+        color: #ffffff !important;
         transform: scale(1.1);
     }
-    /* Al abrirse, el fondo del botón sigue transparente */
-    [data-testid="stPopover"] > button:active, [data-testid="stPopover"] > button:focus {
-        background-color: transparent !important;
-        border: none !important;
-        color: #ffffff !important;
-    }
 
-    /* 4. --- CONTENIDO DESPLEGABLE (LETRAS NEGRAS) --- */
-    /* El interior del candado y de los avisos legales debe ser blanco con letras negras */
+    /* 4. --- CONTENIDO DENTRO DEL CANDADO Y LEGAL (LETRAS NEGRAS) --- */
+    /* Fondo blanco para los desplegables */
     div[data-testid="stPopoverBody"], div[data-testid="stExpanderDetails"] {
         background-color: #ffffff !important;
         border: 1px solid #cbd5e1;
+    }
+    /* FORZAR COLOR NEGRO en todos los textos dentro de los desplegables */
+    div[data-testid="stPopoverBody"] p, div[data-testid="stPopoverBody"] span, 
+    div[data-testid="stPopoverBody"] div, div[data-testid="stPopoverBody"] h3,
+    div[data-testid="stExpanderDetails"] p, div[data-testid="stExpanderDetails"] span, 
+    div[data-testid="stExpanderDetails"] div, div[data-testid="stExpanderDetails"] li {
         color: #000000 !important;
     }
-    div[data-testid="stPopoverBody"] *, div[data-testid="stExpanderDetails"] * {
-        color: #000000 !important;
-    }
-    
-    /* 5. --- LOGO INTOCABLE (ANTI-FULLSCREEN REAL) --- */
-    /* Desactivamos TODOS los eventos de ratón en las imágenes */
-    [data-testid="stImage"] {
-        pointer-events: none !important;
-        user-select: none !important;
-    }
-    [data-testid="stImage"] img {
-        pointer-events: none !important;
-    }
-    /* Ocultamos cualquier botón que Streamlit intente poner encima */
-    [data-testid="stImage"] button {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-    }
-    button[title="View fullscreen"] { display: none !important; }
 
-    /* 6. INPUTS Y FORMULARIOS */
+    /* 5. INPUTS (Cajas blancas, letra negra) */
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important; 
         color: #000000 !important;
@@ -132,7 +111,7 @@ st.markdown("""
     ul[data-baseweb="menu"] li { color: #000000 !important; }
     div[data-baseweb="select"] span { color: #000000 !important; } 
 
-    /* 7. CAJA DE SUBIDA */
+    /* 6. CAJA DE SUBIDA */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
         border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
@@ -154,7 +133,7 @@ st.markdown("""
         font-weight: 600; width: 100%; font-size: 14px;
     }
 
-    /* 8. PESTAÑAS */
+    /* 7. PESTAÑAS */
     div[data-baseweb="tab-list"] { justify-content: center !important; gap: 10px; }
     div[data-baseweb="tab-highlight"] { display: none !important; }
     button[data-baseweb="tab"] {
@@ -168,7 +147,7 @@ st.markdown("""
         background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important; transform: scale(1.05);
     }
 
-    /* 9. OTROS ESTILOS */
+    /* 8. OTROS */
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -182,14 +161,13 @@ st.markdown("""
         padding: 0.6rem 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
     
-    /* 10. OCULTAR UI NATIVA */
+    /* 9. OCULTAR UI NATIVA */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
     section[data-testid="stSidebar"] { display: none !important; }
 
 </style>
 """, unsafe_allow_html=True)
-
 # ==============================================================================
 # 3. LÓGICA & FUNCIONES
 # ==============================================================================
@@ -292,10 +270,24 @@ def save_lead(email, action, details):
 # 4. INTERFAZ PRINCIPAL
 # ==============================================================================
 
+# --- LOGO (SOLUCIÓN HTML PURO ANTI-FULLSCREEN) ---
 c_logo1, c_logo2, c_logo3 = st.columns([3, 2, 3]) 
 with c_logo2:
     if os.path.isfile("logo.png"):
-        st.image("logo.png", use_container_width=True)
+        # 1. Leemos la imagen como bytes
+        with open("logo.png", "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode()
+        
+        # 2. La inyectamos como HTML con 'pointer-events: none' (INTOCABLE)
+        st.markdown(
+            f"""
+            <div style="display: flex; justify-content: center;">
+                <img src="data:image/png;base64,{encoded_string}" 
+                     style="width: 100%; max-width: 300px; pointer-events: none; user-select: none;">
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
     else:
         st.markdown("<h1 style='text-align: center; color: white;'>🦅 LegalEagle AI</h1>", unsafe_allow_html=True)
 
@@ -818,6 +810,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
