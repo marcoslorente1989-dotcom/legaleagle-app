@@ -413,10 +413,34 @@ if not api_key:
     st.error("⚠️ Falta API Key. Configura GROQ_API_KEY en Render.")
     st.stop()
 
-tabs = st.tabs(["🔍 1. ANALIZAR", "✍️ 2. CREAR CONTRATO", "🛡️ 3. RECLAMAR/RECURRIR", "🧮 4. IMPUESTOS"])
+# --- Lógica de Pestañas ---
+tabs = st.tabs(["🏠 INICIO", "🔍 ANALIZAR", "✍️ CREAR CONTRATO", "⚖️ RECLAMAR/RECURRIR", "📊 IMPUESTOS"])
+
+with tabs[0]:
+    st.subheader("Bienvenido a legalapp.es")
+    st.caption("Tu asistente jurídico inteligente disponible las 24 horas.")
+    
+    # Ilustración visual de los pasos
+    
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("#### 1. Sube tu archivo")
+        st.write("Carga un PDF o una foto de cualquier documento legal: contratos, facturas, multas o nóminas.")
+        
+    with col2:
+        st.markdown("#### 2. La IA analiza")
+        st.write("Nuestro motor jurídico revisa el texto, detecta cláusulas abusivas, errores de cálculo o riesgos ocultos.")
+        
+    with col3:
+        st.markdown("#### 3. Obtén resultados")
+        st.write("Descarga un informe detallado, redacta una respuesta legal o calcula tus impuestos al instante.")
+
+    st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado para trámites judiciales.")
 
 # --- TAB 1: ANALIZADOR ---
-with tabs[0]:
+with tabs[1]:
     with st.container(border=False):
         st.subheader("Analizador de Documentos")
         st.caption("Sube un contrato (PDF o Foto) y la IA detectará riesgos, cláusulas abusivas y fechas clave automáticamente.")
@@ -486,7 +510,7 @@ with tabs[0]:
                     st.rerun()
 
 # --- TAB 2: CREADOR (DETALLADO) ---
-with tabs[1]:
+with tabs[2]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
         with st.container(border=False):
@@ -618,7 +642,7 @@ with tabs[1]:
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
 # --- TAB 3: RECLAMAR / RECURRIR (PROFESIONALIZADO) ---
-with tabs[2]:
+with tabs[3]:
     modo = st.radio("Opción:", ["✍️ Redactar Burofax / Reclamación", "🛡️ Responder/Recurrir (Subir PDF/Foto)"], horizontal=True)
     c_rec, c_doc = st.columns([1, 1.3])
     
@@ -735,7 +759,7 @@ with tabs[2]:
                         st.download_button("⬇️ Bajar PDF", data=pdf_claim, file_name="Reclamacion.pdf", mime="application/pdf")
 
 # --- TAB 4: IMPUESTOS ---
-with tabs[3]:
+with tabs[4]:
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
         with st.container(border=False):
@@ -902,8 +926,12 @@ with st.container():
             **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
             **3. Legitimación:** Consentimiento del usuario al usar la herramienta.
             **4. Destinatarios:** Los datos se procesan a través de APIs de terceros (Groq) de forma anónima y no se usan para entrenar modelos.
-            **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente1989@gmail.com.
+            **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente@legalapp.es.
             """)
+
+    with c_contact:
+        # Botón de contacto directo
+        st.link_button("✉️ Contactar", "mailto:marcoslorente@legalapp.es")
             
     with c_admin:
         # EL TRUCO: Un botón "popover" que solo muestra el candado.
@@ -926,6 +954,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
