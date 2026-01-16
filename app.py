@@ -51,22 +51,48 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (CORREGIDO Y LIMPIO)
+# 2. ESTILOS CSS (V100: MASTER - ARREGLO COLORES ADMIN Y LOGO)
 # ==============================================================================
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
     
-    /* 1. FONDO */
+    /* 1. FONDO GENERAL */
     .stApp { 
         background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%);
         font-family: 'Inter', sans-serif;
     }
 
-    /* 2. TEXTOS GENERALES */
-    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown { color: #ffffff !important; }
+    /* 2. TEXTOS GENERALES (BLANCOS POR DEFECTO EN LA APP) */
+    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stCaption { color: #ffffff !important; }
 
-    /* 3. INPUTS */
+    /* 3. --- ZONA CRÍTICA: ARREGLO DE COLORES EN ADMIN Y LEGAL --- */
+    
+    /* A) El cuerpo de los desplegables (Candado y Legal) debe ser BLANCO con letras NEGRAS */
+    div[data-testid="stPopoverBody"], div[data-testid="stExpanderDetails"] {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1;
+    }
+    
+    /* B) Forzamos que CUALQUIER texto dentro de esos desplegables sea NEGRO */
+    div[data-testid="stPopoverBody"] *, div[data-testid="stExpanderDetails"] * {
+        color: #000000 !important;
+    }
+
+    /* C) El botón del candado (🔐) transparente (sin caja blanca fea alrededor) */
+    div[data-testid="stPopover"] > button {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        color: rgba(255, 255, 255, 0.8) !important; /* El icono un poco transparente */
+        font-size: 20px !important;
+    }
+    div[data-testid="stPopover"] > button:hover {
+        color: #ffffff !important;
+        transform: scale(1.2);
+    }
+
+    /* 4. INPUTS (Cajas de texto blancas con letra negra) */
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important; 
         color: #000000 !important;
@@ -74,24 +100,27 @@ st.markdown("""
         border: 1px solid #cbd5e1;
         border-radius: 12px;
     }
-    ul[data-baseweb="menu"] li { color: #000000 !important; background-color: #ffffff !important; }
+    /* Arreglo para el menú desplegable de las listas */
+    ul[data-baseweb="menu"] { background-color: #ffffff !important; }
+    ul[data-baseweb="menu"] li { color: #000000 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; } 
 
-    /* 4. CAJA DE SUBIDA */
+    /* 5. CAJA DE SUBIDA DE ARCHIVOS (Estilo bonito) */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
         border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
     }
     [data-testid="stFileUploader"] section > div > div > span, 
     [data-testid="stFileUploader"] section > div > div > small { display: none !important; }
-
     [data-testid="stFileUploader"] section > div > div::before {
         content: "📂 Arrastra tu PDF aquí para analizar";
-        display: block; text-align: center; color: #334155; font-weight: 600; margin-bottom: 10px;
+        display: block; text-align: center; color: #334155 !important; font-weight: 600; margin-bottom: 10px;
     }
+    /* Botón "Browse files" */
     [data-testid="stFileUploader"] button {
         border-radius: 20px !important; border: 1px solid #94a3b8 !important;
         background-color: #e2e8f0 !important; color: transparent !important;
-        position: relative; width: 160px; height: 40px;
+        position: relative; width: 160px; height: 40px; margin: auto; display: block;
     }
     [data-testid="stFileUploader"] button::after {
         content: "📄 Buscar Archivo"; color: #0f172a !important;
@@ -99,88 +128,48 @@ st.markdown("""
         font-weight: 600; width: 100%; font-size: 14px;
     }
 
-    /* 5. PESTAÑAS (CENTRADO + SIN LÍNEA ROJA) */
-    div[data-baseweb="tab-list"] {
-        justify-content: center !important;
-        gap: 10px;
-    }
-    div[data-baseweb="tab-highlight"] {
-        display: none !important;
-    }
+    /* 6. PESTAÑAS (Centradas y estilo botón) */
+    div[data-baseweb="tab-list"] { justify-content: center !important; gap: 10px; }
+    div[data-baseweb="tab-highlight"] { display: none !important; }
     button[data-baseweb="tab"] {
         background-color: rgba(255, 255, 255, 0.15) !important;
         color: #ffffff !important; 
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 30px !important;
         padding: 10px 30px !important;
-        margin-right: 0px !important;
     }
     button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #3b82f6 !important; 
-        font-weight: bold !important; 
-        border-color: #60a5fa !important;
-        transform: scale(1.05);
+        background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important; transform: scale(1.05);
     }
 
-    /* 6. MÓVIL */
-    @media only screen and (max-width: 600px) {
-        .block-container {
-            padding-left: 1rem !important; padding-right: 1rem !important; padding-top: 2rem !important;
-        }
-        button[data-baseweb="tab"] {
-            padding: 6px 10px !important; font-size: 11px !important; margin-right: 2px !important; flex: 1 1 auto;
-        }
-        [data-testid="stFileUploader"] section > div > div::before {
-            content: "📂 Subir PDF" !important; 
-        }
-        [data-testid="stImage"] img { max-width: 80% !important; margin: auto; }
-    }
-
-    /* 7. OTROS */
+    /* 7. OTROS (Cajas de resultado y Chat) */
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     }
-    .contract-box, .contract-box * { color: #000000 !important; }
-
+    .contract-box * { color: #000000 !important; }
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
     
-    section[data-testid="stSidebar"] { background-color: #0f172a; border-right: 1px solid #1e293b; }
-    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { color: #e2e8f0 !important; }
-
+    /* Botones azules generales */
     div.stButton > button {
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
         color: white !important; border: none; border-radius: 25px !important; 
         padding: 0.6rem 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
-    div.stButton > button:hover {
-        transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%);
-    }
+    div.stButton > button:hover { transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); }
 
-    /* 8. OCULTAR UI STREAMLIT */
+    /* 8. OCULTAR UI STREAMLIT (Menús nativos) */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
-    #MainMenu { visibility: hidden !important; }
+    section[data-testid="stSidebar"] { display: none !important; }
 
-    /* 9. ANTI-FULLSCREEN & LOGO LOCK (NIVEL DIOS) */
-    /* Esto desactiva cualquier clic o interacción del ratón sobre las imágenes */
-    [data-testid="stImage"] { 
-        pointer-events: none !important; 
-        user-select: none !important; 
-    }
-    
-    /* Por seguridad, ocultamos también los botones si pudieran aparecer */
-    button[title="View fullscreen"], button[data-testid="StyledFullScreenButton"] { 
-        display: none !important; 
-    }
-    
-    /* 10. ESTILO FOOTER (Para lo que haremos en el Paso 3) */
-    .footer-legal {
-        font-size: 11px; color: rgba(255,255,255,0.5) !important;
-        text-align: center; margin-top: 50px; padding-top: 20px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
+    /* 9. ANTI-FULLSCREEN & LOGO LOCK (Solución Definitiva) */
+    /* Desactiva clics en imágenes */
+    [data-testid="stImage"] { pointer-events: none !important; user-select: none !important; }
+    /* Oculta botón fullscreen */
+    button[title="View fullscreen"], button[data-testid="StyledFullScreenButton"] { display: none !important; width: 0 !important; height: 0 !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -766,12 +755,6 @@ with tabs[3]:
                         st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
 
 # ==============================================================================
-# PANEL ADMIN
-# ==============================================================================
-# ==============================================================================
-# PANEL LATERAL (ADMIN + LEGAL)
-# ==============================================================================
-# ==============================================================================
 # 5. FOOTER (LEGAL & ADMIN OCULTO)
 # ==============================================================================
 st.write(""); st.write(""); st.write("") # Espacio para separar del contenido
@@ -785,20 +768,22 @@ with st.container():
     
     with c_legal:
         # Texto legal obligatorio pero discreto
-        st.caption("⚖️ **Aviso Legal:** Herramienta de orientación legal basada en IA. No sustituye el asesoramiento de un abogado colegiado. Los documentos generados deben ser revisados antes de su firma.")
+        st.caption("⚖️ **Aviso Legal:** Herramienta de orientación legal basada en IA. No sustituye el asesoramiento de un abogado colegiado.")
         
-        # Desplegable para ver los términos completos (para cumplir la ley sin ensuciar)
-        with st.expander("📜 Ver Política de Privacidad y Términos"):
+        # Desplegable CON LOS CAMPOS RECUPERADOS
+        with st.expander("📜 Ver Aviso Legal y Privacidad"):
             st.caption("""
-            **1. Responsable:** LegalEagle AI.
-            **2. Privacidad:** Los documentos subidos se procesan de forma efímera para su análisis y no se almacenan para entrenar modelos.
-            **3. Exención de Responsabilidad:** El usuario es el único responsable del uso de los documentos generados.
-            **4. Datos:** Cumplimiento con RGPD/LOPD. Puede solicitar la baja de sus datos contactando con soporte.
+            **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
+            **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
+            **3. Legitimación:** Consentimiento del usuario al usar la herramienta.
+            **4. Destinatarios:** Los datos se procesan a través de APIs de terceros (Groq) de forma anónima y no se usan para entrenar modelos.
+            **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente1989@gmail.com.
             """)
             
     with c_admin:
         # EL TRUCO: Un botón "popover" que solo muestra el candado.
         # Al hacer clic, se abre el formulario flotante.
+        # El CSS V95 se encargará de que las letras aquí dentro sean NEGRAS.
         with st.popover("🔐", help="Acceso Administrador"):
             st.markdown("### Panel Admin")
             pass_admin = st.text_input("Clave", type="password", key="admin_pass_footer")
@@ -816,6 +801,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
