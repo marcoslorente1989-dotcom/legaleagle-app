@@ -947,12 +947,12 @@ with st.container():
     # Creamos columnas: Izquierda (Legal) - Derecha (Admin discreto)
     c_legal, c_admin = st.columns([6, 1])
     
-    with c_legal:
+with c_legal:
         # Texto legal obligatorio pero discreto
         st.caption("⚖️ **Aviso Legal:** Herramienta de orientación legal basada en IA. No sustituye el asesoramiento de un abogado colegiado.")
         
         # Desplegable CON LOS CAMPOS RECUPERADOS
-    with st.expander("📜 Ver Aviso Legal y Privacidad"):
+with st.expander("📜 Ver Aviso Legal y Privacidad"):
             st.caption("""
             **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
             **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
@@ -961,11 +961,11 @@ with st.container():
             **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente@legalapp.es.
             """)
 
-    with c_contact:
+with c_contact:
         # Botón de contacto directo
         st.link_button("✉️ Contactar", "mailto:marcoslorente@legalapp.es")
             
-    with c_admin:
+with c_admin:
         # EL TRUCO: Un botón "popover" que solo muestra el candado.
         # Al hacer clic, se abre el formulario flotante.
         # El CSS V95 se encargará de que las letras aquí dentro sean NEGRAS.
@@ -986,6 +986,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
