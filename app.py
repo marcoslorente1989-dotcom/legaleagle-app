@@ -225,17 +225,36 @@ st.markdown("""
     .contract-box * { color: #000000 !important; }
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
+    /* ESTO HARÁ QUE TUS BOTONES SEAN OVALADOS Y AZULES */
     div.stButton > button {
-    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
-    color: white !important;
-    border: none;
-    border-radius: 25px !important; 
-    padding: 0.6rem 1.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-    /* Márgenes añadidos */
-    margin-top: 15px !important;
-    margin-bottom: 15px !important;
-}
+        /* 1. Fondo azul con degradado (Igual al de la pestaña activa) */
+        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+        
+        /* 2. Texto en blanco y negrita */
+        color: white !important;
+        font-weight: bold !important;
+        
+        /* 3. Forma ovalada (Border-radius alto) */
+        border-radius: 30px !important; 
+        
+        /* 4. Sombra para dar profundidad */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        
+        /* 5. Espaciado interno (Para que no se vea pegado el texto) */
+        padding: 10px 25px !important;
+        
+        /* 6. Quitar bordes feos por defecto */
+        border: none !important;
+        
+        /* 7. Margen para que no esté pegado a lo de arriba */
+        margin-top: 20px !important;
+    }
+
+    /* Efecto al pasar el ratón (opcional pero recomendado) */
+    div.stButton > button:hover {
+        transform: scale(1.05) !important;
+        transition: 0.2s ease;
+    }
     
     /* 9. OCULTAR UI NATIVA */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
@@ -907,6 +926,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
