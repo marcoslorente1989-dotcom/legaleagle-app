@@ -252,19 +252,19 @@ st.markdown("""
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
    /* --- BOTÓN WHATSAPP VERDE PROFESIONAL --- */
+    /* --- BOTÓN WHATSAPP MÁS ESTRECHO Y ELEGANTE --- */
     div.stLinkButton a[href*="wa.me"] {
         background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
         color: white !important;
         border-radius: 30px !important;
-        border: none !important;
-        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important; /* Borde fino sugerido */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
         font-weight: bold !important;
-        padding: 12px 20px !important;
+        font-size: 14px !important; /* Texto un poco más pequeño para que quepa bien */
+        padding: 8px 15px !important; /* Menos relleno para hacerlo más fino */
         display: flex !important;
         justify-content: center !important;
-        align-items: center !important;
         text-decoration: none !important;
-        font-family: 'Inter', sans-serif !important;
     }
 
     /* Estilo específico para el icono dentro del texto */
@@ -480,7 +480,7 @@ with tabs[0]:
     url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
 
     # Centramos el botón en el medio (todo dentro del with tabs[0])
-    col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
+    col_wa_1, col_wa_2, col_wa_3 = st.columns([2, 2, 2])
     with col_wa_2:
         st.link_button("📲Compartir por WhatsApp", url_wa, use_container_width=True)
         
@@ -984,6 +984,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
