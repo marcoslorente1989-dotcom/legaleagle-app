@@ -163,26 +163,23 @@ st.markdown("""
     footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
     #MainMenu { visibility: hidden !important; }
 
-    /* 9. ANTI-FULLSCREEN (NIVEL NUCLEAR) */
-    
-    /* A) Oculta cualquier botón dentro de una imagen */
-    [data-testid="stImage"] button { 
-        display: none !important; 
-        visibility: hidden !important;
-        opacity: 0 !important;
-    }
-    
-    /* B) Oculta el botón por su ID específico (Fullscreen) */
-    [data-testid="StyledFullScreenButton"] { 
-        display: none !important; 
-    }
-    
-    /* C) Desactiva los eventos de ratón en el contenedor y en la imagen (Evita el hover) */
+    /* 9. ANTI-FULLSCREEN & LOGO LOCK (NIVEL DIOS) */
+    /* Esto desactiva cualquier clic o interacción del ratón sobre las imágenes */
     [data-testid="stImage"] { 
         pointer-events: none !important; 
+        user-select: none !important; 
     }
-    [data-testid="stImage"] img { 
-        pointer-events: none !important; 
+    
+    /* Por seguridad, ocultamos también los botones si pudieran aparecer */
+    button[title="View fullscreen"], button[data-testid="StyledFullScreenButton"] { 
+        display: none !important; 
+    }
+    
+    /* 10. ESTILO FOOTER (Para lo que haremos en el Paso 3) */
+    .footer-legal {
+        font-size: 11px; color: rgba(255,255,255,0.5) !important;
+        text-align: center; margin-top: 50px; padding-top: 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -307,8 +304,8 @@ tabs = st.tabs(["🔍 1. ANALIZAR", "✍️ 2. CREAR CONTRATO", "🛡️ 3. RECL
 # --- TAB 1: ANALIZADOR ---
 with tabs[0]:
     with st.container(border=True):
-        st.markdown("### 📤 Analizador de Documentos")
-        st.caption("PDF o FOTO (OCR Inteligente)")
+       st.subheader("Analizador de Documentos")
+        st.caption("Sube un contrato (PDF o Foto) y la IA detectará riesgos, cláusulas abusivas y fechas clave automáticamente.")
         uploaded_file = st.file_uploader(" ", type=["pdf", "jpg", "png", "jpeg"], label_visibility="collapsed", key="u1")
     
     if uploaded_file:
@@ -379,7 +376,8 @@ with tabs[1]:
     c1, c2 = st.columns([1, 1.3])
     with c1:
         with st.container(border=True):
-            st.subheader("🛠️ Generador")
+            st.subheader("Generador de Contratos")
+            st.caption("Selecciona el tipo de contrato y rellena los datos. La IA redactará un documento legal válido en España y listo para firmar.")
             
             tipo = st.selectbox("Documento", [
                 "Alquiler Vivienda", 
@@ -513,8 +511,8 @@ with tabs[2]:
     if "Redactar" in modo:
         with c_rec:
             with st.container(border=True):
-                st.subheader("📢 Iniciar Reclamación")
-                st.caption("Generador de Burofax Pre-Contencioso")
+               st.subheader("Iniciar Reclamación")
+                st.caption("Generador de Burofax y cartas certificadas con terminología jurídica para reclamar impagos o incidencias.")
                 
                 remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)")
                 dest = st.text_input("Destinatario (Empresa/Persona y Dirección)")
@@ -580,7 +578,8 @@ with tabs[2]:
     else:
         with c_rec:
             with st.container(border=True):
-                st.subheader("🛡️ Generar Defensa")
+               st.subheader("Generar Defensa")
+                st.caption("Sube la multa o notificación que has recibido. Analizaremos los defectos de forma y redactaremos tu defensa.")
                 st.info("Sube la carta o multa que has recibido.")
                 uploaded_defense = st.file_uploader("Archivo (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_def")
                 mis_datos = st.text_input("Tus Datos (Nombre y DNI)")
@@ -626,7 +625,8 @@ with tabs[3]:
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
         with st.container(border=True):
-            st.subheader("🧮 Calculadora Fiscal")
+            st.subheader("Calculadora Fiscal")
+            st.caption("Calcula con precisión tu sueldo neto real, los impuestos por venta de vivienda o tu cuota hipotecaria actual.")
             tipo_calc = st.selectbox("Trámite", ["Venta Inmueble (Plusvalía+IRPF)", "Sueldo Neto (Nómina)", "Gastos Compraventa", "IPC Alquiler", "Cuota Hipoteca"])            
             anio_actual = datetime.now().year
             
@@ -771,56 +771,49 @@ with tabs[3]:
 # ==============================================================================
 # PANEL LATERAL (ADMIN + LEGAL)
 # ==============================================================================
-with st.sidebar:
-    # 1. LOGO
-    if os.path.isfile("logo.png"):
-        st.image("logo.png", use_container_width=True)
-    
-    st.write("") 
-    
-    # 2. SECCIÓN LEGAL (NUEVO - IMPRESCINDIBLE)
-    st.markdown("### ⚖️ Legal & Info")
-    
-    with st.expander("📜 Aviso Legal y Privacidad"):
-        st.caption("""
-        **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
-        **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA.
-        **3. Legitimación:** Consentimiento del usuario al usar la herramienta.
-        **4. Destinatarios:** Los datos (texto de contratos) se procesan a través de APIs de terceros (Groq/OpenAI) de forma anónima y no se usan para entrenar modelos.
-        **5. Derechos:** Acceder, rectificar y suprimir los datos escribiendo a marcoslorente1989@gmail.com.
-        """)
-    
-    with st.expander("🤖 Términos de Uso (IA)"):
-        st.caption("""
-        **IMPORTANTE:** Esta herramienta utiliza Inteligencia Artificial para generar borradores.
-        **NO SUSTITUYE A UN ABOGADO.**
-        
-        1. El usuario es el único responsable de revisar la veracidad y legalidad de los documentos generados antes de firmarlos.
-        2. LegalEagle AI no se hace responsable de errores de cálculo, alucinaciones de la IA o cambios legislativos recientes no actualizados.
-        3. El uso de esta herramienta es meramente orientativo.
-        """)
-        
-    st.markdown("---")
+# ==============================================================================
+# 5. FOOTER (LEGAL & ADMIN OCULTO)
+# ==============================================================================
+st.write(""); st.write(""); st.write("") # Espacio para separar del contenido
 
-    # 3. ZONA ADMIN (CANDADO)
-    password = st.text_input("🔐 Acceso Admin", type="password", label_visibility="collapsed")
+# Contenedor final
+with st.container():
+    st.markdown("---") # Línea separadora sutil
     
-    if password == "admin123":  # <--- TU CONTRASEÑA
-        st.success("Modo Admin Activo")
-        st.info("🟢 Base de Datos: Conectada")
-        
-        if st.button("🔄 Reiniciar Servidor"): 
-            st.session_state.clear()
-            st.rerun()
-        
-        st.write("")
-        if os.path.isfile("database_leads.csv"):
-            st.caption("📥 Copia de Seguridad Local")
-            with open("database_leads.csv", "rb") as f: 
-                st.download_button("Bajar CSV Backup", f, "leads.csv", mime="text/csv")
+    # Creamos columnas: Izquierda (Legal) - Derecha (Admin discreto)
+    c_legal, c_admin = st.columns([6, 1])
     
-    else:
-        # Pie de página para usuarios normales
-        st.caption("© 2026 LegalEagle AI")
-        st.caption("Desarrollado en España 🇪🇸")
+    with c_legal:
+        # Texto legal obligatorio pero discreto
+        st.caption("⚖️ **Aviso Legal:** Herramienta de orientación legal basada en IA. No sustituye el asesoramiento de un abogado colegiado. Los documentos generados deben ser revisados antes de su firma.")
+        
+        # Desplegable para ver los términos completos (para cumplir la ley sin ensuciar)
+        with st.expander("📜 Ver Política de Privacidad y Términos"):
+            st.caption("""
+            **1. Responsable:** LegalEagle AI.
+            **2. Privacidad:** Los documentos subidos se procesan de forma efímera para su análisis y no se almacenan para entrenar modelos.
+            **3. Exención de Responsabilidad:** El usuario es el único responsable del uso de los documentos generados.
+            **4. Datos:** Cumplimiento con RGPD/LOPD. Puede solicitar la baja de sus datos contactando con soporte.
+            """)
+            
+    with c_admin:
+        # EL TRUCO: Un botón "popover" que solo muestra el candado.
+        # Al hacer clic, se abre el formulario flotante.
+        with st.popover("🔐", help="Acceso Administrador"):
+            st.markdown("### Panel Admin")
+            pass_admin = st.text_input("Clave", type="password", key="admin_pass_footer")
+            
+            if pass_admin == "admin123": # <--- CAMBIA ESTO POR TU CLAVE
+                st.success("Acceso OK")
+                
+                if st.button("📂 Descargar CSV Leads"):
+                    if os.path.isfile("database_leads.csv"):
+                        df_leads = pd.read_csv("database_leads.csv")
+                        st.dataframe(df_leads)
+                    else:
+                        st.warning("No hay datos aún.")
+                        
+                if st.button("🔄 Reiniciar Web"):
+                    st.session_state.clear()
+                    st.rerun()
 
