@@ -304,7 +304,7 @@ tabs = st.tabs(["🔍 1. ANALIZAR", "✍️ 2. CREAR CONTRATO", "🛡️ 3. RECL
 # --- TAB 1: ANALIZADOR ---
 with tabs[0]:
     with st.container(border=True):
-       st.subheader("Analizador de Documentos")
+        st.subheader("Analizador de Documentos")
         st.caption("Sube un contrato (PDF o Foto) y la IA detectará riesgos, cláusulas abusivas y fechas clave automáticamente.")
         uploaded_file = st.file_uploader(" ", type=["pdf", "jpg", "png", "jpeg"], label_visibility="collapsed", key="u1")
     
@@ -816,4 +816,5 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
