@@ -511,7 +511,7 @@ with tabs[2]:
     if "Redactar" in modo:
         with c_rec:
             with st.container(border=True):
-               st.subheader("Iniciar Reclamación")
+                st.subheader("Iniciar Reclamación")
                 st.caption("Generador de Burofax y cartas certificadas con terminología jurídica para reclamar impagos o incidencias.")
                 
                 remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)")
@@ -578,7 +578,7 @@ with tabs[2]:
     else:
         with c_rec:
             with st.container(border=True):
-               st.subheader("Generar Defensa")
+                st.subheader("Generar Defensa")
                 st.caption("Sube la multa o notificación que has recibido. Analizaremos los defectos de forma y redactaremos tu defensa.")
                 st.info("Sube la carta o multa que has recibido.")
                 uploaded_defense = st.file_uploader("Archivo (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_def")
@@ -816,5 +816,6 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
