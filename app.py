@@ -69,6 +69,34 @@ st.markdown("""
         scrollbar-width: none;
         -ms-overflow-style: none;  /* IE y Edge antiguo */
     }
+
+    /* 1. ELIMINAR ESPACIO SUPERIOR (Subir el logo) */
+    .block-container {
+        padding-top: 1rem !important; /* Ajusta este número si quieres que suba más o menos */
+        padding-bottom: 0rem !important;
+    }
+
+    /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
+    @media only screen and (max-width: 600px) {
+        div[data-baseweb="tab-list"] {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important; /* Fuerza las 2 columnas */
+            gap: 8px !important;
+            justify-content: center !important;
+        }
+        
+        button[data-baseweb="tab"] {
+            width: 100% !important;
+            padding: 8px 4px !important;
+            font-size: 10px !important; /* Un pelín más pequeño para que quepa bien */
+            margin: 0 !important;
+        }
+
+        /* Ajuste de logo en móvil para que no coma pantalla */
+        [data-testid="stImage"] img {
+            max-width: 70% !important;
+        }
+    }
     
     /* 1. FONDO GENERAL */
     .stApp { 
@@ -132,7 +160,7 @@ st.markdown("""
     [data-testid="stFileUploader"] section > div > div > span, 
     [data-testid="stFileUploader"] section > div > div > small { display: none !important; }
     [data-testid="stFileUploader"] section > div > div::before {
-        content: "📂 Arrastra tu PDF aquí para analizar";
+        content: "📂 Arrastra PDF para analizar";
         display: block; text-align: center; color: #334155 !important; font-weight: 600; margin-bottom: 10px;
     }
     [data-testid="stFileUploader"] button {
@@ -154,7 +182,9 @@ st.markdown("""
         color: #ffffff !important; 
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 30px !important;
-        padding: 10px 30px !important;
+        /* CAMBIA ESTA LÍNEA: Quita el 30px y ponlo así para que sea flexible */
+        padding: 10px 15px !important; 
+        min-width: 100px; /* Asegura un tamaño mínimo pero flexible */
     }
     button[data-baseweb="tab"][aria-selected="true"] {
         background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important; transform: scale(1.05);
@@ -823,6 +853,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
