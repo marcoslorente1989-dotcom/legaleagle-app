@@ -250,9 +250,9 @@ st.markdown("""
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
     /* ESTO HARÁ QUE TUS BOTONES SEAN OVALADOS Y AZULES */
-    /* --- BOTÓN WHATSAPP (VERDE) --- */
-    /* Sustituye cualquier regla anterior de botones de enlace por esta */
-    a[href*="wa.me"] {
+   /* --- BOTÓN WHATSAPP (VERDE) --- */
+    /* Este selector es más fuerte y asegura el color verde */
+    div.stLinkButton a[href*="wa.me"] {
         background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
         color: white !important;
         border-radius: 30px !important;
@@ -263,7 +263,15 @@ st.markdown("""
         display: flex !important;
         justify-content: center !important;
         padding: 12px 20px !important;
-        margin: 10px auto !important;
+        width: 100% !important;
+    }
+
+    /* Evitar que cambie de color al pasar el ratón o hacer clic */
+    div.stLinkButton a[href*="wa.me"]:hover, 
+    div.stLinkButton a[href*="wa.me"]:active, 
+    div.stLinkButton a[href*="wa.me"]:focus {
+        color: white !important;
+        background: linear-gradient(90deg, #128C7E 0%, #075E54 100%) !important;
     }
 
     /* --- BOTONES DE ACCIÓN (AZULES) --- */
@@ -487,13 +495,15 @@ with tabs[0]:
         st.write("Descarga un informe detallado, redacta una respuesta legal o calcula tus impuestos al instante.")
 
     st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado para trámites judiciales.")
-    # --- BOTÓN DE COMPARTIR ---
-st.write("---") # Una línea divisoria sutil
+  # --- BOTÓN DE COMPARTIR ---
+st.write(""); st.write("") # Un poco de espacio
 mensaje_share = "¡Mira esta herramienta legal con IA! Analiza contratos y redacta documentos al instante: https://legalapp.es"
 url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
 
-col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 2, 1])
+# Centramos el botón en el medio
+col_wa_1, col_wa_2, col_wa_3 = st.columns([1, 4, 1])
 with col_wa_2:
+    # El CSS buscará el "wa.me" dentro del link para ponerlo verde
     st.link_button("📢 Compartir por WhatsApp", url_wa, use_container_width=True)
 
 # --- TAB 1: ANALIZADOR ---
@@ -996,6 +1006,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
