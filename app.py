@@ -51,7 +51,7 @@ components.html("""
 """, height=0)
 
 # ==============================================================================
-# 2. ESTILOS CSS (V100: MASTER - ARREGLO COLORES ADMIN Y LOGO)
+# 2. ESTILOS CSS (V105: NUCLEAR - CANDADO TRANSPARENTE Y LOGO BLOQUEADO)
 # ==============================================================================
 st.markdown("""
 <style>
@@ -63,36 +63,64 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
 
-    /* 2. TEXTOS GENERALES (BLANCOS POR DEFECTO EN LA APP) */
+    /* 2. TEXTOS GENERALES */
     h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stCaption { color: #ffffff !important; }
 
-    /* 3. --- ZONA CRÍTICA: ARREGLO DE COLORES EN ADMIN Y LEGAL --- */
+    /* 3. --- ARREGLO DEL CANDADO (TRANSPARENCIA TOTAL) --- */
     
-    /* A) El cuerpo de los desplegables (Candado y Legal) debe ser BLANCO con letras NEGRAS */
-    div[data-testid="stPopoverBody"], div[data-testid="stExpanderDetails"] {
-        background-color: #ffffff !important;
-        border: 1px solid #cbd5e1;
-    }
-    
-    /* B) Forzamos que CUALQUIER texto dentro de esos desplegables sea NEGRO */
-    div[data-testid="stPopoverBody"] *, div[data-testid="stExpanderDetails"] * {
-        color: #000000 !important;
-    }
-
-    /* C) El botón del candado (🔐) transparente (sin caja blanca fea alrededor) */
-    div[data-testid="stPopover"] > button {
+    /* Atacamos el botón específico del popover para quitarle TODO el estilo de caja */
+    [data-testid="stPopover"] > button {
+        background: transparent !important;
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
-        color: rgba(255, 255, 255, 0.8) !important; /* El icono un poco transparente */
-        font-size: 20px !important;
+        color: rgba(255, 255, 255, 0.5) !important; /* Icono grisáceo sutil */
+        padding: 0 !important;
+        width: auto !important;
     }
-    div[data-testid="stPopover"] > button:hover {
+    /* Efecto al pasar el ratón por el candado */
+    [data-testid="stPopover"] > button:hover {
         color: #ffffff !important;
-        transform: scale(1.2);
+        background-color: transparent !important;
+        transform: scale(1.1);
+    }
+    /* Al abrirse, el fondo del botón sigue transparente */
+    [data-testid="stPopover"] > button:active, [data-testid="stPopover"] > button:focus {
+        background-color: transparent !important;
+        border: none !important;
+        color: #ffffff !important;
     }
 
-    /* 4. INPUTS (Cajas de texto blancas con letra negra) */
+    /* 4. --- CONTENIDO DESPLEGABLE (LETRAS NEGRAS) --- */
+    /* El interior del candado y de los avisos legales debe ser blanco con letras negras */
+    div[data-testid="stPopoverBody"], div[data-testid="stExpanderDetails"] {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1;
+        color: #000000 !important;
+    }
+    div[data-testid="stPopoverBody"] *, div[data-testid="stExpanderDetails"] * {
+        color: #000000 !important;
+    }
+    
+    /* 5. --- LOGO INTOCABLE (ANTI-FULLSCREEN REAL) --- */
+    /* Desactivamos TODOS los eventos de ratón en las imágenes */
+    [data-testid="stImage"] {
+        pointer-events: none !important;
+        user-select: none !important;
+    }
+    [data-testid="stImage"] img {
+        pointer-events: none !important;
+    }
+    /* Ocultamos cualquier botón que Streamlit intente poner encima */
+    [data-testid="stImage"] button {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    button[title="View fullscreen"] { display: none !important; }
+
+    /* 6. INPUTS Y FORMULARIOS */
     .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
         background-color: #ffffff !important; 
         color: #000000 !important;
@@ -100,12 +128,11 @@ st.markdown("""
         border: 1px solid #cbd5e1;
         border-radius: 12px;
     }
-    /* Arreglo para el menú desplegable de las listas */
     ul[data-baseweb="menu"] { background-color: #ffffff !important; }
     ul[data-baseweb="menu"] li { color: #000000 !important; }
     div[data-baseweb="select"] span { color: #000000 !important; } 
 
-    /* 5. CAJA DE SUBIDA DE ARCHIVOS (Estilo bonito) */
+    /* 7. CAJA DE SUBIDA */
     [data-testid="stFileUploader"] section {
         background-color: #f1f5f9 !important;
         border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
@@ -116,7 +143,6 @@ st.markdown("""
         content: "📂 Arrastra tu PDF aquí para analizar";
         display: block; text-align: center; color: #334155 !important; font-weight: 600; margin-bottom: 10px;
     }
-    /* Botón "Browse files" */
     [data-testid="stFileUploader"] button {
         border-radius: 20px !important; border: 1px solid #94a3b8 !important;
         background-color: #e2e8f0 !important; color: transparent !important;
@@ -128,7 +154,7 @@ st.markdown("""
         font-weight: 600; width: 100%; font-size: 14px;
     }
 
-    /* 6. PESTAÑAS (Centradas y estilo botón) */
+    /* 8. PESTAÑAS */
     div[data-baseweb="tab-list"] { justify-content: center !important; gap: 10px; }
     div[data-baseweb="tab-highlight"] { display: none !important; }
     button[data-baseweb="tab"] {
@@ -142,7 +168,7 @@ st.markdown("""
         background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important; transform: scale(1.05);
     }
 
-    /* 7. OTROS (Cajas de resultado y Chat) */
+    /* 9. OTROS ESTILOS */
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
@@ -150,25 +176,16 @@ st.markdown("""
     .contract-box * { color: #000000 !important; }
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
-    
-    /* Botones azules generales */
     div.stButton > button {
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
         color: white !important; border: none; border-radius: 25px !important; 
         padding: 0.6rem 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2);
     }
-    div.stButton > button:hover { transform: scale(1.03); background: linear-gradient(90deg, #2563eb 0%, #1d4ed8 100%); }
-
-    /* 8. OCULTAR UI STREAMLIT (Menús nativos) */
+    
+    /* 10. OCULTAR UI NATIVA */
     header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
     footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
     section[data-testid="stSidebar"] { display: none !important; }
-
-    /* 9. ANTI-FULLSCREEN & LOGO LOCK (Solución Definitiva) */
-    /* Desactiva clics en imágenes */
-    [data-testid="stImage"] { pointer-events: none !important; user-select: none !important; }
-    /* Oculta botón fullscreen */
-    button[title="View fullscreen"], button[data-testid="StyledFullScreenButton"] { display: none !important; width: 0 !important; height: 0 !important; }
 
 </style>
 """, unsafe_allow_html=True)
@@ -801,6 +818,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
