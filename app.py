@@ -131,7 +131,7 @@ st.markdown("""
 
     /* 1. ELIMINAR ESPACIO SUPERIOR (Subir el logo) */
     .block-container {
-        padding-top: 0rem !important; /* Ajusta este número si quieres que suba más o menos */
+        padding-top: -3rem !important; /* Ajusta este número si quieres que suba más o menos */
         padding-bottom: -3rem !important;
     }
     [data-testid="stImage"] {
@@ -1256,6 +1256,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
