@@ -129,10 +129,24 @@ st.markdown("""
         -ms-overflow-style: none;  /* IE y Edge antiguo */
     }
 
-    /* 1. ELIMINAR ESPACIO SUPERIOR (Subir el logo) */
+    /* 1. ELIMINAR ESPACIO SUPERIOR TOTAL */
     .block-container {
-        padding-top: -3rem !important; /* Ajusta este número si quieres que suba más o menos */
-        padding-bottom: 0rem !important;
+        padding-top: 0rem !important; 
+        margin-top: -6rem !important; /* Forzamos la subida masiva */
+    }
+
+    /* 2. AJUSTE DEL LOGO PARA QUE NO OCUPE ESPACIO VERTICAL */
+    [data-testid="stImage"] {
+        margin-top: -30px !important;
+        margin-bottom: -50px !important; /* Quitamos el espacio que deja debajo */
+        display: flex;
+        justify-content: center;
+        transform: scale(0.8); /* Reducimos un poco el tamaño visual para ganar pantalla */
+    }
+
+    /* Ocultar elementos nativos que roban espacio arriba */
+    header, [data-testid="stHeader"] {
+        display: none !important;
     }
   
     /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
@@ -1252,6 +1266,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
