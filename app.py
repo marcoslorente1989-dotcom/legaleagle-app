@@ -104,11 +104,11 @@ st.markdown("""
 
     /* 1. ELIMINAR ESPACIO SUPERIOR (Subir el logo) */
     .block-container {
-        padding-top: 0.5rem !important; /* Ajusta este número si quieres que suba más o menos */
-        padding-bottom: -2rem !important;
+        padding-top: 0rem !important; /* Ajusta este número si quieres que suba más o menos */
+        padding-bottom: -3rem !important;
     }
     [data-testid="stImage"] {
-        margin-top: -30px !important;
+        margin-top: -40px !important;
         text-align: center;
     }
 
@@ -758,6 +758,7 @@ with tabs[2]:
                 "Contrato de Arras",
                 "Desistimiento / Cancelación"
             ])
+            st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
             
             data_p = ""
             
@@ -771,7 +772,7 @@ with tabs[2]:
                 renta = st.number_input('Renta Mensual (€)')
                 data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
 
-            st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
+    
             elif "Préstamo" in tipo: # NUEVO BLOQUE
                 st.info("💡 **Consejo:** Para evitar problemas con Hacienda, este contrato debe indicar si es con intereses y presentarse (exento) mediante el Modelo 600.")
                 c_p1, c_p2 = st.columns(2)
@@ -1019,6 +1020,7 @@ with tabs[4]:
                 "Cuota Hipoteca"   
             ])
             anio_actual = datetime.now().year
+            st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
 
             if "ESCÁNER" in tipo_calc:
                 st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
@@ -1159,7 +1161,7 @@ with tabs[4]:
                 if st.button("🧮 CALCULAR"):
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
                     
-           st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
+           
             elif "Hipoteca" in tipo_calc:
                 st.caption("Calculadora Cuota Mensual Inteligente")
                 capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
@@ -1234,6 +1236,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
