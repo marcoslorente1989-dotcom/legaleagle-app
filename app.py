@@ -247,10 +247,19 @@ st.markdown("""
     .contract-box {
         font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
         padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        /* Bloqueo de copia en la previsualización */
+        }
+    .contract-box {
+        -webkit-user-select: none; /* Safari */
+        -ms-user-select: none; /* IE/Edge */
+        user-select: none; /* Estándar */
+        pointer-events: none; /* Evita que el ratón interactúe con el texto */
     }
+
     .contract-box * { color: #000000 !important; }
     .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
     .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
+  
    /* --- BOTÓN WHATSAPP VERDE PROFESIONAL --- */
     /* --- BOTÓN WHATSAPP MÁS ESTRECHO Y ELEGANTE --- */
     div.stLinkButton a[href*="wa.me"] {
@@ -985,6 +994,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
