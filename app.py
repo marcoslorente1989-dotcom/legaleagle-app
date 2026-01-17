@@ -31,6 +31,20 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+# --- PERSONALIZACIÓN DE PREVISUALIZACIÓN (WhatsApp/Social) ---
+st.markdown(
+    """
+    <head>
+        <title>LegalApp AI - Tu Abogado 24h</title>
+        <meta property="og:title" content="LegalApp AI - Inteligencia Legal en España">
+        <meta property="og:description" content="Analiza contratos, redacta documentos legales y calcula tus impuestos al instante con nuestra IA especializada.">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://legalapp.es">
+        <meta property="og:image" content="https://legalapp.es/logo.png">
+    </head>
+    """,
+    unsafe_allow_html=True
+)
 
 # Textos ocultos para SEO/Idioma
 st.markdown("""
@@ -1103,6 +1117,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
