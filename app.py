@@ -484,18 +484,25 @@ with tabs[0]:
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("#### 1. Sube tu archivo")
-        st.write("Carga un PDF o una foto de cualquier documento legal: contratos, facturas, multas o nóminas.")
+        st.markdown("#### 🔍 Analizar")
+        st.write("Detecta cláusulas abusivas y riesgos en tus contratos o nóminas.")
+        if st.button("Empezar Análisis", key="btn_ir_analizar"):
+            components.html("<script>window.parent.document.querySelectorAll('button[data-baseweb=\"tab\"]')[1].click();</script>", height=0)
         
     with col2:
-        st.markdown("#### 2. La IA analiza")
-        st.write("Nuestro motor jurídico revisa el texto, detecta cláusulas abusivas, errores de cálculo o riesgos ocultos.")
+        st.markdown("#### ✍️ Crear")
+        st.write("Genera contratos de alquiler, préstamos o trabajo listos para firmar.")
+        if st.button("Redactar Contrato", key="btn_ir_crear"):
+            components.html("<script>window.parent.document.querySelectorAll('button[data-baseweb=\"tab\"]')[2].click();</script>", height=0)
         
     with col3:
-        st.markdown("#### 3. Obtén resultados")
-        st.write("Descarga un informe detallado, redacta una respuesta legal o calcula tus impuestos al instante.")
+        st.markdown("#### 📊 Impuestos")
+        st.write("Calcula tu sueldo neto, hipoteca o impuestos por venta de vivienda.")
+        if st.button("Calcular ahora", key="btn_ir_impuestos"):
+            components.html("<script>window.parent.document.querySelectorAll('button[data-baseweb=\"tab\"]')[4].click();</script>", height=0)
 
-    st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado para trámites judiciales.")
+    st.write("---")
+    st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado.")
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
     st.write(""); st.write("") 
@@ -1084,6 +1091,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
