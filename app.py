@@ -547,6 +547,15 @@ with tabs[0]:
         st.write("""
         Totalmente. Los archivos se procesan de forma cifrada y efímera. Una vez analizados, no se guardan permanentemente en nuestros servidores ni se utilizan para entrenar modelos públicos de IA.
         """)
+st.write("")
+    st.markdown("### ❓ Preguntas Frecuentes")
+    faq1, faq2 = st.columns(2)
+    with faq1:
+        with st.expander("¿Tienen validez oficial los contratos?"):
+            st.write("Sí, cumplen con el Código Civil y la LAU. Una vez firmados por ambas partes, tienen plena validez legal en España.")
+    with faq2:
+        with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
+            st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).")
         
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
@@ -1097,32 +1106,33 @@ st.write(""); st.write(""); st.write("")
 with st.container():
     st.markdown("---") 
     
-    # SOLUCIÓN AL NameError: Añadimos c_contact a la creación de columnas
     c_legal, c_contact, c_admin = st.columns([4, 2, 1])
     
     with c_legal:
-        st.caption("⚖️ **legalapp.es** | Herramienta de orientación legal basada en IA.")
-        with st.expander("📜 Ver Aviso Legal y Privacidad"):
-            st.caption("""
-            **1. Responsable:** Marcos Lorente Diaz-Guerra - 46994385A
-            **2. Finalidad:** Gestión de herramientas legales y redacción asistida por IA en legalapp.es.
-            **3. Legitimación:** Consentimiento del usuario al usar la herramienta.
-            **4. Destinatarios:** Los datos se procesan a través de APIs de terceros (Groq) de forma anónima.
-            **5. Derechos:** Puede escribir a **marcoslorente@legalapp.es**.
+        st.caption("⚖️ **legalapp.es** | Inteligencia Jurídica para España.")
+        with st.expander("📜 Avisos Legales, Privacidad y Cookies"):
+            st.markdown("""
+            **Información Legal (LSSI):**
+            Responsable: Marcos Lorente Diaz-Guerra | DNI: 46994385A 
+            Email: marcoslorente@legalapp.es
+            
+            **Política de Privacidad (RGPD):**
+            1. **Finalidad:** Los datos y documentos se procesan exclusivamente para generar el informe o contrato solicitado.
+            2. **Conservación:** No almacenamos documentos personales de forma permanente. Los textos se procesan de forma efímera a través de la API de Groq (anónima).
+            3. **Derechos:** Puede ejercer sus derechos de acceso, rectificación o supresión escribiendo a nuestro email de contacto.
+            
+            **Términos de Uso:**
+            Esta herramienta utiliza Inteligencia Artificial. Los resultados son orientativos y no constituyen un consejo legal vinculante. Se recomienda la revisión por un abogado colegiado para procesos judiciales.
             """)
 
     with c_contact:
-        # Ahora c_contact sí existe y funcionará
-        st.link_button("✉️ Contactar", "mailto:marcoslorente@legalapp.es")
+        st.link_button("✉️ Contactar Soporte", "mailto:marcoslorente@legalapp.es")
             
     with c_admin:
-        with st.popover("🔐", help="Acceso Administrador"):
-            st.markdown("### Panel Admin")
-            pass_admin = st.text_input("Clave", type="password", key="admin_pass_footer")
-            
+        with st.popover("🔐", help="Admin"):
+            pass_admin = st.text_input("Clave", type="password")
             if pass_admin == "admin123": 
-                st.success("Acceso OK")
-                if st.button("🔄 Reiniciar Web"):
+                if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
 
