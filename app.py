@@ -16,6 +16,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 # 1. CONFIGURACIÓN Y CLAVES
 # ==============================================================================
 
+st.set_page_config(
+    page_title="LegalApp AI - Tu Abogado 24h", # <--- CAMBIA LegalEagle por esto
+    page_icon="🦅",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 # Intentar leer de Variable de Entorno (Render) o Secrets (Local)
 api_key = os.getenv("GROQ_API_KEY")
 if not api_key:
@@ -38,13 +45,6 @@ st.markdown(
     </script>
     """,
     unsafe_allow_html=True
-)
-
-st.set_page_config(
-    page_title="LegalApp AI - Tu Abogado 24h", # <--- CAMBIA LegalEagle por esto
-    page_icon="🦅",
-    layout="wide",
-    initial_sidebar_state="collapsed"
 )
 
 # --- FORZAR TÍTULO PARA RASTREADORES ---
@@ -314,6 +314,7 @@ st.markdown("""
 
     /* --- BOTÓN CONTACTAR Y OTROS (AZUL) --- */
     /* Usamos :not para que esta regla no afecte al de WhatsApp */
+    
     div.stButton > button, .stLinkButton a:not([href*="wa.me"]) {
         background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
         color: white !important;
@@ -321,15 +322,15 @@ st.markdown("""
         border: none !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
         font-weight: bold !important;
-        text-decoration: none !important;
-        display: flex !important;
-        justify-content: center !important;
+        height: 45px !important;
+        width: 100% !important;
+        transition: 0.2s ease;
     }
 
     /* Efecto al pasar el ratón (opcional pero recomendado) */
     div.stButton > button:hover {
         transform: scale(1.05) !important;
-        transition: 0.2s ease;
+        filter: brightness(1.1);
     }
     
     /* 9. OCULTAR UI NATIVA */
@@ -592,31 +593,23 @@ with tabs[0]:
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
-    # --- ACCESOS DIRECTOS A TRÁMITES ---
+   # --- ACCESOS DIRECTOS A TRÁMITES (CORREGIDO) ---
     st.write("")
-    st.markdown("#### ⚡ Acceso Rápido a Trámites")
     
-    col_1, col_2, col_3 = st.columns(3)
+    c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-    with col_1:
-        if st.button("💰 Préstamos Particulares", use_container_width=True, help="Crear contrato de préstamo"):
-            st.components.v1.html(
-                "<script>window.parent.document.getElementById('prestamos').scrollIntoView({behavior: 'smooth'});</script>",
-                height=0
-            )
+    with c_acc1:
+        if st.button("💰 Préstamos Particulares", key="acc_pres"):
+            components.html("""<script>window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[2].click();</script>""", height=0)
             
-    with col_2:
-        if st.button("🏠 Revisión de Alquiler", use_container_width=True, help="Analizar contrato con IA"):
-            # Este botón redirige a la pestaña de ANALIZAR (Index 1)
-            st.session_state.current_tab = 1 # Asumiendo que controlas las pestañas con session_state
-            st.rerun()
+    with c_acc2:
+        if st.button("🏠 Revisión de Alquiler", key="acc_alq"):
+            components.html("""<script>window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[1].click();</script>""", height=0)
 
-    with col_3:
-        if st.button("📉 Cálculo de Hipoteca", use_container_width=True, help="Calculadora con Euríbor real"):
-            st.components.v1.html(
-                "<script>window.parent.document.getElementById('hipoteca').scrollIntoView({behavior: 'smooth'});</script>",
-                height=0
-            )
+    with c_acc3:
+        if st.button("📉 Cálculo de Hipoteca", key="acc_hip"):
+            components.html("""<script>window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[4].click();</script>""", height=0)
+   
     st.write("---")    
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
@@ -1236,6 +1229,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
