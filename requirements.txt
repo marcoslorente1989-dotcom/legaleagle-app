@@ -6,4 +6,5 @@ pdfplumber
 fpdf
 gspread
 oauth2client
+requests
 
