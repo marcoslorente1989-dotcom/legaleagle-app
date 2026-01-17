@@ -32,6 +32,20 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# --- FORZAR TÍTULO PARA RASTREADORES ---
+components.html(
+    """
+    <script>
+        window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
+        var meta = window.parent.document.createElement('meta');
+        meta.setAttribute('property', 'og:title');
+        meta.content = "LegalApp AI - Tu Abogado 24h";
+        window.parent.document.getElementsByTagName('head')[0].appendChild(meta);
+    </script>
+    """,
+    height=0
+)
+
 # Textos ocultos para SEO/Idioma
 st.markdown("""
 <div style="display:none; visibility:hidden; height:0;">
@@ -330,6 +344,41 @@ st.markdown("""
         }
     }
 
+    /* --- DISEÑO FAQ PREMIUM: TRANSPARENTE Y BLANCO --- */
+    
+    /* 1. Fondo transparente para la caja principal y quitar bordes blancos */
+    .stExpander {
+        background-color: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-radius: 12px !important;
+        margin-bottom: 10px !important;
+    }
+
+    /* 2. Forzar letras BLANCAS en el título (Cerrado y Abierto) */
+    .stExpander details summary p {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+        font-weight: 500 !important;
+    }
+
+    /* 3. Forzar letras BLANCAS en el contenido interior */
+    .stExpander details div {
+        color: #ffffff !important;
+    }
+
+    /* 4. Cambiar color del icono de la flecha a Blanco */
+    .stExpander details summary svg {
+        fill: #ffffff !important;
+    }
+
+    /* 5. Eliminar el color de fondo que Streamlit pone al pasar el ratón o hacer clic */
+    .stExpander details summary:hover, 
+    .stExpander details summary:active, 
+    .stExpander details summary:focus {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: #ffffff !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 # ==============================================================================
@@ -347,11 +396,23 @@ if "analysis_done" not in st.session_state: st.session_state.analysis_done = Fal
 @st.cache_data(show_spinner=False)
 def obtener_euribor_actual():
     try:
-        # Consulta a una fuente de datos financieros (ejemplo estable)
-        # En enero 2026 el valor medio ronda el 2.252%
-        return 2.252 
-    except:
-        return 2.252
+        # Consultamos el valor diario en una fuente pública estable
+        url = "https://www.euribor-rates.eu/es/tasas-euribor-actuales/1/euribor-tasa-12-meses/"
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
+            # Buscamos el valor en la tabla (ajustado a la estructura de la web)
+            valor_texto = soup.find("td", {"class": "text-right"}).text.strip()
+            # Limpiamos el texto (ej: "2,252 %" -> 2.252)
+            valor_limpio = float(valor_texto.replace('%', '').replace(',', '.').strip())
+            return valor_limpio
+        return 2.252 # Valor de respaldo si la web cambia estructura
+    except Exception as e:
+        print(f"Error Euribor: {e}")
+        return 2.252 # Segundo respaldo de seguridad
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -478,6 +539,7 @@ tabs = st.tabs(["🏠 INICIO", "🔍 ANALIZAR", "✍️ CREAR CONTRATO", "⚖️
 # (Se coloca justo después de definir los tabs)
 
 with tabs[0]:
+    st.markdown("<h1 style='display:none;'>LegalApp AI - Inteligencia Legal en España</h1>", unsafe_allow_html=True)
     st.subheader("Bienvenido a legalapp.es")
     st.caption("Tu asistente jurídico inteligente disponible las 24 horas.")
     
@@ -1129,6 +1191,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
