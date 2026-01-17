@@ -16,6 +16,23 @@ from oauth2client.service_account import ServiceAccountCredentials
 st.markdown(
     """
     <script>
+
+    /* --- ELIMINAR RESALTADO NEGRO/GRIS EN MÓVIL --- */
+    * {
+        -webkit-tap-highlight-color: transparent !important;
+        -webkit-touch-callout: none !important;
+    }
+
+    /* Ajuste específico para botones y pestañas */
+    button, div[data-baseweb="tab"], .stButton > button {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    
+    /* Evitar que Streamlit oscurezca el contenedor al interactuar */
+    .stApp > header, .main {
+        background-color: transparent !important;
+    }
         // Cambia el título de la pestaña inmediatamente
         window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
         
@@ -1266,6 +1283,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
