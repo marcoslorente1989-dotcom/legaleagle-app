@@ -25,6 +25,21 @@ if not api_key:
             api_key = st.secrets.get("GROQ_API_KEY")
     except: pass
 
+# --- ESTO DEBE IR ANTES DE TODO LO DEMÁS ---
+st.markdown(
+    f"""
+    <script>
+        var link = window.parent.document.querySelector("link[rel*='icon']") || window.parent.document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        link.href = 'https://legalapp.es/logo.png';
+        window.parent.document.getElementsByTagName('head')[0].appendChild(link);
+        window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h", # <--- CAMBIA LegalEagle por esto
     page_icon="🦅",
@@ -1225,6 +1240,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
