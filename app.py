@@ -503,6 +503,18 @@ with tabs[0]:
 
     st.write("---")
     st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado.")
+
+    # Añadir después del st.warning en tabs[0]
+    st.write("")
+    st.markdown("### 🛠️ Soluciones Legales Populares")
+    c_serv1, c_serv2, c_serv3 = st.columns(3)
+    
+    with c_serv1:
+        st.info("**Préstamos Familiares**\n\nEvita multas de Hacienda con contratos de préstamo entre particulares (Modelo 600).")
+    with c_serv2:
+        st.info("**Revisión de Alquiler**\n\nAnalizamos tu contrato de vivienda para asegurar que cumple con la nueva Ley de Vivienda.")
+    with c_serv3:
+        st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
     st.write(""); st.write("") 
@@ -1091,6 +1103,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
