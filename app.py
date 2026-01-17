@@ -855,7 +855,7 @@ with tabs[4]:
                 "Gastos Compraventa", 
                 "IPC Alquiler", 
                 "Cuota Hipoteca"   
-            ]
+            ])
             anio_actual = datetime.now().year
 
             if "ESCÁNER" in tipo_calc:
@@ -886,7 +886,7 @@ with tabs[4]:
                             """
                             st.session_state.generated_calc = groq_engine(p_nomina, api_key)
             
-            if "Venta" in tipo_calc:
+                if "Venta" in tipo_calc:
                 st.caption("Plusvalía Municipal + IRPF")
                 f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015)
                 p_compra = st.number_input("Precio Compra (€)", min_value=0.0)
@@ -901,7 +901,7 @@ with tabs[4]:
                         p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
                         st.session_state.generated_calc = groq_engine(p, api_key)
             
-            elif "Sueldo" in tipo_calc:
+                elif "Sueldo" in tipo_calc:
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                 bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
                 edad = st.number_input("Edad", 18, 70, 30)
@@ -1069,6 +1069,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
