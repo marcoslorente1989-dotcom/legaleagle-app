@@ -902,7 +902,7 @@ with tabs[4]:
                         ganancia = p_venta - p_compra
                         p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
                         st.session_state.generated_calc = groq_engine(p, api_key)
-                elif "Sueldo" in tipo_calc:
+            elif "Sueldo" in tipo_calc:
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                 bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
                 edad = st.number_input("Edad", 18, 70, 30)
@@ -1070,6 +1070,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
