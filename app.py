@@ -83,12 +83,6 @@ components.html("""
 # ==============================================================================
 # 2. ESTILOS CSS (V110: SOLUCIÓN FINAL CANDADO Y COLORES)
 # ==============================================================================
-/* --- ELIMINAR ESPACIO SUPERIOR --- */
-      /* Ajuste específico para el logo */
-    [data-testid="stImage"] {
-        margin-top: -20px !important;
-    }
-
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -1240,6 +1234,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
