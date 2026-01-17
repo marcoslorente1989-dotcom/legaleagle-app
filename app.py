@@ -586,7 +586,7 @@ with tabs[2]:
             st.subheader("Generador de Contratos")
             st.caption("Selecciona el tipo de contrato y rellena los datos. La IA redactará un documento legal válido en España y listo para firmar.")
             
-           tipo = st.selectbox("Documento", [
+            tipo = st.selectbox("Documento", [
                 "Alquiler Vivienda", 
                 "Préstamo entre Particulares", # NUEVA OPCIÓN
                 "Compraventa Vehículo", 
@@ -1068,6 +1068,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
