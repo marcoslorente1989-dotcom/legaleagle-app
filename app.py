@@ -68,6 +68,12 @@ components.html("""
 # ==============================================================================
 # 2. ESTILOS CSS (V110: SOLUCIÓN FINAL CANDADO Y COLORES)
 # ==============================================================================
+/* --- ELIMINAR ESPACIO SUPERIOR --- */
+      /* Ajuste específico para el logo */
+    [data-testid="stImage"] {
+        margin-top: -20px !important;
+    }
+
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -89,17 +95,16 @@ st.markdown("""
 
     /* 1. ELIMINAR ESPACIO SUPERIOR (Subir el logo) */
     .block-container {
-        padding-top: 1rem !important; /* Ajusta este número si quieres que suba más o menos */
-        padding-bottom: 0rem !important;
+        padding-top: 0.5rem !important; /* Ajusta este número si quieres que suba más o menos */
+        padding-bottom: -2rem !important;
+    }
+    [data-testid="stImage"] {
+        margin-top: -30px !important;
+        text-align: center;
     }
 
     /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
-  /* ==============================================================================
-       AJUSTES EXCLUSIVOS PARA MÓVIL (Todo en un solo bloque)
-       ============================================================================== */
- /* ==============================================================================
-       AJUSTES FINALES MÓVIL: BLOQUEO LATERAL Y ELIMINACIÓN DE SOMBRAS
-       ============================================================================== */
+
     @media only screen and (max-width: 600px) {
         
         /* 1. Bloqueo total de movimiento lateral en la raíz y contenedores */
@@ -540,7 +545,7 @@ tabs = st.tabs(["🏠 INICIO", "🔍 ANALIZAR", "✍️ CREAR CONTRATO", "⚖️
 
 with tabs[0]:
     st.markdown("<h1 style='display:none;'>LegalApp AI - Inteligencia Legal en España</h1>", unsafe_allow_html=True)
-    st.subheader("Bienvenido a legalapp.es")
+    st.subheader("Bienvenido a LegalApp")
     st.caption("Tu asistente jurídico inteligente disponible las 24 horas.")
     
     col1, col2, col3 = st.columns(3)
@@ -577,6 +582,33 @@ with tabs[0]:
         st.info("**Revisión de Alquiler**\n\nAnalizamos tu contrato de vivienda para asegurar que cumple con la nueva Ley de Vivienda.")
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
+   
+    # --- ACCESOS DIRECTOS A TRÁMITES ---
+    st.write("")
+    st.markdown("#### ⚡ Acceso Rápido a Trámites")
+    
+    col_1, col_2, col_3 = st.columns(3)
+    
+    with col_1:
+        if st.button("💰 Préstamos Particulares", use_container_width=True, help="Crear contrato de préstamo"):
+            st.components.v1.html(
+                "<script>window.parent.document.getElementById('prestamos').scrollIntoView({behavior: 'smooth'});</script>",
+                height=0
+            )
+            
+    with col_2:
+        if st.button("🏠 Revisión de Alquiler", use_container_width=True, help="Analizar contrato con IA"):
+            # Este botón redirige a la pestaña de ANALIZAR (Index 1)
+            st.session_state.current_tab = 1 # Asumiendo que controlas las pestañas con session_state
+            st.rerun()
+
+    with col_3:
+        if st.button("📉 Cálculo de Hipoteca", use_container_width=True, help="Calculadora con Euríbor real"):
+            st.components.v1.html(
+                "<script>window.parent.document.getElementById('hipoteca').scrollIntoView({behavior: 'smooth'});</script>",
+                height=0
+            )
+    st.write("---")    
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
     st.write(""); st.write("") 
@@ -730,6 +762,7 @@ with tabs[2]:
                 renta = st.number_input('Renta Mensual (€)')
                 data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
 
+            st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
             elif "Préstamo" in tipo: # NUEVO BLOQUE
                 st.info("💡 **Consejo:** Para evitar problemas con Hacienda, este contrato debe indicar si es con intereses y presentarse (exento) mediante el Modelo 600.")
                 c_p1, c_p2 = st.columns(2)
@@ -1117,6 +1150,7 @@ with tabs[4]:
                 if st.button("🧮 CALCULAR"):
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
                     
+           st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
             elif "Hipoteca" in tipo_calc:
                 st.caption("Calculadora Cuota Mensual Inteligente")
                 capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
@@ -1191,6 +1225,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
