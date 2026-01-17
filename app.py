@@ -465,23 +465,34 @@ if "analysis_done" not in st.session_state: st.session_state.analysis_done = Fal
 @st.cache_data(show_spinner=False)
 def obtener_euribor_actual():
     try:
-        # Consultamos el valor diario en una fuente pública estable
+        # Fuente: Datos del Euríbor (vía API abierta o JSON estable)
+        url = "https://api.statista.com/v1/data/..." # Ejemplo conceptual
+        # Como alternativa gratuita y 100% fiable para España:
         url = "https://www.euribor-rates.eu/es/tasas-euribor-actuales/1/euribor-tasa-12-meses/"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=5)
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Accept': 'text/html'
+        }
+        response = requests.get(url, headers=headers, timeout=10)
         
         if response.status_code == 200:
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(response.text, 'html.parser')
-            # Buscamos el valor en la tabla (ajustado a la estructura de la web)
-            valor_texto = soup.find("td", {"class": "text-right"}).text.strip()
-            # Limpiamos el texto (ej: "2,252 %" -> 2.252)
-            valor_limpio = float(valor_texto.replace('%', '').replace(',', '.').strip())
-            return valor_limpio
-        return 2.252 # Valor de respaldo si la web cambia estructura
+            # Buscamos el patrón numérico del Euríbor (ej: 2,823) en el texto bruto
+            import re
+            # Buscamos un número que tenga formato X,XXX seguido de un espacio o %
+            encontrados = re.findall(r"(\d,\d{3})", response.text)
+            if encontrados:
+                # El primer valor suele ser el actual a 12 meses
+                valor_limpio = float(encontrados[0].replace(',', '.'))
+                # Validación de seguridad: el Euribor actual no debería ser > 10 o < -1
+                if -1 < valor_limpio < 10:
+                    return valor_limpio
+        
+        return 2.252 # Respaldo si la web no responde
     except Exception as e:
         print(f"Error Euribor: {e}")
-        return 2.252 # Segundo respaldo de seguridad
+        return 2.252
+        
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -1293,6 +1304,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
