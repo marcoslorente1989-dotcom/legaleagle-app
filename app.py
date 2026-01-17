@@ -547,16 +547,10 @@ with tabs[0]:
         st.write("""
         Totalmente. Los archivos se procesan de forma cifrada y efímera. Una vez analizados, no se guardan permanentemente en nuestros servidores ni se utilizan para entrenar modelos públicos de IA.
         """)
-st.write("")
-    st.markdown("### ❓ Preguntas Frecuentes")
-    faq1, faq2 = st.columns(2)
-    with faq1:
-        with st.expander("¿Tienen validez oficial los contratos?"):
-            st.write("Sí, cumplen con el Código Civil y la LAU. Una vez firmados por ambas partes, tienen plena validez legal en España.")
-    with faq2:
-        with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
-            st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).")
-        
+     
+    with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
+            st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).")    
+   
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
     with st.container(border=False):
@@ -1135,6 +1129,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
