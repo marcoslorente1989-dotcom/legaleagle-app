@@ -12,6 +12,33 @@ import gspread
 import requests # AÑADIR AL PRINCIPIO CON LOS DEMÁS IMPORTS
 from oauth2client.service_account import ServiceAccountCredentials
 
+# --- INYECCIÓN DE CABECERA RADICAL ---
+st.markdown(
+    """
+    <script>
+        // Cambia el título de la pestaña inmediatamente
+        window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
+        
+        // Función para sobreescribir los metadatos que WhatsApp lee
+        function fixMeta() {
+            const metas = window.parent.document.getElementsByTagName('meta');
+            for (let i = 0; i < metas.length; i++) {
+                if (metas[i].getAttribute('property') === 'og:title' || metas[i].getAttribute('name') === 'title') {
+                    metas[i].content = "LegalApp AI - Tu Abogado 24h";
+                }
+                if (metas[i].getAttribute('property') === 'og:description' || metas[i].getAttribute('name') === 'description') {
+                    metas[i].content = "Analiza contratos y genera documentos legales gratis con IA en España.";
+                }
+            }
+        }
+        // Ejecutar varias veces durante la carga para asegurar que Streamlit no lo cambie de nuevo
+        fixMeta();
+        setInterval(fixMeta, 500); 
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
 # ==============================================================================
 # 1. CONFIGURACIÓN Y CLAVES
 # ==============================================================================
@@ -1229,6 +1256,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
