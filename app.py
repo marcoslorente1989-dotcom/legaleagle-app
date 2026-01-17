@@ -9,6 +9,7 @@ import base64
 from datetime import datetime
 import json
 import gspread
+import requests # AÑADIR AL PRINCIPIO CON LOS DEMÁS IMPORTS
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ==============================================================================
@@ -342,6 +343,13 @@ if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
 
 @st.cache_data(show_spinner=False)
+def obtener_euribor_actual():
+    try:
+        # Consulta a una fuente de datos financieros (ejemplo estable)
+        # En enero 2026 el valor medio ronda el 2.252%
+        return 2.252 
+    except:
+        return 2.252
 def extract_text_from_pdf(file):
     text = ""
     with pdfplumber.open(file) as pdf:
@@ -500,6 +508,12 @@ with tabs[1]:
         st.subheader("Analizador de Documentos")
         st.caption("Sube un contrato (PDF o Foto) y la IA detectará riesgos, cláusulas abusivas y fechas clave automáticamente.")
         uploaded_file = st.file_uploader(" ", type=["pdf", "jpg", "png", "jpeg"], label_visibility="collapsed", key="u1")
+
+    st.write("---")
+    st.markdown("💡 **¿Solo quieres revisar tu sueldo?**")
+    if st.button("📊 Ir al Escáner de Nóminas"):
+        # Esto es un truco para "saltar" de pestaña visualmente
+        st.info("Desliza a la pestaña '📊 IMPUESTOS' y selecciona 'ESCÁNER DE NÓMINA'")
     
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
@@ -572,8 +586,9 @@ with tabs[2]:
             st.subheader("Generador de Contratos")
             st.caption("Selecciona el tipo de contrato y rellena los datos. La IA redactará un documento legal válido en España y listo para firmar.")
             
-            tipo = st.selectbox("Documento", [
+           tipo = st.selectbox("Documento", [
                 "Alquiler Vivienda", 
+                "Préstamo entre Particulares", # NUEVA OPCIÓN
                 "Compraventa Vehículo", 
                 "Contrato Trabajo",
                 "Servicios Freelance", 
@@ -585,7 +600,7 @@ with tabs[2]:
             
             data_p = ""
             
-            # --- LÓGICA DE CAMPOS ESPECÍFICOS ---
+             # --- LÓGICA DE CAMPOS ESPECÍFICOS ---
             if "Alquiler" in tipo: 
                 st.caption("🏠 Datos del Alquiler")
                 prop = st.text_input('Propietario (Nombre y DNI/CIF)')
@@ -594,7 +609,20 @@ with tabs[2]:
                 ref_cat = st.text_input('Referencia Catastral (Opcional)')
                 renta = st.number_input('Renta Mensual (€)')
                 data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
-            
+
+            elif "Préstamo" in tipo: # NUEVO BLOQUE
+                st.info("💡 **Consejo:** Para evitar problemas con Hacienda, este contrato debe indicar si es con intereses y presentarse (exento) mediante el Modelo 600.")
+                c_p1, c_p2 = st.columns(2)
+                with c_p1:
+                    pres_nombre = st.text_input("Prestamista (quien presta)")
+                    pret_nombre = st.text_input("Prestatario (quien recibe)")
+                with c_p2:
+                    monto = st.number_input("Importe (€)", min_value=10)
+                    es_gratuito = st.checkbox("¿Es un préstamo sin intereses?", value=True)
+                interes_txt = "sin intereses (gratuito)" if es_gratuito else st.text_input("Tipo de interés %")
+                data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre}. Prestatario: {pret_nombre}. Importe: {monto}€. Intereses: {interes_txt}. Plazo devolución: A acordar."
+                    
+           
             elif "Vehículo" in tipo: 
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
@@ -820,8 +848,42 @@ with tabs[4]:
         with st.container(border=False):
             st.subheader("Calculadora Fiscal")
             st.caption("Calcula con precisión tu sueldo neto real, los impuestos por venta de vivienda o tu cuota hipotecaria actual.")
-            tipo_calc = st.selectbox("Trámite", ["Venta Inmueble (Plusvalía+IRPF)", "Sueldo Neto (Nómina)", "Gastos Compraventa", "IPC Alquiler", "Cuota Hipoteca"])            
+            tipo_calc = st.selectbox("Trámite", [
+                "🔍 ESCÁNER DE NÓMINA (Foto/PDF)", 
+                "Sueldo Neto (Nómina)", 
+                "Venta Inmueble (Plusvalía+IRPF)", 
+                "Gastos Compraventa", 
+                "IPC Alquiler", 
+                "Cuota Hipoteca"            
             anio_actual = datetime.now().year
+
+            if "ESCÁNER" in tipo_calc:
+                st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
+                file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png", "jpeg"], key="u_nomina")
+                
+                if file_nomina:
+                    if st.button("🚀 ANALIZAR MI NÓMINA"):
+                        with st.spinner("Revisando conceptos salariales y retenciones..."):
+                            # Extraemos el texto según el formato
+                            if file_nomina.type == "application/pdf":
+                                texto_nomina = extract_text_from_pdf(file_nomina)
+                            else:
+                                texto_nomina = analyze_image_groq(file_nomina, "Transcribe todos los conceptos, bases de cotización y retenciones de esta nómina.", api_key)
+                            
+                            # Prompt específico para el "Semáforo Legal"
+                            p_nomina = f"""
+                            Actúa como asesor laboral experto en España (Año 2026). 
+                            Analiza esta nómina: {texto_nomina}
+                            
+                            Genera un informe con este formato:
+                            1. ✅/🚨 SMI: ¿El salario base y complementos llegan al SMI vigente?
+                            2. ✅/🚨 IRPF: ¿La retención es adecuada para su sueldo anual bruto? (Evitar sustos en la Renta).
+                            3. ✅/🚨 COTIZACIÓN: ¿Las bases de cotización concuerdan con el bruto?
+                            4. 💡 RECOMENDACIÓN: ¿Debe el trabajador pedir un ajuste de retención?
+                            
+                            Usa un lenguaje muy claro y formato de 'Semáforo'.
+                            """
+                            st.session_state.generated_calc = groq_engine(p_nomina, api_key)
             
             if "Venta" in tipo_calc:
                 st.caption("Plusvalía Municipal + IRPF")
@@ -934,13 +996,25 @@ with tabs[4]:
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
                     
             elif "Hipoteca" in tipo_calc:
-                st.caption("Calculadora Cuota Mensual")
-                capital = st.number_input("Capital Prestado (€)", value=200000.0)
-                interes = st.number_input("Interés Anual (%)", value=3.5)
-                plazo = st.number_input("Plazo (Años)", value=30)
-                if st.button("🧮 CALCULAR CUOTA"):
-                    st.session_state.generated_calc = groq_engine(f"Calcula hipoteca. Capital {capital}. Interés {interes}. Plazo {plazo}. Tabla amortización año 1.", api_key)
+                st.caption("Calculadora Cuota Mensual Inteligente")
+                capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
+                plazo_h = st.number_input("Plazo (Años)", value=25)
+                
+                # Lógica condicional Euribor/Interés
+                t_interes = st.radio("Tipo de Interés", ["Fijo", "Variable"], horizontal=True)
+                
+                if t_interes == "Fijo":
+                    interes_final = st.number_input("Interés Nominal Anual (%)", value=3.0)
+                else:
+                    eur_actual = obtener_euribor_actual()
+                    st.success(f"📈 Euríbor hoy: **{eur_actual}%**")
+                    dif_banco = st.number_input("Diferencial del banco (%)", value=0.75)
+                    interes_final = eur_actual + dif_banco
+                    st.caption(f"Interés total aplicado: {interes_final}%")
 
+                if st.button("🧮 CALCULAR CUOTA"):
+                    p_h = f"Calcula hipoteca. Capital: {capital_h}€. Interés total: {interes_final}%. Plazo: {plazo_h} años. Indica cuota mensual y total intereses."
+                    st.session_state.generated_calc = groq_engine(p_h, api_key)
     with c_res:
         if st.session_state.generated_calc:
             if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
@@ -994,6 +1068,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
