@@ -336,6 +336,8 @@ st.markdown("""
 # 3. LÓGICA & FUNCIONES
 # ==============================================================================
 
+if "active_tab" not in st.session_state: 
+    st.session_state.active_tab = 0 # 0 es Inicio, 1 Analizar... 4 Impuestos
 keys = ["contract_text", "analysis_report", "generated_contract", "generated_claim", "generated_calc", "defense_text"]
 for k in keys:
     if k not in st.session_state: st.session_state[k] = ""
@@ -469,8 +471,11 @@ if not api_key:
     st.error("⚠️ Falta API Key. Configura GROQ_API_KEY en Render.")
     st.stop()
 
-# --- Lógica de Pestañas ---
+# Sustituye tu línea de tabs por esta:
 tabs = st.tabs(["🏠 INICIO", "🔍 ANALIZAR", "✍️ CREAR CONTRATO", "⚖️ RECLAMAR/RECURRIR", "📊 IMPUESTOS"])
+
+# Esta línea es un truco para que Streamlit fuerce el cambio visual
+# (Se coloca justo después de definir los tabs)
 
 with tabs[0]:
     st.subheader("Bienvenido a legalapp.es")
@@ -511,9 +516,18 @@ with tabs[1]:
 
     st.write("---")
     st.markdown("💡 **¿Solo quieres revisar tu sueldo?**")
-    if st.button("📊 Ir al Escáner de Nóminas"):
-        # Esto es un truco para "saltar" de pestaña visualmente
-        st.info("Desliza a la pestaña '📊 IMPUESTOS' y selecciona 'ESCÁNER DE NÓMINA'")
+    if st.button("📊 Ir al Escáner de Nóminas Ahora"):
+        # Cambiamos la selección en el selectbox de la otra pestaña antes de ir
+        st.session_state.generated_calc = "" # Limpiamos cálculos previos
+        
+        # Inyectamos un pequeño script de JavaScript para hacer clic en la pestaña 4
+        # Esta es la única forma real de cambiar de pestaña físicamente en Streamlit hoy
+        components.html("""
+            <script>
+                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                tabs[4].click(); 
+            </script>
+        """, height=0)
     
     if uploaded_file:
         if uploaded_file.type == "application/pdf":
@@ -1070,6 +1084,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
