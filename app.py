@@ -647,23 +647,33 @@ with tabs[0]:
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
-   # --- ACCESOS DIRECTOS A TRÁMITES (CORREGIDO) ---
+  # --- ACCESOS DIRECTOS A TRÁMITES (CON AUTO-SCROLL ARRIBA) ---
     st.write("")
-    
+       
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
+    # El script 'window.parent.window.scrollTo(0,0)' es el que fuerza la subida
+    
     with c_acc1:
-        if st.button("💰 Préstamos Particulares", key="acc_pres"):
-            components.html("""<script>window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[2].click();</script>""", height=0)
+        if st.button("💰 Préstamos", key="btn_p1_top"):
+            components.html("""<script>
+                window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[2].click();
+                window.parent.window.scrollTo(0, 0);
+            </script>""", height=0)
             
     with c_acc2:
-        if st.button("🏠 Revisión de Alquiler", key="acc_alq"):
-            components.html("""<script>window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[1].click();</script>""", height=0)
+        if st.button("🏠 Alquiler", key="btn_p2_top"):
+            components.html("""<script>
+                window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[1].click();
+                window.parent.window.scrollTo(0, 0);
+            </script>""", height=0)
 
     with c_acc3:
-        if st.button("📉 Cálculo de Hipoteca", key="acc_hip"):
-            components.html("""<script>window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[4].click();</script>""", height=0)
-   
+        if st.button("📉 Hipoteca", key="btn_p3_top"):
+            components.html("""<script>
+                window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[4].click();
+                window.parent.window.scrollTo(0, 0);
+            </script>""", height=0)
     st.write("---")    
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
@@ -1283,6 +1293,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
