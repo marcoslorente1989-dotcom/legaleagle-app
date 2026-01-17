@@ -26,28 +26,10 @@ if not api_key:
     except: pass
 
 st.set_page_config(
-    page_title="LegalEagle AI",
+    page_title="LegalApp AI - Tu Abogado 24h", # <--- CAMBIA LegalEagle por esto
     page_icon="🦅",
     layout="wide",
     initial_sidebar_state="collapsed"
-)
-st.markdown(
-    """
-    <head>
-        <title>LegalApp AI - Tu Abogado 24h</title>
-        <meta name="description" content="Analiza contratos y calcula tus impuestos con IA en España.">
-        
-        <meta property="og:title" content="LegalApp AI - Inteligencia Legal en España">
-        <meta property="og:description" content="Analiza contratos, redacta documentos y calcula tu sueldo neto al instante.">
-        <meta property="og:url" content="https://legalapp.es">
-        <meta property="og:type" content="website">
-        
-        <meta http-equiv="cache-control" content="no-cache">
-        <meta http-equiv="expires" content="0">
-        <meta http-equiv="pragma" content="no-cache">
-    </head>
-    """,
-    unsafe_allow_html=True
 )
 
 # Textos ocultos para SEO/Idioma
@@ -543,6 +525,28 @@ with tabs[0]:
     col_wa_1, col_wa_2, col_wa_3 = st.columns([3, 2, 3])
     with col_wa_2:
         st.link_button("📲Compartir por WhatsApp", url_wa, use_container_width=True)
+
+# --- FILA 4: PREGUNTAS FRECUENTES (FAQ) ---
+    st.write("")
+    st.markdown("### ❓ Preguntas Frecuentes")
+    
+    with st.expander("¿Tienen validez legal los documentos generados?"):
+        st.write("""
+        Sí. Los documentos generados por LegalApp AI siguen la normativa vigente en España (LAU, Código Civil, Estatuto de los Trabajadores). 
+        Utilizamos modelos de lenguaje entrenados específicamente en derecho español para asegurar que todas las cláusulas necesarias estén presentes.
+        """)
+        
+    with st.expander("¿Cómo registro mi contrato ante las autoridades?"):
+        st.write("""
+        Dependiendo del contrato:
+        - **Alquiler:** Debe depositarse la fianza en el organismo autonómico correspondiente (ej. IVIMA en Madrid).
+        - **Préstamo:** Debe presentarse el Modelo 600 en Hacienda (está exento de pago).
+        """)
+
+    with st.expander("¿Es seguro subir mis documentos personales?"):
+        st.write("""
+        Totalmente. Los archivos se procesan de forma cifrada y efímera. Una vez analizados, no se guardan permanentemente en nuestros servidores ni se utilizan para entrenar modelos públicos de IA.
+        """)
         
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
@@ -1121,6 +1125,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
