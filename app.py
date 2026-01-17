@@ -854,7 +854,8 @@ with tabs[4]:
                 "Venta Inmueble (Plusvalía+IRPF)", 
                 "Gastos Compraventa", 
                 "IPC Alquiler", 
-                "Cuota Hipoteca"            
+                "Cuota Hipoteca"   
+            ]
             anio_actual = datetime.now().year
 
             if "ESCÁNER" in tipo_calc:
@@ -1068,6 +1069,7 @@ with st.container():
                 if st.button("🔄 Reiniciar Web"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
