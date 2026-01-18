@@ -1245,7 +1245,7 @@ with tabs[4]:
             st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
 
             if "RENTA" in tipo_calc:
-                st.info("💡 **¿Sabías que...?** Cada año se pierden millones de euros en deducciones autonómicas no reclamadas. Selecciona tu perfil y encuéntralas.")
+                st.info("💡 **Buscador de Ahorro:** Selecciona solo lo que cumples. La IA buscará las deducciones exactas para ti en tu Comunidad.")
                 
                 ccaa = st.selectbox("📍 Tu Comunidad Autónoma", [
                     "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", 
@@ -1253,7 +1253,7 @@ with tabs[4]:
                     "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"
                 ])
                 
-                st.markdown("👇 **Marca lo que aplique a tu situación en 2024/25:**")
+                st.markdown("👇 **Marca SOLO lo que aplique a tu situación:**")
                 
                 c_chk1, c_chk2 = st.columns(2)
                 with c_chk1:
@@ -1267,11 +1267,29 @@ with tabs[4]:
                     rural = st.checkbox("Vivo en zona despoblada/Rural")
                     eficiencia = st.checkbox("Obras eficiencia energética")
 
-                otros = st.text_input("Otros gastos (Ej: Gimnasio, Transporte, Ayuda doméstica...)")
+                otros = st.text_input("Otros (Ej: Transporte, Ayuda doméstica...)")
                 
-                if st.button("🔍 BUSCAR DEDUCCIONES"):
-                    perfil = f"Residente en {ccaa}. Situación: {'Hijos, ' if hijos else ''}{'Alquiler, ' if alquiler else ''}{'Hipoteca antigua, ' if hipoteca else ''}{'Discapacidad, ' if discapacidad else ''}{'Donaciones, ' if donaciones else ''}{'Gastos escolares, ' if idiomas else ''}{'Zona rural, ' if rural else ''}{'Obras eficiencia, ' if eficiencia else ''}. Otros: {otros}."
+                if st.button("🔍 BUSCAR MIS DEDUCCIONES"):
+                    # 1. Construimos el perfil SOLO con lo marcado
+                    situaciones = []
+                    if hijos: situaciones.append("Tiene Hijos (Buscar: nacimiento, adopción, material escolar, guardería)")
+                    if alquiler: situaciones.append("Vive de Alquiler (Buscar: deducción alquiler vivienda habitual)")
+                    if hipoteca: situaciones.append("Paga Hipoteca (Buscar: deducción inversión vivienda habitual)")
+                    if discapacidad: situaciones.append("Tiene Discapacidad")
+                    if donaciones: situaciones.append("Hace Donaciones")
+                    if idiomas: situaciones.append("Gastos Educación/Idiomas")
+                    if rural: situaciones.append("Residencia en zona Rural/Despoblada")
+                    if eficiencia: situaciones.append("Obras Eficiencia Energética")
+                    if otros: situaciones.append(f"Otros gastos: {otros}")
                     
+                    # Definimos perfil_txt DENTRO del botón
+                    if not situaciones:
+                        st.warning("⚠️ Por favor, marca al menos una casilla para buscar deducciones específicas.")
+                        perfil_txt = "Contribuyente genérico sin cargas familiares ni vivienda."
+                    else:
+                        perfil_txt = ", ".join(situaciones)
+
+                    # 2. Prompt DENTRO del botón (Aquí estaba el fallo antes)
                     prompt_renta = f"""
                     Actúa como Asesor Fiscal experto en IRPF España (Campaña 2024/2025).
                     
@@ -1279,7 +1297,7 @@ with tabs[4]:
                     - Residente en: {ccaa}
                     - SITUACIONES CONFIRMADAS: {perfil_txt}
                     
-                    INSTRUCCIONES ESTRICTAS:
+                    INSTRUCCIONES STRICTAS:
                     1. Lista ÚNICAMENTE las deducciones que apliquen a las 'SITUACIONES CONFIRMADAS'.
                     2. REGLA DE ORO: Si el usuario NO ha marcado 'Alquiler', NO hables de alquiler. Si no ha marcado 'Discapacidad', NO hables de discapacidad. Cíñete a lo marcado.
                     3. Para cada deducción encontrada: Nombre, Cuantía aprox y Casilla/Requisito clave.
@@ -1507,6 +1525,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
