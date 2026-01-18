@@ -9,62 +9,24 @@ import base64
 from datetime import datetime
 import json
 import gspread
-import requests # AÑADIR AL PRINCIPIO CON LOS DEMÁS IMPORTS
+import requests 
 from oauth2client.service_account import ServiceAccountCredentials
-
-# --- INYECCIÓN DE CABECERA RADICAL ---
-st.markdown(
-    """
-    <script>
-
-    /* --- ELIMINAR RESALTADO NEGRO/GRIS EN MÓVIL --- */
-    * {
-        -webkit-tap-highlight-color: transparent !important;
-        -webkit-touch-callout: none !important;
-    }
-
-    /* Ajuste específico para botones y pestañas */
-    button, div[data-baseweb="tab"], .stButton > button {
-        outline: none !important;
-        box-shadow: none !important;
-    }
-    
-    /* Evitar que Streamlit oscurezca el contenedor al interactuar */
-    .stApp > header, .main {
-        background-color: transparent !important;
-    }
-        // Cambia el título de la pestaña inmediatamente
-        window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
-        
-        // Función para sobreescribir los metadatos que WhatsApp lee
-        function fixMeta() {
-            const metas = window.parent.document.getElementsByTagName('meta');
-            for (let i = 0; i < metas.length; i++) {
-                if (metas[i].getAttribute('property') === 'og:title' || metas[i].getAttribute('name') === 'title') {
-                    metas[i].content = "LegalApp AI - Tu Abogado 24h";
-                }
-                if (metas[i].getAttribute('property') === 'og:description' || metas[i].getAttribute('name') === 'description') {
-                    metas[i].content = "Analiza contratos y genera documentos legales gratis con IA en España.";
-                }
-            }
-        }
-        // Ejecutar varias veces durante la carga para asegurar que Streamlit no lo cambie de nuevo
-        fixMeta();
-        setInterval(fixMeta, 500); 
-    </script>
-    """,
-    unsafe_allow_html=True
-)
+import re # IMPORTANTE: Necesario para el nuevo Euribor
 
 # ==============================================================================
-# 1. CONFIGURACIÓN Y CLAVES
+# 1. CONFIGURACIÓN Y CLAVES (OBLIGATORIO PRIMERO)
 # ==============================================================================
 
 st.set_page_config(
-    page_title="LegalApp AI - Tu Abogado 24h", # <--- CAMBIA LegalEagle por esto
+    page_title="LegalApp AI - Tu Abogado 24h",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="collapsed",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': "LegalApp AI - Inteligencia Legal en España"
+    }
 )
 
 # Intentar leer de Variable de Entorno (Render) o Secrets (Local)
@@ -76,34 +38,142 @@ if not api_key:
             api_key = st.secrets.get("GROQ_API_KEY")
     except: pass
 
-# --- ESTO DEBE IR ANTES DE TODO LO DEMÁS ---
+# ==============================================================================
+# 2. SCRIPTS Y ESTILOS (SEPARADOS)
+# ==============================================================================
+
+# --- A. LÓGICA JAVASCRIPT (SOLO CÓDIGO) ---
 st.markdown(
-    f"""
+    """
     <script>
+        // 1. Icono y Título
         var link = window.parent.document.querySelector("link[rel*='icon']") || window.parent.document.createElement('link');
         link.type = 'image/x-icon';
         link.rel = 'shortcut icon';
         link.href = 'https://legalapp.es/logo.png';
         window.parent.document.getElementsByTagName('head')[0].appendChild(link);
         window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
+        
+        // 2. Función para sobreescribir los metadatos (WhatsApp)
+        function fixMeta() {
+            const metas = window.parent.document.getElementsByTagName('meta');
+            for (let i = 0; i < metas.length; i++) {
+                if (metas[i].getAttribute('property') === 'og:title' || metas[i].getAttribute('name') === 'title') {
+                    metas[i].content = "LegalApp AI - Tu Abogado 24h";
+                }
+                if (metas[i].getAttribute('property') === 'og:description' || metas[i].getAttribute('name') === 'description') {
+                    metas[i].content = "Analiza contratos y genera documentos legales gratis con IA en España.";
+                }
+            }
+        }
+        fixMeta();
+        setInterval(fixMeta, 500); 
     </script>
     """,
     unsafe_allow_html=True
 )
 
-# --- FORZAR TÍTULO PARA RASTREADORES ---
-components.html(
-    """
-    <script>
-        window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
-        var meta = window.parent.document.createElement('meta');
-        meta.setAttribute('property', 'og:title');
-        meta.content = "LegalApp AI - Tu Abogado 24h";
-        window.parent.document.getElementsByTagName('head')[0].appendChild(meta);
-    </script>
-    """,
-    height=0
-)
+# --- B. ESTILOS CSS (SOLO DISEÑO) ---
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
+
+    /* 1. ELIMINAR RESALTADO NEGRO/GRIS EN MÓVIL (CRÍTICO) */
+    * {
+        -webkit-tap-highlight-color: transparent !important;
+        -webkit-touch-callout: none !important;
+        outline: none !important;
+    }
+    
+    /* 2. SCROLLBAR INVISIBLE */
+    ::-webkit-scrollbar { display: none; }
+    .stApp { scrollbar-width: none; -ms-overflow-style: none; }
+
+    /* 3. LOGO Y ESPACIOS (AJUSTE FINAL) */
+    .block-container {
+        padding-top: 0rem !important; 
+        margin-top: -6.5rem !important; /* Subida agresiva */
+    }
+
+    [data-testid="stImage"] {
+        margin-top: 0px !important;
+        margin-bottom: -60px !important;
+        display: flex;
+        justify-content: center;
+        transform: scale(0.7); /* Logo un poco más pequeño para móviles */
+    }
+    
+    /* Ocultar header nativo */
+    header, [data-testid="stHeader"] { display: none !important; }
+
+    /* 4. UNIFICAR BOTONES (AZULES Y GRANDES) */
+    div.stButton > button {
+        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: white !important;
+        border-radius: 30px !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+        font-weight: bold !important;
+        height: 50px !important;
+        width: 100% !important;
+        transition: 0.2s ease;
+    }
+    div.stButton > button:hover { transform: scale(1.02) !important; }
+
+    /* 5. ARREGLO PESTAÑAS MÓVIL (2x2) */
+    @media only screen and (max-width: 600px) {
+        .stApp, .main, .block-container { overflow-x: hidden !important; width: 100vw !important; }
+        div[data-baseweb="tab-list"] { 
+            display: grid !important; 
+            grid-template-columns: 1fr 1fr !important; 
+            gap: 10px !important; 
+            padding: 10px !important; 
+        }
+        button[data-baseweb="tab"]:first-child { 
+            grid-column: span 2 !important; 
+            width: 92% !important; 
+            margin: 0 auto 10px auto !important; 
+        }
+        button[data-baseweb="tab"] {
+            border-radius: 25px !important;
+            background-color: rgba(255, 255, 255, 0.12) !important;
+            font-size: 11px !important;
+        }
+    }
+
+    /* 6. ESTILOS GENERALES (FONDO Y TEXTO) */
+    .stApp { background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%); font-family: 'Inter', sans-serif; }
+    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stCaption { color: #ffffff !important; }
+
+    /* Inputs Blancos */
+    .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+        background-color: #ffffff !important; color: #000000 !important; border-radius: 12px;
+    }
+    ul[data-baseweb="menu"], div[data-baseweb="popover"] { background-color: #ffffff !important; }
+    ul[data-baseweb="menu"] li { color: #000000 !important; }
+    div[data-baseweb="select"] span { color: #000000 !important; }
+
+    /* 7. FAQ TRANSPARENTE */
+    .stExpander {
+        background-color: transparent !important;
+        border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        border-radius: 12px !important;
+        margin-bottom: 10px !important;
+    }
+    .stExpander details summary p { color: #ffffff !important; }
+    .stExpander details summary:hover { background-color: transparent !important; }
+    .stExpander details div { color: #ffffff !important; }
+
+    /* 8. CAJA CONTRATO */
+    .contract-box {
+        font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
+        padding: 30px; border-radius: 10px; color: #000000 !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .contract-box * { color: #000000 !important; }
+</style>
+""", unsafe_allow_html=True)
 
 # Textos ocultos para SEO/Idioma
 st.markdown("""
@@ -665,41 +735,60 @@ with tabs[0]:
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
- # --- ACCESOS DIRECTOS A TRÁMITES (FORZANDO SUBIDA TOTAL) ---
+ # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL FIXED) ---
+    # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL NUCLEAR V2) ---
     st.write("")
     st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
     
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-    # Este script busca el contenedor '.main' que es el que tiene el scroll en Streamlit
-    script_scroll_top = """
+    # Script JavaScript Mejorado: Dispara el scroll dos veces para asegurar
+    script_scroll_fix = """
         <script>
-            var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-            var mainContent = window.parent.document.querySelector('.main');
-            
             function goToTab(index) {
-                tabs[index].click();
-                if (mainContent) {
-                    mainContent.scrollTo({top: 0, behavior: 'auto'});
+                // 1. Hacer clic en la pestaña
+                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                if (tabs[index]) {
+                    tabs[index].click();
                 }
-                window.parent.window.scrollTo(0, 0);
+                
+                // 2. Definir los contenedores de scroll
+                var containers = [
+                    window.parent.document.querySelector('section[data-testid="stAppViewContainer"]'),
+                    window.parent.document.documentElement,
+                    window.parent.document.body,
+                    window.parent.window
+                ];
+                
+                // 3. Función de subida forzada
+                function forceScrollTop() {
+                    containers.forEach(el => {
+                        if (el) {
+                            try { el.scrollTo({top: 0, left: 0, behavior: 'instant'}); } catch(e){}
+                            try { el.scrollTop = 0; } catch(e){}
+                        }
+                    });
+                }
+
+                // 4. Ejecutar inmediatamente y REPETIR a los 50ms para vencer a Streamlit
+                forceScrollTop();
+                setTimeout(forceScrollTop, 50);
+                setTimeout(forceScrollTop, 100);
             }
         </script>
     """
 
     with c_acc1:
-        if st.button("💰 Préstamos", key="btn_acc_p1"):
-            components.html(script_scroll_top + "<script>goToTab(2);</script>", height=0)
+        if st.button("💰 Préstamos", key="btn_q1"):
+            components.html(script_scroll_fix + "<script>goToTab(2);</script>", height=0)
             
     with c_acc2:
-        if st.button("🏠 Alquiler", key="btn_acc_p2"):
-            components.html(script_scroll_top + "<script>goToTab(1);</script>", height=0)
+        if st.button("🏠 Alquiler", key="btn_q2"):
+            components.html(script_scroll_fix + "<script>goToTab(1);</script>", height=0)
 
     with c_acc3:
-        if st.button("📉 Hipoteca", key="btn_acc_p3"):
-            components.html(script_scroll_top + "<script>goToTab(4);</script>", height=0)
-        
-    st.write("---")    
+        if st.button("📉 Hipoteca", key="btn_q3"):
+            components.html(script_scroll_fix + "<script>goToTab(4);</script>", height=0)
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
     st.write(""); st.write("") 
@@ -1318,58 +1407,4 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
