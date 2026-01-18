@@ -571,6 +571,9 @@ for k in keys:
     if k not in st.session_state: st.session_state[k] = ""
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
+def limpiar_cache_reclamacion():
+    """Borra el resultado de la reclamación al cambiar de modo"""
+    st.session_state.generated_claim = ""    
 
 @st.cache_data(ttl=3600) # Se actualiza cada hora
 def obtener_euribor_actual():
@@ -1137,29 +1140,20 @@ with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. INICIALIZAR RASTREADOR DE CAMBIOS
-    if "last_tab3_mode" not in st.session_state:
-        st.session_state.last_tab3_mode = "Selecciona..."
-
-    # 2. SELECTOR
-    modo_seleccionado = st.selectbox(
+    # 1. SELECTOR CON LIMPIEZA AUTOMÁTICA
+    # Usamos on_change para borrar el resultado anterior al cambiar de opción
+    modo = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
             "Selecciona una opción...", 
             "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
-            "🛡️ Responder Carta (Vecinos, Seguros...)", 
-            "👮 Recurrir Multa (Tráfico DGT/Ayto)"
+            "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
+            "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        key="sb_tab3_mode"
+        index=0,
+        on_change=limpiar_cache_reclamacion # <--- AHORA SÍ FUNCIONARÁ PORQUE LA DEFINIMOS ARRIBA
     )
-
-    # 3. LÓGICA "NUCLEAR": SI CAMBIA LA OPCIÓN -> BORRAR Y RECARGAR
-    # Esto garantiza que JAMÁS se mezclen las pantallas.
-    if st.session_state.last_tab3_mode != modo_seleccionado:
-        st.session_state.generated_claim = ""       # Borrar texto generado
-        st.session_state.last_tab3_mode = modo_seleccionado # Actualizar memoria
-        st.rerun() # <--- LA CLAVE: Reinicia la app al instante con la pantalla limpia
-
+    
     c_rec, c_doc = st.columns([1, 1.3])
     
     # =========================================================
@@ -1633,6 +1627,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
