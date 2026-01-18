@@ -794,8 +794,8 @@ with tabs[0]:
         st.info("**Revisión de Alquiler**\n\nAnalizamos tu contrato de vivienda para asegurar que cumple con la nueva Ley de Vivienda.")
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
-   
-   
+    
+    
 # --- ACCESOS DIRECTOS A TRÁMITES (CORREGIDO Y UNIFICADO) ---
     st.write("")
     st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
@@ -871,10 +871,10 @@ with tabs[0]:
         st.write("""
         Totalmente. Los archivos se procesan de forma cifrada y efímera. Una vez analizados, no se guardan permanentemente en nuestros servidores ni se utilizan para entrenar modelos públicos de IA.
         """)
-     
+      
     with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
             st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).")    
-   
+    
 # --- TAB 1: ANALIZADOR ---
 with tabs[1]:
     with st.container(border=False):
@@ -1028,7 +1028,7 @@ with tabs[2]:
                 
                 data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre}. Prestatario: {pret_nombre}. Importe Principal: {monto}€. Plazo: {plazo_meses} meses. CONDICIONES ECONÓMICAS EXACTAS: {detalles_pago}. Incluir cuadro de amortización si es posible."
                     
-           
+            
             elif "Vehículo" in tipo: 
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
@@ -1314,7 +1314,7 @@ with tabs[4]:
                 "Venta Inmueble (Plusvalía+IRPF)", 
                 "Gastos Compraventa", 
                 "IPC Alquiler", 
-                "Cuota Hipoteca"   
+                "Cuota Hipoteca"    
             ])
             anio_actual = datetime.now().year
             st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
@@ -1522,10 +1522,10 @@ with tabs[4]:
                         st.session_state.generated_calc = html_nomina
 
                 if st.session_state.generated_calc:
-                     st.write("")
-                     if st.button("🔄 Calcular de nuevo", use_container_width=True):
-                         st.session_state.generated_calc = ""
-                         st.rerun()
+                      st.write("")
+                      if st.button("🔄 Calcular de nuevo", use_container_width=True):
+                          st.session_state.generated_calc = ""
+                          st.rerun()
 
             elif "Compraventa" in tipo_calc:
                 precio = st.number_input("Precio (€)", 150000.0)
@@ -1540,7 +1540,7 @@ with tabs[4]:
                 if st.button("🧮 CALCULAR"):
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
                     
-           
+            
             elif "Hipoteca" in tipo_calc:
                 st.caption("Calculadora Cuota Mensual Inteligente")
                 capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
@@ -1615,21 +1615,3 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
