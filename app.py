@@ -571,9 +571,16 @@ for k in keys:
     if k not in st.session_state: st.session_state[k] = ""
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
+
+# --- FUNCIÓN DE LIMPIEZA AGRESIVA (PEGAR ARRIBA) ---
+def nukear_memoria_reclamacion():
+    """Borra cualquier rastro de texto generado en la pestaña 3"""
+    st.session_state.generated_claim = ""
+
 def limpiar_cache_reclamacion():
     """Borra el resultado de la reclamación al cambiar de modo"""
-    st.session_state.generated_claim = ""    
+    st.session_state.generated_claim = ""  
+    
 
 @st.cache_data(ttl=3600) # Se actualiza cada hora
 def obtener_euribor_actual():
@@ -1136,16 +1143,13 @@ with tabs[2]:
                         st.success("Hecho")
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
+# --- TAB 3: RECLAMAR / RECURRIR (CON LIMPIEZA AGRESIVA) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. Inicializar las 3 memorias independientes si no existen
-    if "res_burofax" not in st.session_state: st.session_state.res_burofax = ""
-    if "res_carta" not in st.session_state: st.session_state.res_carta = ""
-    if "res_multa" not in st.session_state: st.session_state.res_multa = ""
-
-    # 2. SELECTOR
+    # 1. SELECTOR CON DETONADOR DE LIMPIEZA
+    # Al cambiar la opción, se ejecuta 'nukear_memoria_reclamacion' inmediatamente.
     modo = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
@@ -1153,7 +1157,9 @@ with tabs[3]:
             "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
-        ]
+        ],
+        index=0,
+        on_change=nukear_memoria_reclamacion # <--- AQUÍ ESTÁ LA CLAVE
     )
     
     c_rec, c_doc = st.columns([1, 1.3])
@@ -1629,6 +1635,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
