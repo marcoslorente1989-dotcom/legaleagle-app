@@ -766,19 +766,19 @@ with tabs[0]:
         st.markdown("#### 🔍 Analizar")
         st.write("Detecta cláusulas abusivas y riesgos en tus contratos o nóminas.")
         if st.button("Empezar Análisis", key="btn_ir_analizar"):
-            components.html("<script>window.parent.document.querySelectorAll('button[data-baseweb=\"tab\"]')[1].click();</script>", height=0)
+            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
         
     with col2:
         st.markdown("#### ✍️ Crear")
         st.write("Genera contratos de alquiler, préstamos o trabajo listos para firmar.")
         if st.button("Redactar Contrato", key="btn_ir_crear"):
-            components.html("<script>window.parent.document.querySelectorAll('button[data-baseweb=\"tab\"]')[2].click();</script>", height=0)
+            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
         
     with col3:
         st.markdown("#### 📊 Impuestos")
         st.write("Calcula tu sueldo neto, hipoteca o impuestos por venta de vivienda.")
         if st.button("Calcular ahora", key="btn_ir_impuestos"):
-            components.html("<script>window.parent.document.querySelectorAll('button[data-baseweb=\"tab\"]')[4].click();</script>", height=0)
+            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
 
     st.write("---")
     st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado.")
@@ -796,12 +796,13 @@ with tabs[0]:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
    
-  # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL "ANCLA VISUAL") ---
+# --- ACCESOS DIRECTOS A TRÁMITES (CORREGIDO Y UNIFICADO) ---
     st.write("")
     st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
     
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
+    # 1. Definimos la variable (Nombre: script_universal_scroll)
     script_universal_scroll = """
         <script>
             function goToTab(index) {
@@ -812,27 +813,32 @@ with tabs[0]:
                 // 2. BUSCAR EL ANCLA INVISIBLE Y SALTAR A ELLA
                 var topAnchor = window.parent.document.getElementById('top-of-page');
                 if (topAnchor) {
-                    topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
+                    // Usamos setTimeout para dar tiempo a que la pestaña cambie visualmente antes de saltar
+                    setTimeout(function() {
+                        topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
+                    }, 100);
                 }
 
-                // 3. RESPALDO: Forzar también los contenedores internos
+                // 3. RESPALDO: Forzar también el contenedor principal
                 var mainView = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
                 if (mainView) { mainView.scrollTop = 0; }
             }
         </script>
     """
 
+    # 2. Usamos la variable CORRECTA dentro de los botones
     with c_acc1:
-        if st.button("💰 Préstamos", key="btn_q1_ancla"):
-            components.html(script_scroll_anchor + "<script>goToTab(2);</script>", height=0)
+        if st.button("💰 Préstamos", key="btn_q1_uni"):
+            # AQUÍ estaba el error: ahora usamos script_universal_scroll
+            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
             
     with c_acc2:
-        if st.button("🏠 Alquiler", key="btn_q2_ancla"):
-            components.html(script_scroll_anchor + "<script>goToTab(1);</script>", height=0)
+        if st.button("🏠 Alquiler", key="btn_q2_uni"):
+            components.html(script_universal_scroll + "<script>goToTab(1);</script>", height=0)
 
     with c_acc3:
-        if st.button("📉 Hipoteca", key="btn_q3_ancla"):
-            components.html(script_scroll_anchor + "<script>goToTab(4);</script>", height=0)
+        if st.button("📉 Hipoteca", key="btn_q3_uni"):
+            components.html(script_universal_scroll + "<script>goToTab(4);</script>", height=0)
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
     st.write(""); st.write("") 
@@ -1451,6 +1457,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
