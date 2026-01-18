@@ -93,7 +93,7 @@ st.markdown("""
     /* 3. LOGO Y ESPACIOS (AJUSTE FINAL) */
     .block-container {
         padding-top: 0rem !important; 
-        margin-top: -5.5rem !important; /* Subida agresiva */
+        margin-top: -4.5rem !important; /* Subida agresiva */
     }
 
     [data-testid="stImage"] {
@@ -1420,6 +1420,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
