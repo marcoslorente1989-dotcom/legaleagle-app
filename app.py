@@ -978,7 +978,10 @@ with tabs[2]:
                 "Compraventa Vivienda (Piso/Casa)",
                 "Contrato de Arras",
                 "Desistimiento / Cancelación"
-            ])
+            ],
+            index=0,
+        on_change=limpiar_cache_reclamacion # <--- ESTA ES LA CLAVE
+        )
             st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
             
             data_p = ""
@@ -1135,17 +1138,23 @@ with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. CAMBIO: USAMOS SELECTBOX (DESPLEGABLE) EN LUGAR DE RADIO
-    # El 'on_change' fuerza a borrar el resultado anterior al cambiar
+   # FUNCIÓN DE LIMPIEZA (Lambda):
+    # Cada vez que cambias la opción, esto se ejecuta y borra el resultado anterior.
+    # Así no se mezcla un burofax antiguo con una multa nueva.
+    def limpiar_cache_reclamacion():
+        st.session_state.generated_claim = ""
+
+    # 1. SELECTOR DESPLEGABLE (Con disparador de limpieza)
     modo = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
             "Selecciona una opción...", 
             "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
-            "🛡️ Responder Carta (Vecinos, Seguros...)", 
-            "👮 Recurrir Multa (Tráfico DGT/Ayto)"
+            "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
+            "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        on_change=lambda: st.session_state.update(generated_claim="")
+        index=0,
+        on_change=limpiar_cache_reclamacion # <--- ESTA ES LA CLAVE
     )
     
     c_rec, c_doc = st.columns([1, 1.3])
@@ -1621,5 +1630,6 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
