@@ -994,17 +994,39 @@ with tabs[2]:
                 data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
 
     
-            elif "Préstamo" in tipo: # NUEVO BLOQUE
-                st.info("💡 **Consejo:** Para evitar problemas con Hacienda, este contrato debe indicar si es con intereses y presentarse (exento) mediante el Modelo 600.")
+            elif "Préstamo" in tipo:
+                st.info("💡 **Consejo:** Define el plazo y la IA calculará la cuota mensual para que el contrato sea perfecto ante Hacienda.")
+                
                 c_p1, c_p2 = st.columns(2)
                 with c_p1:
-                    pres_nombre = st.text_input("Prestamista (quien presta)")
-                    pret_nombre = st.text_input("Prestatario (quien recibe)")
+                    pres_nombre = st.text_input("Prestamista (quien presta el dinero)")
+                    pret_nombre = st.text_input("Prestatario (quien lo recibe)")
                 with c_p2:
-                    monto = st.number_input("Importe (€)", min_value=10)
-                    es_gratuito = st.checkbox("¿Es un préstamo sin intereses?", value=True)
-                interes_txt = "sin intereses (gratuito)" if es_gratuito else st.text_input("Tipo de interés %")
-                data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre}. Prestatario: {pret_nombre}. Importe: {monto}€. Intereses: {interes_txt}. Plazo devolución: A acordar."
+                    monto = st.number_input("Importe del Préstamo (€)", min_value=100.0, step=500.0)
+                    plazo_meses = st.number_input("Plazo de devolución (Meses)", min_value=1, value=12)
+
+                # Calculadora de Cuota Integrada
+                es_gratuito = st.checkbox("¿Es un préstamo sin intereses (0%)?", value=True)
+                
+                cuota_mensual = 0.0
+                detalles_pago = ""
+                
+                if es_gratuito:
+                    cuota_mensual = monto / plazo_meses
+                    detalles_pago = f"SIN INTERESES (Tipo 0%). Devolución en {plazo_meses} cuotas mensuales consecutivas de {cuota_mensual:.2f} € cada una."
+                else:
+                    interes_anual = st.number_input("Tipo de Interés Anual (%)", min_value=0.1, value=3.0, step=0.1)
+                    # Fórmula Sistema Francés (Estándar bancario)
+                    i = (interes_anual / 100) / 12
+                    n = plazo_meses
+                    cuota_mensual = monto * (i * (1 + i)**n) / ((1 + i)**n - 1)
+                    total_devolver = cuota_mensual * n
+                    detalles_pago = f"CON INTERESES ({interes_anual}% anual). Devolución en {plazo_meses} cuotas de {cuota_mensual:.2f} €. Total a devolver: {total_devolver:.2f} €."
+
+                # Mostramos el resultado al usuario antes de generar
+                st.success(f"💰 **Plan de Pago calculado:** {detalles_pago}")
+                
+                data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre}. Prestatario: {pret_nombre}. Importe Principal: {monto}€. Plazo: {plazo_meses} meses. CONDICIONES ECONÓMICAS EXACTAS: {detalles_pago}. Incluir cuadro de amortización si es posible."
                     
            
             elif "Vehículo" in tipo: 
@@ -1593,6 +1615,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
