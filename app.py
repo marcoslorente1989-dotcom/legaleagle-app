@@ -1273,19 +1273,23 @@ with tabs[4]:
                     perfil = f"Residente en {ccaa}. Situación: {'Hijos, ' if hijos else ''}{'Alquiler, ' if alquiler else ''}{'Hipoteca antigua, ' if hipoteca else ''}{'Discapacidad, ' if discapacidad else ''}{'Donaciones, ' if donaciones else ''}{'Gastos escolares, ' if idiomas else ''}{'Zona rural, ' if rural else ''}{'Obras eficiencia, ' if eficiencia else ''}. Otros: {otros}."
                     
                     prompt_renta = f"""
-                    Actúa como Asesor Fiscal experto en IRPF España (Campaña Renta 2024/2025).
-                    Objetivo: Encontrar DEDUCCIONES AUTONÓMICAS y ESTATALES para este perfil.
+                    Actúa como Asesor Fiscal experto en IRPF España (Campaña 2024/2025).
                     
-                    PERFIL: {perfil}
+                    PERFIL DEL USUARIO:
+                    - Residente en: {ccaa}
+                    - SITUACIONES CONFIRMADAS: {perfil_txt}
                     
-                    TAREA:
-                    Genera una lista clara de las deducciones a las que podría tener derecho.
-                    Para cada deducción indica:
-                    1. Nombre de la deducción.
-                    2. Cuantía aproximada (Ej: 15% hasta 500€).
-                    3. Casilla aproximada del Modelo 100 (si es relevante) o requisitos clave.
+                    INSTRUCCIONES ESTRICTAS:
+                    1. Lista ÚNICAMENTE las deducciones que apliquen a las 'SITUACIONES CONFIRMADAS'.
+                    2. REGLA DE ORO: Si el usuario NO ha marcado 'Alquiler', NO hables de alquiler. Si no ha marcado 'Discapacidad', NO hables de discapacidad. Cíñete a lo marcado.
+                    3. Para cada deducción encontrada: Nombre, Cuantía aprox y Casilla/Requisito clave.
                     
-                    Formato: Usa iconos (💰, 👶, 🏠) y sé muy directo. Al final, añade un consejo sobre cómo aplicarlas en el Borrador Web.
+                    FORMATO DE SALIDA:
+                    ### ✅ TUS DEDUCCIONES DETECTADAS
+                    (Lista aquí solo lo que aplica al perfil)
+                    
+                    ### ⚡ OTRAS OPORTUNIDADES EN {ccaa} (RESUMEN)
+                    (Aquí lista muy brevemente, en 2-3 líneas, otras deducciones famosas de {ccaa} que el usuario NO ha marcado, por si acaso se le olvidó).
                     """
                     st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
 
@@ -1503,6 +1507,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
