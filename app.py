@@ -1233,6 +1233,7 @@ with tabs[4]:
             st.subheader("Calculadora Fiscal")
             st.caption("Calcula con precisión tu sueldo neto real, los impuestos por venta de vivienda o tu cuota hipotecaria actual.")
             tipo_calc = st.selectbox("Trámite", [
+                "💰 DEDUCCIONES RENTA (Buscador de Ahorro)",
                 "🔍 ESCÁNER DE NÓMINA (Foto/PDF)", 
                 "Sueldo Neto (Nómina)", 
                 "Venta Inmueble (Plusvalía+IRPF)", 
@@ -1243,7 +1244,52 @@ with tabs[4]:
             anio_actual = datetime.now().year
             st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
 
-            if "ESCÁNER" in tipo_calc:
+            if "RENTA" in tipo_calc:
+                st.info("💡 **¿Sabías que...?** Cada año se pierden millones de euros en deducciones autonómicas no reclamadas. Selecciona tu perfil y encuéntralas.")
+                
+                ccaa = st.selectbox("📍 Tu Comunidad Autónoma", [
+                    "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", 
+                    "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", 
+                    "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"
+                ])
+                
+                st.markdown("👇 **Marca lo que aplique a tu situación en 2024/25:**")
+                
+                c_chk1, c_chk2 = st.columns(2)
+                with c_chk1:
+                    hijos = st.checkbox("Tengo hijos (< 25 años)")
+                    alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
+                    hipoteca = st.checkbox("Pago hipoteca (Anterior 2013)")
+                    discapacidad = st.checkbox("Discapacidad (>33%)")
+                with c_chk2:
+                    donaciones = st.checkbox("Hago donaciones (ONG/Partidos)")
+                    idiomas = st.checkbox("Gastos escolar/Idiomas")
+                    rural = st.checkbox("Vivo en zona despoblada/Rural")
+                    eficiencia = st.checkbox("Obras eficiencia energética")
+
+                otros = st.text_input("Otros gastos (Ej: Gimnasio, Transporte, Ayuda doméstica...)")
+                
+                if st.button("🔍 BUSCAR DEDUCCIONES"):
+                    perfil = f"Residente en {ccaa}. Situación: {'Hijos, ' if hijos else ''}{'Alquiler, ' if alquiler else ''}{'Hipoteca antigua, ' if hipoteca else ''}{'Discapacidad, ' if discapacidad else ''}{'Donaciones, ' if donaciones else ''}{'Gastos escolares, ' if idiomas else ''}{'Zona rural, ' if rural else ''}{'Obras eficiencia, ' if eficiencia else ''}. Otros: {otros}."
+                    
+                    prompt_renta = f"""
+                    Actúa como Asesor Fiscal experto en IRPF España (Campaña Renta 2024/2025).
+                    Objetivo: Encontrar DEDUCCIONES AUTONÓMICAS y ESTATALES para este perfil.
+                    
+                    PERFIL: {perfil}
+                    
+                    TAREA:
+                    Genera una lista clara de las deducciones a las que podría tener derecho.
+                    Para cada deducción indica:
+                    1. Nombre de la deducción.
+                    2. Cuantía aproximada (Ej: 15% hasta 500€).
+                    3. Casilla aproximada del Modelo 100 (si es relevante) o requisitos clave.
+                    
+                    Formato: Usa iconos (💰, 👶, 🏠) y sé muy directo. Al final, añade un consejo sobre cómo aplicarlas en el Borrador Web.
+                    """
+                    st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
+
+            elif "ESCÁNER" in tipo_calc:
                 st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
                 file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png", "jpeg"], key="u_nomina")
                 
@@ -1457,6 +1503,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
