@@ -1140,8 +1140,11 @@ with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. SELECTOR CON LIMPIEZA AUTOMÁTICA
-    # Usamos on_change para borrar el resultado anterior al cambiar de opción
+    # 1. CONTROL DE ESTADO (Para detectar cambios)
+    if "tab3_last_mode" not in st.session_state:
+        st.session_state.tab3_last_mode = "Selecciona una opción..."
+
+    # 2. SELECTOR
     modo = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
@@ -1149,11 +1152,16 @@ with tabs[3]:
             "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
-        ],
-        index=0,
-        on_change=limpiar_cache_reclamacion # <--- AHORA SÍ FUNCIONARÁ PORQUE LA DEFINIMOS ARRIBA
+        ]
     )
-    
+
+    # 3. LÓGICA DE LIMPIEZA FORZADA (NUCLEAR)
+    # Si la opción actual es diferente a la última guardada:
+    if modo != st.session_state.tab3_last_mode:
+        st.session_state.generated_claim = ""       # 1. Borramos el resultado anterior
+        st.session_state.tab3_last_mode = modo      # 2. Actualizamos el estado
+        st.rerun()                                  # 3. RECARGAMOS LA PÁGINA AL INSTANTE
+
     c_rec, c_doc = st.columns([1, 1.3])
     
     # =========================================================
@@ -1627,6 +1635,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
