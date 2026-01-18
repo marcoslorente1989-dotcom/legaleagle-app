@@ -1143,17 +1143,18 @@ with tabs[2]:
                         st.success("Hecho")
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (SOLUCIÓN FINAL: KEYS ÚNICAS + AUTO-RESET) ---
-# --- TAB 3: RECLAMAR / RECURRIR (CORREGIDO Y CON LIMPIEZA TOTAL) ---
+# --- TAB 3: RECLAMAR / RECURRIR (SOLUCIÓN CALLBACK INFALIBLE) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
-    
-    # 1. CONTROL DE MEMORIA (Para detectar cambios)
-    if "modo_previo" not in st.session_state:
-        st.session_state.modo_previo = "Selecciona una opción..."
 
-    # 2. EL SELECTOR (Variable 'modo')
+    # --- 1. FUNCIÓN DE LIMPIEZA INTERNA ---
+    # Esta función se ejecuta AUTOMÁTICAMENTE solo cuando cambias el desplegable.
+    def reset_tab3_state():
+        st.session_state.generated_claim = "" # Borra el texto de la IA
+        # No hace falta st.rerun(), el callback fuerza el redibujado limpio.
+
+    # --- 2. EL SELECTOR CON EL DETONADOR (CALLBACK) ---
     modo = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
@@ -1162,25 +1163,21 @@ with tabs[3]:
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        key="selector_modo_unico"
+        key="tab3_main_selector",
+        on_change=reset_tab3_state # <--- AQUÍ ESTÁ LA MAGIA: Limpia antes de pintar nada
     )
-
-    # 3. EL LIMPIADOR NUCLEAR (Detecta el cambio y reinicia)
-    if modo != st.session_state.modo_previo:
-        st.session_state.generated_claim = ""       # Borra el texto generado
-        st.session_state.modo_previo = modo         # Actualiza la memoria
-        st.rerun()                                  # ¡REINICIO FORZADO! (Limpia la pantalla)
-
+    
     c_rec, c_doc = st.columns([1, 1.3])
     
     # =========================================================
     # CASO A: REDACTAR BUROFAX
     # =========================================================
+    # Usamos "in" para que coincida aunque cambiemos el texto del menú luego
     if "Redactar" in modo:
         with c_rec:
             with st.container(border=False):
                 st.info("Generador de Burofax")
-                # Keys únicas para evitar que se mezclen con otros formularios
+                # Keys únicas (bf_)
                 remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bf_remitente")
                 dest = st.text_input("Destinatario (Empresa/Persona)", key="bf_destinatario")
                 st.markdown("---")
@@ -1188,7 +1185,6 @@ with tabs[3]:
                 motivo = st.selectbox("Motivo", ["Cobro Indebido", "Seguros", "Fianza Alquiler", "Banca", "Transporte", "Otro"], key="bf_motivo")
                 
                 datos_clave = ""
-                # Lógica simplificada para evitar errores visuales
                 if "Cobro" in motivo:
                     datos_clave = f"Factura {st.text_input('Nº Factura', key='bf_fac')} de {st.number_input('Importe €', 0.0, key='bf_imp')}€."
                 elif "Seguros" in motivo:
@@ -1217,6 +1213,7 @@ with tabs[3]:
         with c_rec:
             with st.container(border=False):
                 st.info("Respuesta Legal")
+                # Keys únicas (rc_)
                 uploaded_gen = st.file_uploader("Sube la carta (PDF/Foto)", type=["pdf", "jpg", "png"], key="rc_upload")
                 mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
                 
@@ -1237,6 +1234,7 @@ with tabs[3]:
         with c_rec:
             with st.container(border=False):
                 st.info("Recurso de Multas")
+                # Keys únicas (mul_)
                 uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
                 tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
                 mis_datos = st.text_input("Tus Datos", key="mul_datos")
@@ -1255,7 +1253,7 @@ with tabs[3]:
     # VISOR DE RESULTADOS (COMÚN)
     # =========================================================
     with c_doc:
-        # Solo mostramos si hay texto Y NO estamos en "Selecciona..."
+        # Solo mostramos si hay texto generado Y NO estamos en la opción "Selecciona..."
         if st.session_state.generated_claim and "Selecciona" not in modo:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
             st.write("")
@@ -1584,6 +1582,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
