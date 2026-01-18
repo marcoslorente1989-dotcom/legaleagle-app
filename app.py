@@ -1110,7 +1110,16 @@ with tabs[2]:
 
 # --- TAB 3: RECLAMAR / RECURRIR (PROFESIONALIZADO) ---
 with tabs[3]:
-    modo = st.radio("Opción:", ["✍️ Redactar Burofax / Reclamación", "🛡️ Responder/Recurrir (Subir PDF/Foto)"], horizontal=True)
+    st.subheader("Centro de Reclamaciones")
+    st.caption("Genera burofaxes, responde cartas o recurre multas.")
+    
+    # 1. SELECTOR CON 3 OPCIONES
+    modo = st.radio("Elige tu caso:", [
+        "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
+        "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
+        "👮 Recurrir Multa Tráfico (DGT/Ayto)"
+    ], horizontal=True)
+    
     c_rec, c_doc = st.columns([1, 1.3])
     
     if "Redactar" in modo:
@@ -1180,50 +1189,85 @@ with tabs[3]:
                         """
                         st.session_state.generated_claim = groq_engine(prompt_claim, api_key)
 
-    else:
+    # --- OPCIÓN B: RESPONDER GENÉRICO (Tu función original recuperada) ---
+    elif "Responder" in modo:
         with c_rec:
             with st.container(border=False):
-                st.subheader("Generar Defensa")
-                st.caption("Sube la multa o notificación que has recibido. Analizaremos los defectos de forma y redactaremos tu defensa.")
-                st.info("Sube la carta o multa que has recibido.")
-                uploaded_defense = st.file_uploader("Archivo (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_def")
-                mis_datos = st.text_input("Tus Datos (Nombre y DNI)")
-                mis_argumentos = st.text_area("Tus Argumentos de defensa")
+                st.info("📂 **Respuesta Universal:** Sube cualquier carta (Comunidad, Seguro, Hacienda...) y la IA redactará la respuesta.")
+                # Key única para que no choque con el otro uploader
+                uploaded_gen = st.file_uploader("Sube la carta recibida (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_gen")
+                mis_argumentos = st.text_area("¿Qué quieres alegar/responder?", placeholder="Ej: No estoy de acuerdo porque...")
                 
-                if uploaded_defense:
-                    if uploaded_defense.type == "application/pdf": st.session_state.defense_text = extract_text_from_pdf(uploaded_defense)
-                    else:
-                        with st.spinner("Leyendo imagen..."): st.session_state.defense_text = analyze_image_groq(uploaded_defense, "Transcribe esta notificación legal.", api_key)
-                
-                if st.button("⚖️ GENERAR RESPUESTA"):
-                    if st.session_state.defense_text and mis_datos:
-                        with st.spinner("Analizando puntos débiles y redactando defensa..."):
-                            p_def = f"""
-                            Actúa como abogado defensor. He recibido esta notificación:
+                if st.button("📝 GENERAR RESPUESTA"):
+                    if uploaded_gen and mis_argumentos:
+                        with st.spinner("Analizando documento y redactando respuesta..."):
+                            if uploaded_gen.type == "application/pdf": txt_gen = extract_text_from_pdf(uploaded_gen)
+                            else: txt_gen = analyze_image_groq(uploaded_gen, "Lee esta carta.", api_key)
+                            
+                            p_gen = f"""
+                            Actúa como abogado. He recibido esta notificación:
                             ---
-                            {st.session_state.defense_text[:4000]}
+                            {txt_gen[:4000]}
                             ---
-                            MIS ARGUMENTOS: {mis_argumentos}
-                            MIS DATOS: {mis_datos}
-                            TAREA: Redacta un PLIEGO DE DESCARGOS o CARTA DE OPOSICIÓN formal.
-                            Busca defectos de forma, cita jurisprudencia o leyes que me beneficien y mantén un tono respetuoso pero firme en la defensa.
+                            QUIERO RESPONDER ESTO: {mis_argumentos}
+                            
+                            TAREA: Redacta una carta formal de respuesta/alegaciones.
+                            Cita leyes si aplica al contexto (LPH si es vecinos, Ley Contrato Seguro si es seguros, etc).
                             """
-                            st.session_state.generated_claim = groq_engine(p_def, api_key)
-                    else: st.warning("Por favor sube el archivo y rellena tus datos.")
+                            st.session_state.generated_claim = groq_engine(p_gen, api_key)
+                            
+                            # Auto-Scroll
+                            js_scroll_up = """<script>var topAnchor = window.parent.document.getElementById('top-of-page'); if (topAnchor) { topAnchor.scrollIntoView({behavior: "smooth", block: "start"}); }</script>"""
+                            components.html(js_scroll_up, height=0)
+                    else: st.warning("Sube el archivo y tus argumentos.")
 
+    # --- OPCIÓN C: RECURRIR MULTA (La nueva especialista) ---
+    elif "Multa" in modo:
+        with c_rec:
+            with st.container(border=False):
+                st.info("👮 **Especialista en Tráfico:** Busca defectos de forma (fechas, fotos, márgenes radar) automáticamente.")
+                # Key única
+                uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_multa")
+                mis_datos = st.text_input("Tus Datos (Nombre y DNI)", key="d_multa")
+                
+                if st.button("⚖️ ANALIZAR Y RECURRIR"):
+                    if uploaded_multa and mis_datos:
+                        with st.spinner("Auditando multa..."):
+                            if uploaded_multa.type == "application/pdf": txt_multa = extract_text_from_pdf(uploaded_multa)
+                            else: txt_multa = analyze_image_groq(uploaded_multa, "Lee esta multa entera.", api_key)
+                            
+                            p_multa = f"""
+                            Actúa como Abogado experto en Tráfico. He recibido esta multa:
+                            ---
+                            {txt_multa[:5000]}
+                            ---
+                            DATOS: {mis_datos}
+                            TAREA: Redacta un PLIEGO DE DESCARGOS. 
+                            1. Busca defectos de forma (Fechas, falta de foto, márgenes).
+                            2. Cita Ley Seguridad Vial.
+                            3. Solicita nulidad.
+                            """
+                            st.session_state.generated_claim = groq_engine(p_multa, api_key)
+                            
+                            # Auto-Scroll
+                            js_scroll_up = """<script>var topAnchor = window.parent.document.getElementById('top-of-page'); if (topAnchor) { topAnchor.scrollIntoView({behavior: "smooth", block: "start"}); }</script>"""
+                            components.html(js_scroll_up, height=0)
+                    else: st.warning("Faltan datos.")
+
+    # --- VISOR DE RESULTADOS (COMÚN PARA LOS 3) ---
     with c_doc:
         if st.session_state.generated_claim:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
             st.write("")
             with st.container(border=False):
                 ce2, cb2 = st.columns([2,1])
-                with ce2: m2 = st.text_input("Email", key="mr")
+                with ce2: m2 = st.text_input("Email (Opcional)", key="mr")
                 with cb2:
                     st.write(""); st.write("")
                     if st.button("PDF LEGAL", key="br"):
-                        save_lead(m2, "RECLAMACION", "Burofax Generado")
+                        save_lead(m2, "RECLAMACION", modo)
                         pdf_claim = create_pdf(st.session_state.generated_claim, "Documento Legal")
-                        st.download_button("⬇️ Bajar PDF", data=pdf_claim, file_name="Reclamacion.pdf", mime="application/pdf")
+                        st.download_button("⬇️ Bajar PDF", data=pdf_claim, file_name="Documento_Legal.pdf", mime="application/pdf")
 
 # --- TAB 4: IMPUESTOS ---
 with tabs[4]:
@@ -1540,6 +1584,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
