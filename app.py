@@ -1244,70 +1244,73 @@ with tabs[4]:
             anio_actual = datetime.now().year
             st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
 
+            # --- A. LÓGICA RENTA (CON DETALLE HIJOS) ---
             if "RENTA" in tipo_calc:
-                st.info("💡 **Buscador de Ahorro:** Selecciona solo lo que cumples. La IA buscará las deducciones exactas para ti en tu Comunidad.")
-                
+                st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
                 ccaa = st.selectbox("📍 Tu Comunidad Autónoma", [
                     "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", 
                     "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", 
                     "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"
                 ])
+                st.markdown("👇 **Marca tu situación:**")
                 
-                st.markdown("👇 **Marca SOLO lo que aplique a tu situación:**")
-                
+                # Sub-menú Hijos
+                hijos = st.checkbox("👶 Tengo hijos (< 25 años)")
+                detalles_hijos = ""
+                if hijos:
+                    st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Detalles para filtrar deducciones:</small></div>""", unsafe_allow_html=True)
+                    anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)")
+                    c_h1, c_h2 = st.columns(2)
+                    with c_h1:
+                        guarderia = st.checkbox("Gastos de Guardería (0-3 años)")
+                        material = st.checkbox("Gastos Material Escolar / Libros")
+                    with c_h2:
+                        fam_mono = st.checkbox("Familia Monoparental / Numerosa")
+                        discap_hijo = st.checkbox("Algún hijo con Discapacidad")
+                    detalles_hijos = f"Tiene hijos nacidos en: {anios_hijos}. "
+                    if guarderia: detalles_hijos += "Paga Guardería. "
+                    if material: detalles_hijos += "Paga Material Escolar/Libros. "
+                    if fam_mono: detalles_hijos += "Es Familia Monoparental/Numerosa. "
+                    if discap_hijo: detalles_hijos += "Hijo con discapacidad. "
+
+                st.markdown("---")
                 c_chk1, c_chk2 = st.columns(2)
                 with c_chk1:
-                    hijos = st.checkbox("Tengo hijos (< 25 años)")
                     alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
-                    hipoteca = st.checkbox("Pago hipoteca (Anterior 2013)")
-                    discapacidad = st.checkbox("Discapacidad (>33%)")
+                    hipoteca = st.checkbox("Hipoteca (Anterior 2013)")
+                    discapacidad = st.checkbox("Mi Discapacidad (>33%)")
                 with c_chk2:
-                    donaciones = st.checkbox("Hago donaciones (ONG/Partidos)")
-                    idiomas = st.checkbox("Gastos escolar/Idiomas")
-                    rural = st.checkbox("Vivo en zona despoblada/Rural")
-                    eficiencia = st.checkbox("Obras eficiencia energética")
-
-                otros = st.text_input("Otros (Ej: Transporte, Ayuda doméstica...)")
+                    donaciones = st.checkbox("Hago Donaciones")
+                    idiomas = st.checkbox("Idiomas extraescolares")
+                    rural = st.checkbox("Zona Rural / Despoblada")
+                otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)")
                 
-                if st.button("🔍 BUSCAR MIS DEDUCCIONES"):
-                    # 1. Construimos el perfil SOLO con lo marcado
+                if st.button("🔍 BUSCAR DEDUCCIONES"):
                     situaciones = []
-                    if hijos: situaciones.append("Tiene Hijos (Buscar: nacimiento, adopción, material escolar, guardería)")
-                    if alquiler: situaciones.append("Vive de Alquiler (Buscar: deducción alquiler vivienda habitual)")
-                    if hipoteca: situaciones.append("Paga Hipoteca (Buscar: deducción inversión vivienda habitual)")
-                    if discapacidad: situaciones.append("Tiene Discapacidad")
+                    if hijos: situaciones.append(f"HIJOS: {detalles_hijos}")
+                    else: situaciones.append("No tiene hijos.")
+                    if alquiler: situaciones.append("Vive de Alquiler")
+                    if hipoteca: situaciones.append("Paga Hipoteca")
+                    if discapacidad: situaciones.append("Tiene Discapacidad propia")
                     if donaciones: situaciones.append("Hace Donaciones")
-                    if idiomas: situaciones.append("Gastos Educación/Idiomas")
-                    if rural: situaciones.append("Residencia en zona Rural/Despoblada")
-                    if eficiencia: situaciones.append("Obras Eficiencia Energética")
+                    if idiomas: situaciones.append("Gastos Educación Idiomas")
+                    if rural: situaciones.append("Residencia en zona Rural")
                     if otros: situaciones.append(f"Otros gastos: {otros}")
                     
-                    # Definimos perfil_txt DENTRO del botón
-                    if not situaciones:
-                        st.warning("⚠️ Por favor, marca al menos una casilla para buscar deducciones específicas.")
-                        perfil_txt = "Contribuyente genérico sin cargas familiares ni vivienda."
-                    else:
-                        perfil_txt = ", ".join(situaciones)
-
-                    # 2. Prompt DENTRO del botón (Aquí estaba el fallo antes)
+                    perfil_txt = " | ".join(situaciones)
+                    
                     prompt_renta = f"""
                     Actúa como Asesor Fiscal experto en IRPF España (Campaña 2024/2025).
+                    PERFIL EXACTO: Residente en {ccaa}. SITUACIÓN: {perfil_txt}.
+                    INSTRUCCIONES DE FILTRADO:
+                    1. Analiza los AÑOS DE NACIMIENTO. Si nació antes de 2023, NO menciones deducción por nacimiento.
+                    2. Si no hay 'Alquiler', NO hables de alquiler.
+                    3. Si no hay 'Guardería' o el niño es mayor de 3 años, NO hables de guardería.
+                    TAREA: Lista ÚNICAMENTE las deducciones aplicables REALMENTE.
+                    FORMATO:✅ TUS DEDUCCIONES CONFIRMADAS (Iconos, Nombre, Cuantía, Casilla del modelo 100).
                     
-                    PERFIL DEL USUARIO:
-                    - Residente en: {ccaa}
-                    - SITUACIONES CONFIRMADAS: {perfil_txt}
-                    
-                    INSTRUCCIONES STRICTAS:
-                    1. Lista ÚNICAMENTE las deducciones que apliquen a las 'SITUACIONES CONFIRMADAS'.
-                    2. REGLA DE ORO: Si el usuario NO ha marcado 'Alquiler', NO hables de alquiler. Si no ha marcado 'Discapacidad', NO hables de discapacidad. Cíñete a lo marcado.
-                    3. Para cada deducción encontrada: Nombre, Cuantía aprox y Casilla/Requisito clave.
-                    
-                    FORMATO DE SALIDA:
-                    ### ✅ TUS DEDUCCIONES DETECTADAS
-                    (Lista aquí solo lo que aplica al perfil)
-                    
-                    ### ⚡ OTRAS OPORTUNIDADES EN {ccaa} (RESUMEN)
-                    (Aquí lista muy brevemente, en 2-3 líneas, otras deducciones famosas de {ccaa} que el usuario NO ha marcado, por si acaso se le olvidó).
+                    ⚠️ REVISA ESTO POR SI ACASO
+                    (Solo 1 o 2 deducciones muy famosas de {ccaa} que no haya marcado, brevemente).
                     """
                     st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
 
@@ -1525,6 +1528,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
