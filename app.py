@@ -462,36 +462,43 @@ for k in keys:
 if "chat_history" not in st.session_state: st.session_state.chat_history = []
 if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(ttl=3600) # Se actualiza cada hora
 def obtener_euribor_actual():
     try:
-        # Fuente: Datos del Euríbor (vía API abierta o JSON estable)
-        url = "https://api.statista.com/v1/data/..." # Ejemplo conceptual
-        # Como alternativa gratuita y 100% fiable para España:
-        url = "https://www.euribor-rates.eu/es/tasas-euribor-actuales/1/euribor-tasa-12-meses/"
+        # 1. Web objetivo
+        url = "https://www.euribor.com.es/"
         
+        # 2. Navegador simulado
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'text/html'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
-        response = requests.get(url, headers=headers, timeout=10)
+        
+        response = requests.get(url, headers=headers, timeout=5)
         
         if response.status_code == 200:
-            # Buscamos el patrón numérico del Euríbor (ej: 2,823) en el texto bruto
             import re
-            # Buscamos un número que tenga formato X,XXX seguido de un espacio o %
-            encontrados = re.findall(r"(\d,\d{3})", response.text)
-            if encontrados:
-                # El primer valor suele ser el actual a 12 meses
-                valor_limpio = float(encontrados[0].replace(',', '.'))
-                # Validación de seguridad: el Euribor actual no debería ser > 10 o < -1
-                if -1 < valor_limpio < 10:
-                    return valor_limpio
+            
+            # 3. ESTRATEGIA FRANCOTIRADOR: Buscamos "Euríbor hoy" y pillamos el número que le sigue
+            # (?i) hace que no importe si es mayúscula o minúscula
+            # Busca: "Euríbor hoy", luego cualquier cosa (espacios, dos puntos), y luego el número (d.ddd)
+            match_hoy = re.search(r"(?i)Euríbor hoy.*?:.*?(\d+[.,]\d+)", response.text)
+            
+            if match_hoy:
+                # Encontramos el dato exacto del día (ej: 2.248)
+                valor = match_hoy.group(1).replace(',', '.')
+                return float(valor)
+            
+            # 4. ESTRATEGIA DE RESPALDO: Si no encuentra "hoy", busca la "Media" del mes
+            match_media = re.search(r"(?i)Media.*?(\d+[.,]\d+)", response.text)
+            if match_media:
+                valor = match_media.group(1).replace(',', '.')
+                return float(valor)
+
+        return 2.248 # Valor fijo de tu captura (por si la web se cae)
         
-        return 2.252 # Respaldo si la web no responde
     except Exception as e:
         print(f"Error Euribor: {e}")
-        return 2.252
+        return 2.248 # Valor seguro
         
 def extract_text_from_pdf(file):
     text = ""
@@ -658,33 +665,40 @@ with tabs[0]:
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
-  # --- ACCESOS DIRECTOS A TRÁMITES (CON AUTO-SCROLL ARRIBA) ---
+ # --- ACCESOS DIRECTOS A TRÁMITES (FORZANDO SUBIDA TOTAL) ---
     st.write("")
-       
+    st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
+    
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-    # El script 'window.parent.window.scrollTo(0,0)' es el que fuerza la subida
-    
-    with c_acc1:
-        if st.button("💰 Préstamos", key="btn_p1_top"):
-            components.html("""<script>
-                window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[2].click();
+    # Este script busca el contenedor '.main' que es el que tiene el scroll en Streamlit
+    script_scroll_top = """
+        <script>
+            var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+            var mainContent = window.parent.document.querySelector('.main');
+            
+            function goToTab(index) {
+                tabs[index].click();
+                if (mainContent) {
+                    mainContent.scrollTo({top: 0, behavior: 'auto'});
+                }
                 window.parent.window.scrollTo(0, 0);
-            </script>""", height=0)
+            }
+        </script>
+    """
+
+    with c_acc1:
+        if st.button("💰 Préstamos", key="btn_acc_p1"):
+            components.html(script_scroll_top + "<script>goToTab(2);</script>", height=0)
             
     with c_acc2:
-        if st.button("🏠 Alquiler", key="btn_p2_top"):
-            components.html("""<script>
-                window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[1].click();
-                window.parent.window.scrollTo(0, 0);
-            </script>""", height=0)
+        if st.button("🏠 Alquiler", key="btn_acc_p2"):
+            components.html(script_scroll_top + "<script>goToTab(1);</script>", height=0)
 
     with c_acc3:
-        if st.button("📉 Hipoteca", key="btn_p3_top"):
-            components.html("""<script>
-                window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[4].click();
-                window.parent.window.scrollTo(0, 0);
-            </script>""", height=0)
+        if st.button("📉 Hipoteca", key="btn_acc_p3"):
+            components.html(script_scroll_top + "<script>goToTab(4);</script>", height=0)
+        
     st.write("---")    
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
@@ -1304,6 +1318,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
