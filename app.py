@@ -1108,12 +1108,12 @@ with tabs[2]:
                         st.success("Hecho")
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (LIMPIO Y SIN DUPLICADOS) ---
+# --- TAB 3: RECLAMAR / RECURRIR (VERSIÓN FINAL Y LIMPIA) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. SELECTOR DE MODO (Solo una vez)
+    # 1. SELECTOR DE MODO (Excluyente: Solo uno activo a la vez)
     modo = st.radio("Elige tu caso:", [
         "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
         "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
@@ -1122,7 +1122,7 @@ with tabs[3]:
     
     c_rec, c_doc = st.columns([1, 1.3])
     
-    # --- CASO A: BUROFAX ---
+    # --- CASO A: BUROFAX (Manual) ---
     if "Redactar" in modo:
         with c_rec:
             with st.container(border=False):
@@ -1136,13 +1136,20 @@ with tabs[3]:
                 ])
                 
                 detalles = ""
+                # CORRECCIÓN: Usamos siempre la variable 'detalles'
                 if "Facturas" in motivo:
                     num_fac = st.text_input("Nº Factura")
                     importe = st.number_input("Importe (€)", 0.0)
-                    detalles = f"Factura {num_fac} por importe de {importe}€."
+                    fecha_fac = st.date_input("Fecha Factura")
+                    detalles = f"Reclamación de Factura Nº {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}."
+                elif "Seguros" in motivo:
+                    poliza = st.text_input("Nº Póliza")
+                    siniestro = st.text_input("Nº Siniestro")
+                    detalles = f"Reclamación a Seguro. Póliza: {poliza}. Siniestro: {siniestro}."
                 elif "Vuelos" in motivo:
                     vuelo = st.text_input("Nº Vuelo")
-                    detalles = f"Incidencia en vuelo {vuelo}. Reglamento 261/2004."
+                    incidencia = st.selectbox("Tipo", ["Retraso", "Cancelación", "Equipaje"])
+                    detalles = f"Incidencia vuelo {vuelo}: {incidencia}. Reglamento 261/2004."
                 else:
                     detalles = st.text_area("Detalles / Hechos", placeholder="Explica qué ha pasado...")
                 
@@ -1151,11 +1158,10 @@ with tabs[3]:
                         p = f"Actúa como abogado. Redacta Burofax Reclamación. De: {remitente}. A: {dest}. Motivo: {motivo}. Detalles: {detalles}. Tono legal y firme."
                         st.session_state.generated_claim = groq_engine(p, api_key)
                         
-                        # Auto-Scroll
                         js_scroll_up = """<script>var topAnchor = window.parent.document.getElementById('top-of-page'); if (topAnchor) { topAnchor.scrollIntoView({behavior: "smooth", block: "start"}); }</script>"""
                         components.html(js_scroll_up, height=0)
 
-    # --- CASO B: RESPONDER CARTA ---
+    # --- CASO B: RESPONDER CARTA (IA) ---
     elif "Responder" in modo:
         with c_rec:
             with st.container(border=False):
@@ -1176,7 +1182,7 @@ with tabs[3]:
                             components.html(js_scroll_up, height=0)
                     else: st.warning("Faltan datos.")
 
-    # --- CASO C: RECURRIR MULTA ---
+    # --- CASO C: RECURRIR MULTA (IA Tráfico) ---
     elif "Multa" in modo:
         with c_rec:
             with st.container(border=False):
@@ -1202,7 +1208,7 @@ with tabs[3]:
                             components.html(js_scroll_up, height=0)
                     else: st.warning("Faltan datos.")
 
-    # --- VISOR DE RESULTADOS (COMÚN PARA TODOS) ---
+    # --- VISOR DE RESULTADOS (COMÚN) ---
     with c_doc:
         if st.session_state.generated_claim:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
@@ -1213,7 +1219,6 @@ with tabs[3]:
                 with cb2:
                     st.write(""); st.write("")
                     if st.button("PDF LEGAL", key="br"):
-                        # Guardamos el lead con el modo actual
                         save_lead(m2, "RECLAMACION", modo)
                         pdf_claim = create_pdf(st.session_state.generated_claim, "Documento Legal")
                         st.download_button("⬇️ Bajar PDF", data=pdf_claim, file_name="Documento_Legal.pdf", mime="application/pdf")
@@ -1533,6 +1538,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
