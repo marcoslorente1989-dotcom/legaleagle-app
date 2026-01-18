@@ -742,22 +742,22 @@ with tabs[0]:
     
     col1, col2, col3 = st.columns(3)
 
-    script_mobile_scroll = """
+    script_universal_scroll = """
         <script>
             function goToTab(index) {
-                // 1. Cambiar pestaña
+                // 1. Cambiar la pestaña
                 var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
                 if (tabs[index]) { tabs[index].click(); }
                 
-                // 2. SOLUCIÓN MÓVIL: Buscar el ancla invisible y saltar a ella
+                // 2. BUSCAR EL ANCLA INVISIBLE Y SALTAR A ELLA
                 var topAnchor = window.parent.document.getElementById('top-of-page');
                 if (topAnchor) {
                     topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
                 }
 
-                // 3. REFODRZO: Forzar propiedad scrollTop del contenedor específico de Streamlit
-                var mobileContainer = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
-                if (mobileContainer) { mobileContainer.scrollTop = 0; }
+                // 3. RESPALDO: Forzar también los contenedores internos
+                var mainView = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
+                if (mainView) { mainView.scrollTop = 0; }
             }
         </script>
     """
@@ -802,22 +802,22 @@ with tabs[0]:
     
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-    script_mobile_scroll = """
+    script_universal_scroll = """
         <script>
             function goToTab(index) {
-                // 1. Cambiar pestaña
+                // 1. Cambiar la pestaña
                 var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
                 if (tabs[index]) { tabs[index].click(); }
                 
-                // 2. SOLUCIÓN MÓVIL: Buscar el ancla invisible y saltar a ella
+                // 2. BUSCAR EL ANCLA INVISIBLE Y SALTAR A ELLA
                 var topAnchor = window.parent.document.getElementById('top-of-page');
                 if (topAnchor) {
                     topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
                 }
 
-                // 3. REFODRZO: Forzar propiedad scrollTop del contenedor específico de Streamlit
-                var mobileContainer = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
-                if (mobileContainer) { mobileContainer.scrollTop = 0; }
+                // 3. RESPALDO: Forzar también los contenedores internos
+                var mainView = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
+                if (mainView) { mainView.scrollTop = 0; }
             }
         </script>
     """
@@ -1451,6 +1451,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
