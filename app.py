@@ -93,12 +93,12 @@ st.markdown("""
     /* 3. LOGO Y ESPACIOS (AJUSTE FINAL) */
     .block-container {
         padding-top: 0rem !important; 
-        margin-top: -6.5rem !important; /* Subida agresiva */
+        margin-top: -5.5rem !important; /* Subida agresiva */
     }
 
     [data-testid="stImage"] {
         margin-top: 0px !important;
-        margin-bottom: -60px !important;
+        margin-bottom: -50px !important;
         display: flex;
         justify-content: center;
         transform: scale(0.7); /* Logo un poco más pequeño para móviles */
@@ -735,60 +735,51 @@ with tabs[0]:
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
- # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL FIXED) ---
-    # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL NUCLEAR V2) ---
+# --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL RECURSIVO) ---
     st.write("")
     st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
     
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-    # Script JavaScript Mejorado: Dispara el scroll dos veces para asegurar
-    script_scroll_fix = """
+  # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL "ANCLA VISUAL") ---
+    st.write("")
+    st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
+    
+    c_acc1, c_acc2, c_acc3 = st.columns(3)
+    
+    # Este script busca el contenedor principal del contenido y lo obliga a mostrarse desde el principio
+    script_scroll_anchor = """
         <script>
             function goToTab(index) {
-                // 1. Hacer clic en la pestaña
+                // 1. Clic en la pestaña
                 var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-                if (tabs[index]) {
-                    tabs[index].click();
+                if (tabs[index]) { tabs[index].click(); }
+                
+                // 2. BUSCAR EL CONTENIDO PRINCIPAL (Clase 'block-container')
+                var bloquePrincipal = window.parent.document.getElementsByClassName('block-container')[0];
+                
+                if (bloquePrincipal) {
+                    // 3. OBLIGAR AL NAVEGADOR A ENFOCAR EL INICIO DEL BLOQUE
+                    bloquePrincipal.scrollIntoView({behavior: "instant", block: "start", inline: "nearest"});
                 }
                 
-                // 2. Definir los contenedores de scroll
-                var containers = [
-                    window.parent.document.querySelector('section[data-testid="stAppViewContainer"]'),
-                    window.parent.document.documentElement,
-                    window.parent.document.body,
-                    window.parent.window
-                ];
-                
-                // 3. Función de subida forzada
-                function forceScrollTop() {
-                    containers.forEach(el => {
-                        if (el) {
-                            try { el.scrollTo({top: 0, left: 0, behavior: 'instant'}); } catch(e){}
-                            try { el.scrollTop = 0; } catch(e){}
-                        }
-                    });
-                }
-
-                // 4. Ejecutar inmediatamente y REPETIR a los 50ms para vencer a Streamlit
-                forceScrollTop();
-                setTimeout(forceScrollTop, 50);
-                setTimeout(forceScrollTop, 100);
+                // 4. Aseguramiento extra para móviles
+                window.parent.window.scrollTo(0, 0);
             }
         </script>
     """
 
     with c_acc1:
-        if st.button("💰 Préstamos", key="btn_q1"):
-            components.html(script_scroll_fix + "<script>goToTab(2);</script>", height=0)
+        if st.button("💰 Préstamos", key="btn_q1_ancla"):
+            components.html(script_scroll_anchor + "<script>goToTab(2);</script>", height=0)
             
     with c_acc2:
-        if st.button("🏠 Alquiler", key="btn_q2"):
-            components.html(script_scroll_fix + "<script>goToTab(1);</script>", height=0)
+        if st.button("🏠 Alquiler", key="btn_q2_ancla"):
+            components.html(script_scroll_anchor + "<script>goToTab(1);</script>", height=0)
 
     with c_acc3:
-        if st.button("📉 Hipoteca", key="btn_q3"):
-            components.html(script_scroll_fix + "<script>goToTab(4);</script>", height=0)
+        if st.button("📉 Hipoteca", key="btn_q3_ancla"):
+            components.html(script_scroll_anchor + "<script>goToTab(4);</script>", height=0)
     
     # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
     st.write(""); st.write("") 
@@ -1407,4 +1398,5 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
