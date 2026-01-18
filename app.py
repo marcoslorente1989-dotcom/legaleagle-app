@@ -1140,9 +1140,10 @@ with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. CONTROL DE ESTADO (Para detectar cambios)
-    if "tab3_last_mode" not in st.session_state:
-        st.session_state.tab3_last_mode = "Selecciona una opción..."
+    # 1. Inicializar las 3 memorias independientes si no existen
+    if "res_burofax" not in st.session_state: st.session_state.res_burofax = ""
+    if "res_carta" not in st.session_state: st.session_state.res_carta = ""
+    if "res_multa" not in st.session_state: st.session_state.res_multa = ""
 
     # 2. SELECTOR
     modo = st.selectbox(
@@ -1154,14 +1155,7 @@ with tabs[3]:
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ]
     )
-
-    # 3. LÓGICA DE LIMPIEZA FORZADA (NUCLEAR)
-    # Si la opción actual es diferente a la última guardada:
-    if modo != st.session_state.tab3_last_mode:
-        st.session_state.generated_claim = ""       # 1. Borramos el resultado anterior
-        st.session_state.tab3_last_mode = modo      # 2. Actualizamos el estado
-        st.rerun()                                  # 3. RECARGAMOS LA PÁGINA AL INSTANTE
-
+    
     c_rec, c_doc = st.columns([1, 1.3])
     
     # =========================================================
@@ -1635,6 +1629,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
