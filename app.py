@@ -1313,6 +1313,18 @@ with tabs[4]:
                     (Solo 1 o 2 deducciones muy famosas de {ccaa} que no haya marcado, brevemente).
                     """
                     st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
+                    
+                    js_scroll_up = """
+                        <script>
+                            var topAnchor = window.parent.document.getElementById('top-of-page');
+                            if (topAnchor) {
+                                topAnchor.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
+                            }
+                        </script>
+                    """
+                    components.html(js_scroll_up, height=0)
+
+            
 
             elif "ESCÁNER" in tipo_calc:
                 st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
@@ -1528,6 +1540,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
