@@ -1144,16 +1144,17 @@ with tabs[2]:
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
 # --- TAB 3: RECLAMAR / RECURRIR (SOLUCIÓN FINAL: KEYS ÚNICAS + AUTO-RESET) ---
+# --- TAB 3: RECLAMAR / RECURRIR (CORREGIDO Y CON LIMPIEZA TOTAL) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. MEMORIA DEL ÚLTIMO MODO (Para detectar cambios)
-    if "modo_anterior_tab3" not in st.session_state:
-        st.session_state.modo_anterior_tab3 = "Selecciona..."
+    # 1. CONTROL DE MEMORIA (Para detectar cambios)
+    if "modo_previo" not in st.session_state:
+        st.session_state.modo_previo = "Selecciona una opción..."
 
-    # 2. SELECTOR
-    modo_actual = st.selectbox(
+    # 2. EL SELECTOR (Variable 'modo')
+    modo = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
             "Selecciona una opción...", 
@@ -1161,51 +1162,50 @@ with tabs[3]:
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        key="selector_principal_tab3"
+        key="selector_modo_unico"
     )
 
-    # 3. EL "LIMPIADOR" (Se ejecuta ANTES de pintar nada)
-    # Si detecta que has cambiado de opción respecto a la última vez:
-    if modo_actual != st.session_state.modo_anterior_tab3:
-        st.session_state.generated_claim = ""           # Borra el texto de la IA
-        st.session_state.modo_anterior_tab3 = modo_actual # Actualiza la memoria
-        st.rerun()                                      # Reinicia la página para que salga todo limpio
+    # 3. EL LIMPIADOR NUCLEAR (Detecta el cambio y reinicia)
+    if modo != st.session_state.modo_previo:
+        st.session_state.generated_claim = ""       # Borra el texto generado
+        st.session_state.modo_previo = modo         # Actualiza la memoria
+        st.rerun()                                  # ¡REINICIO FORZADO! (Limpia la pantalla)
 
     c_rec, c_doc = st.columns([1, 1.3])
     
     # =========================================================
     # CASO A: REDACTAR BUROFAX
     # =========================================================
-    if "Redactar Burofax" in modo_actual:
+    if "Redactar" in modo:
         with c_rec:
             with st.container(border=False):
                 st.info("Generador de Burofax")
-                # AÑADIMOS KEYS ÚNICAS PARA QUE NO SE MEZCLEN CON OTROS FORMULARIOS
-                remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bur_remitente")
-                dest = st.text_input("Destinatario (Empresa/Persona)", key="bur_destinatario")
+                # Keys únicas para evitar que se mezclen con otros formularios
+                remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bf_remitente")
+                dest = st.text_input("Destinatario (Empresa/Persona)", key="bf_destinatario")
                 st.markdown("---")
                 
-                motivo = st.selectbox("Motivo", ["Cobro Indebido", "Seguros", "Fianza Alquiler", "Banca", "Transporte", "Otro"], key="bur_motivo")
+                motivo = st.selectbox("Motivo", ["Cobro Indebido", "Seguros", "Fianza Alquiler", "Banca", "Transporte", "Otro"], key="bf_motivo")
                 
                 datos_clave = ""
                 # Lógica simplificada para evitar errores visuales
                 if "Cobro" in motivo:
-                    datos_clave = f"Factura {st.text_input('Nº Factura', key='bur_fact')} de {st.number_input('Importe €', 0.0, key='bur_imp')}€."
+                    datos_clave = f"Factura {st.text_input('Nº Factura', key='bf_fac')} de {st.number_input('Importe €', 0.0, key='bf_imp')}€."
                 elif "Seguros" in motivo:
-                    datos_clave = f"Seguro {st.text_input('Póliza', key='bur_pol')}."
+                    datos_clave = f"Seguro {st.text_input('Póliza', key='bf_pol')}."
                 elif "Fianza" in motivo:
-                    datos_clave = f"Fianza piso {st.text_input('Dirección', key='bur_dir')}."
+                    datos_clave = f"Fianza piso {st.text_input('Dirección', key='bf_dir')}."
                 elif "Banca" in motivo:
-                    datos_clave = f"Banco: {st.text_input('Producto', key='bur_prod')}."
+                    datos_clave = f"Banco: {st.text_input('Producto', key='bf_prod')}."
                 elif "Transporte" in motivo:
-                    datos_clave = f"Vuelo {st.text_input('Vuelo', key='bur_vue')}."
+                    datos_clave = f"Vuelo {st.text_input('Vuelo', key='bf_vue')}."
                 else:
-                    datos_clave = f"Asunto: {st.text_input('Asunto', key='bur_asu')}."
+                    datos_clave = f"Asunto: {st.text_input('Asunto', key='bf_asu')}."
 
                 st.write("")
-                hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bur_hechos")
+                hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bf_hechos")
                 
-                if st.button("🔥 GENERAR BUROFAX", key="btn_gen_burofax"):
+                if st.button("🔥 GENERAR BUROFAX", key="btn_bf"):
                     with st.spinner("Redactando..."):
                         p = f"Actúa como abogado. Redacta Burofax. De: {remitente}. A: {dest}. Contexto: {datos_clave}. Hechos: {hechos}. Tono formal."
                         st.session_state.generated_claim = groq_engine(p, api_key)
@@ -1213,15 +1213,14 @@ with tabs[3]:
     # =========================================================
     # CASO B: RESPONDER CARTA
     # =========================================================
-    elif "Responder" in modo_actual:
+    elif "Responder" in modo:
         with c_rec:
             with st.container(border=False):
                 st.info("Respuesta Legal")
-                # KEYS ÚNICAS DIFERENTES A LAS DEL BUROFAX
-                uploaded_gen = st.file_uploader("Sube la carta (PDF/Foto)", type=["pdf", "jpg", "png"], key="res_upload")
-                mis_argumentos = st.text_area("¿Qué quieres responder?", key="res_argumentos")
+                uploaded_gen = st.file_uploader("Sube la carta (PDF/Foto)", type=["pdf", "jpg", "png"], key="rc_upload")
+                mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
                 
-                if st.button("📝 GENERAR RESPUESTA", key="btn_gen_respuesta"):
+                if st.button("📝 GENERAR RESPUESTA", key="btn_rc"):
                     if uploaded_gen and mis_argumentos:
                         with st.spinner("Analizando..."):
                             if uploaded_gen.type == "application/pdf": txt = extract_text_from_pdf(uploaded_gen)
@@ -1234,16 +1233,15 @@ with tabs[3]:
     # =========================================================
     # CASO C: MULTAS
     # =========================================================
-    elif "Multa" in modo_actual:
+    elif "Multa" in modo:
         with c_rec:
             with st.container(border=False):
                 st.info("Recurso de Multas")
-                # KEYS ÚNICAS DIFERENTES
                 uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
                 tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
                 mis_datos = st.text_input("Tus Datos", key="mul_datos")
                 
-                if st.button("⚖️ RECURRIR", key="btn_gen_multa"):
+                if st.button("⚖️ RECURRIR", key="btn_mul"):
                     if uploaded_multa and mis_datos:
                         with st.spinner("Auditando..."):
                             if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
@@ -1258,16 +1256,16 @@ with tabs[3]:
     # =========================================================
     with c_doc:
         # Solo mostramos si hay texto Y NO estamos en "Selecciona..."
-        if st.session_state.generated_claim and "Selecciona" not in modo_actual:
+        if st.session_state.generated_claim and "Selecciona" not in modo:
             st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
             st.write("")
             with st.container(border=False):
                 ce2, cb2 = st.columns([2,1])
-                with ce2: m2 = st.text_input("Email (Opcional)", key="email_final_tab3")
+                with ce2: m2 = st.text_input("Email (Opcional)", key="email_res")
                 with cb2:
                     st.write(""); st.write("")
-                    if st.button("PDF LEGAL", key="btn_pdf_tab3"):
-                        save_lead(m2, "RECLAMACION", modo_actual)
+                    if st.button("PDF LEGAL", key="btn_pdf_res"):
+                        save_lead(m2, "RECLAMACION", modo)
                         pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
                         st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
 
@@ -1586,6 +1584,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
