@@ -742,7 +742,7 @@ with tabs[0]:
     
     col1, col2, col3 = st.columns(3)
 
-   script_mobile_scroll = """
+    script_mobile_scroll = """
         <script>
             function goToTab(index) {
                 // 1. Cambiar pestaña
@@ -802,7 +802,7 @@ with tabs[0]:
     
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-   script_mobile_scroll = """
+    script_mobile_scroll = """
         <script>
             function goToTab(index) {
                 // 1. Cambiar pestaña
@@ -1451,6 +1451,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
