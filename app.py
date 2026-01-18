@@ -701,6 +701,28 @@ with tabs[0]:
     st.caption("Tu asistente jurídico inteligente disponible las 24 horas.")
     
     col1, col2, col3 = st.columns(3)
+
+    # Este script busca el contenedor principal del contenido y lo obliga a mostrarse desde el principio
+    script_scroll_anchor = """
+        <script>
+            function goToTab(index) {
+                // 1. Clic en la pestaña
+                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+                if (tabs[index]) { tabs[index].click(); }
+                
+                // 2. BUSCAR EL CONTENIDO PRINCIPAL (Clase 'block-container')
+                var bloquePrincipal = window.parent.document.getElementsByClassName('block-container')[0];
+                
+                if (bloquePrincipal) {
+                    // 3. OBLIGAR AL NAVEGADOR A ENFOCAR EL INICIO DEL BLOQUE
+                    bloquePrincipal.scrollIntoView({behavior: "instant", block: "start", inline: "nearest"});
+                }
+                
+                // 4. Aseguramiento extra para móviles
+                window.parent.window.scrollTo(0, 0);
+            }
+        </script>
+    """
     
     with col1:
         st.markdown("#### 🔍 Analizar")
@@ -1398,5 +1420,6 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
