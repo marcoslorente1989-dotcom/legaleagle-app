@@ -1140,7 +1140,7 @@ with tabs[3]:
         "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
         "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
         "👮 Recurrir Multa Tráfico (DGT/Ayto)"
-    ], horizontal=True)
+    ], horizontal=True, on_change=lambda: st.session_state.update(generated_claim=""))
     
     c_rec, c_doc = st.columns([1, 1.3])
     
@@ -1615,3 +1615,4 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
