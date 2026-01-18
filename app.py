@@ -1148,9 +1148,12 @@ with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. SELECTOR CON DETONADOR DE LIMPIEZA
-    # Al cambiar la opción, se ejecuta 'nukear_memoria_reclamacion' inmediatamente.
-    modo = st.selectbox(
+    # 1. INICIALIZAR MEMORIA DE SELECCIÓN
+    if "modo_anterior" not in st.session_state:
+        st.session_state.modo_anterior = "Selecciona..."
+
+    # 2. EL SELECTOR
+    modo_actual = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
             "Selecciona una opción...", 
@@ -1158,10 +1161,18 @@ with tabs[3]:
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        index=0,
-        on_change=nukear_memoria_reclamacion # <--- AQUÍ ESTÁ LA CLAVE
+        key="selector_tramite"
     )
-    
+
+    # 3. EL LIMPIADOR (Aquí está la magia)
+    # Si la opción que acabas de elegir es distinta a la que tenías antes...
+    if modo_actual != st.session_state.modo_anterior:
+        st.session_state.generated_claim = ""        # 1. Borra el texto generado antiguo
+        st.session_state.modo_anterior = modo_actual # 2. Actualiza la memoria
+        st.rerun()                                   # 3. REINICIA LA PÁGINA (F5 automático)
+        # Al hacer st.rerun(), el código se detiene aquí y vuelve a empezar limpio.
+        # Así es IMPOSIBLE que se mezclen formularios.
+
     c_rec, c_doc = st.columns([1, 1.3])
     
     # =========================================================
@@ -1635,6 +1646,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
