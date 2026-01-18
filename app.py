@@ -1,8 +1,45 @@
 import streamlit as st
+import os
+
+# ==============================================================================
+# 0. PARCHE DE EMERGENCIA PARA WHATSAPP/SEO (Sobrescribe el archivo físico)
+# ==============================================================================
+try:
+    # Buscamos dónde está instalado Streamlit en el servidor de Render
+    import streamlit
+    p = os.path.dirname(streamlit.__file__)
+    f_path = os.path.join(p, "static", "index.html")
+    
+    # Leemos el archivo original
+    with open(f_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+    
+    # Si sigue poniendo "Streamlit", lo cambiamos físicamente por "LegalApp"
+    if "<title>Streamlit</title>" in html_content:
+        new_content = html_content.replace(
+            "<title>Streamlit</title>", 
+            "<title>LegalApp AI - Tu Abogado 24h</title>"
+        )
+        # Añadimos metaetiquetas reales para que WhatsApp las lea sí o sí
+        meta_tags = """
+        <meta property="og:title" content="LegalApp AI - Tu Abogado 24h">
+        <meta property="og:description" content="Tu abogado virtual gratuito. Analiza contratos, calcula impuestos y reclama deudas con IA.">
+        <meta property="og:image" content="https://legalapp.es/logo.png">
+        """
+        new_content = new_content.replace("<head>", f"<head>{meta_tags}")
+        
+        # Guardamos el archivo hackeado
+        with open(f_path, "w", encoding="utf-8") as f:
+            f.write(new_content)
+except Exception as e:
+    print(f"Error parcheando SEO: {e}")
+
+# ==============================================================================
+# 1. IMPORTS Y CONFIGURACIÓN
+# ==============================================================================
 import streamlit.components.v1 as components
 import pdfplumber
 from groq import Groq
-import os
 import pandas as pd
 from fpdf import FPDF
 import base64
@@ -11,11 +48,7 @@ import json
 import gspread
 import requests 
 from oauth2client.service_account import ServiceAccountCredentials
-import re # IMPORTANTE: Necesario para el nuevo Euribor
-
-# ==============================================================================
-# 1. CONFIGURACIÓN Y CLAVES (OBLIGATORIO PRIMERO)
-# ==============================================================================
+import re 
 
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
@@ -25,9 +58,16 @@ st.set_page_config(
     menu_items={
         'Get Help': None,
         'Report a bug': None,
-        'About': "LegalApp AI - Inteligencia Legal en España"
+        'About': "LegalApp AI"
     }
 )
+
+# ... después de st.set_page_config ...
+
+# ANCLA INVISIBLE PARA EL SCROLL MÓVIL
+st.markdown("<div id='top-of-page'></div>", unsafe_allow_html=True)
+
+# ... aquí siguen tus claves api_key ...
 
 # Intentar leer de Variable de Entorno (Render) o Secrets (Local)
 api_key = os.getenv("GROQ_API_KEY")
@@ -702,24 +742,22 @@ with tabs[0]:
     
     col1, col2, col3 = st.columns(3)
 
-    # Este script busca el contenedor principal del contenido y lo obliga a mostrarse desde el principio
-    script_scroll_anchor = """
+   script_mobile_scroll = """
         <script>
             function goToTab(index) {
-                // 1. Clic en la pestaña
+                // 1. Cambiar pestaña
                 var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
                 if (tabs[index]) { tabs[index].click(); }
                 
-                // 2. BUSCAR EL CONTENIDO PRINCIPAL (Clase 'block-container')
-                var bloquePrincipal = window.parent.document.getElementsByClassName('block-container')[0];
-                
-                if (bloquePrincipal) {
-                    // 3. OBLIGAR AL NAVEGADOR A ENFOCAR EL INICIO DEL BLOQUE
-                    bloquePrincipal.scrollIntoView({behavior: "instant", block: "start", inline: "nearest"});
+                // 2. SOLUCIÓN MÓVIL: Buscar el ancla invisible y saltar a ella
+                var topAnchor = window.parent.document.getElementById('top-of-page');
+                if (topAnchor) {
+                    topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
                 }
-                
-                // 4. Aseguramiento extra para móviles
-                window.parent.window.scrollTo(0, 0);
+
+                // 3. REFODRZO: Forzar propiedad scrollTop del contenedor específico de Streamlit
+                var mobileContainer = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
+                if (mobileContainer) { mobileContainer.scrollTop = 0; }
             }
         </script>
     """
@@ -757,36 +795,29 @@ with tabs[0]:
     with c_serv3:
         st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
    
-# --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL RECURSIVO) ---
-    st.write("")
-    st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
-    
-    c_acc1, c_acc2, c_acc3 = st.columns(3)
-    
+   
   # --- ACCESOS DIRECTOS A TRÁMITES (CON SCROLL "ANCLA VISUAL") ---
     st.write("")
     st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
     
     c_acc1, c_acc2, c_acc3 = st.columns(3)
     
-    # Este script busca el contenedor principal del contenido y lo obliga a mostrarse desde el principio
-    script_scroll_anchor = """
+   script_mobile_scroll = """
         <script>
             function goToTab(index) {
-                // 1. Clic en la pestaña
+                // 1. Cambiar pestaña
                 var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
                 if (tabs[index]) { tabs[index].click(); }
                 
-                // 2. BUSCAR EL CONTENIDO PRINCIPAL (Clase 'block-container')
-                var bloquePrincipal = window.parent.document.getElementsByClassName('block-container')[0];
-                
-                if (bloquePrincipal) {
-                    // 3. OBLIGAR AL NAVEGADOR A ENFOCAR EL INICIO DEL BLOQUE
-                    bloquePrincipal.scrollIntoView({behavior: "instant", block: "start", inline: "nearest"});
+                // 2. SOLUCIÓN MÓVIL: Buscar el ancla invisible y saltar a ella
+                var topAnchor = window.parent.document.getElementById('top-of-page');
+                if (topAnchor) {
+                    topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
                 }
-                
-                // 4. Aseguramiento extra para móviles
-                window.parent.window.scrollTo(0, 0);
+
+                // 3. REFODRZO: Forzar propiedad scrollTop del contenedor específico de Streamlit
+                var mobileContainer = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
+                if (mobileContainer) { mobileContainer.scrollTop = 0; }
             }
         </script>
     """
@@ -1420,6 +1451,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
