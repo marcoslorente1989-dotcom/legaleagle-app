@@ -1395,43 +1395,47 @@ with tabs[4]:
         with c_menu_L:
             st.subheader("Calculadora Fiscal")
             st.caption("Selecciona una herramienta:")
+            c_nav1, c_nav2, = st.columns(2)
+
             
             # Grid de botones (Izquierda)
-            if st.button("💰\nRENTA\nDeducciones", use_container_width=True): 
-                st.session_state.nav_impuestos = "RENTA"
-                st.session_state.generated_calc = ""
-                st.rerun()
-            if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True): 
-                st.session_state.nav_impuestos = "ESCANER"
-                st.session_state.generated_calc = ""
-                st.rerun()
-            if st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True): 
-                st.session_state.nav_impuestos = "VENTA"
-                st.session_state.generated_calc = ""
-                st.rerun()
-            if st.button("📈\nIPC\nAlquiler", use_container_width=True): 
-                st.session_state.nav_impuestos = "IPC"
-                st.session_state.generated_calc = ""
-                st.rerun()
+            with c_nav1: 
+                if st.button("💰\nRENTA\nDeducciones", use_container_width=True): 
+                   st.session_state.nav_impuestos = "RENTA"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
+                if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True): 
+                   st.session_state.nav_impuestos = "ESCANER"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
+                if st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True): 
+                   st.session_state.nav_impuestos = "VENTA"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
+                if st.button("📈\nIPC\nAlquiler", use_container_width=True): 
+                   st.session_state.nav_impuestos = "IPC"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
 
                    
             # Grid de botones (Derecha)
-            if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True): 
-                st.session_state.nav_impuestos = "SUELDO"
-                st.session_state.generated_calc = ""
-                st.rerun()
-            if st.button("📝\nGASTOS\nCompraventa", use_container_width=True): 
-                st.session_state.nav_impuestos = "GASTOS"
-                st.session_state.generated_calc = ""
-                st.rerun()
-            if st.button("📉\nHIPOTECA\nCuota", use_container_width=True): 
-                st.session_state.nav_impuestos = "HIPOTECA"
-                st.session_state.generated_calc = ""
-                st.rerun()
-            if st.button("❓\nOTRO\nTrámite", use_container_width=True): 
-                st.session_state.nav_impuestos = "OTRO"
-                st.session_state.generated_calc = ""
-                st.rerun()
+            with c_nav2: 
+                if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True): 
+                   st.session_state.nav_impuestos = "SUELDO"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
+                if st.button("📝\nGASTOS\nCompraventa", use_container_width=True): 
+                   st.session_state.nav_impuestos = "GASTOS"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
+                if st.button("📉\nHIPOTECA\nCuota", use_container_width=True): 
+                   st.session_state.nav_impuestos = "HIPOTECA"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
+                if st.button("❓\nOTRO\nTrámite", use_container_width=True): 
+                   st.session_state.nav_impuestos = "OTRO"
+                   st.session_state.generated_calc = ""
+                   st.rerun()
 
     # --- VISTA B: HERRAMIENTAS (COLUMNAS NUEVAS = LIMPIEZA TOTAL) ---
     else:
@@ -1739,6 +1743,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
