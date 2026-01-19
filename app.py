@@ -1449,7 +1449,7 @@ with tabs[4]:
                 st.rerun()
             
             st.markdown("---")
-            tool = st.session_state.nav_impuestos
+            modo = st.session_state.nav_impuestos
             anio_actual = datetime.now().year
 
             # === RENTA (Lógica Completa) ===
@@ -1743,6 +1743,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
