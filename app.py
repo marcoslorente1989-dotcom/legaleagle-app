@@ -1340,15 +1340,15 @@ with tabs[3]:
         elif st.session_state.nav_reclamar == "RESPONDER":
             with c_rec:
                 with st.container(border=False):
-                    st.info("📂 Sube la carta recibida.")
-                    uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
-                    mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
+                     st.info("📂 Sube la carta recibida.")
+                     uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
+                     mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
                     
                     if st.button("📝 GENERAR RESPUESTA"):
-                    if uploaded_gen and mis_argumentos:
-                        with st.spinner("Analizando documento y redactando respuesta..."):
-                            if uploaded_gen.type == "application/pdf": txt_gen = extract_text_from_pdf(uploaded_gen)
-                            else: txt_gen = analyze_image_groq(uploaded_gen, "Lee esta carta.", api_key)
+                        if uploaded_gen and mis_argumentos:
+                           with st.spinner("Analizando documento y redactando respuesta..."):
+                               if uploaded_gen.type == "application/pdf": txt_gen = extract_text_from_pdf(uploaded_gen)
+                               else: txt_gen = analyze_image_groq(uploaded_gen, "Lee esta carta.", api_key)
                             
                             p_gen = f"""
                             Actúa como abogado. He recibido esta notificación:
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
