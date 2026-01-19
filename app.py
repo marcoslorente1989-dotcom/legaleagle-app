@@ -1224,16 +1224,15 @@ with tabs[2]:
                             pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
                             st.download_button("⬇️ Bajar PDF", data=pdf_file, file_name=f"{tipo_texto}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA CORREGIDA IDÉNTICA A TAB 2) ---
+# --- TAB 3: RECLAMAR / RECURRIR (AISLAMIENTO TOTAL) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
-    st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    # 1. GESTIÓN DEL ESTADO
     if "nav_reclamar" not in st.session_state:
         st.session_state.nav_reclamar = "MENU"
 
-    # --- VISTA A: MENÚ PRINCIPAL (BOTONES) ---
+    # --- VISTA A: MENÚ PRINCIPAL ---
     if st.session_state.nav_reclamar == "MENU":
         st.info("Selecciona qué trámite quieres iniciar:")
         c_nav1, c_nav2, c_nav3 = st.columns(3)
@@ -1241,7 +1240,7 @@ with tabs[3]:
         with c_nav1:
             if st.button("✍️\nREDACTAR BUROFAX\n(Reclamar Deudas)", use_container_width=True):
                 st.session_state.nav_reclamar = "BUROFAX"
-                st.session_state.generated_claim = "" # Limpieza preventiva
+                st.session_state.generated_claim = ""
                 st.rerun()
         with c_nav2:
             if st.button("🛡️\nRESPONDER CARTA\n(Vecinos, Seguros...)", use_container_width=True):
@@ -1254,44 +1253,44 @@ with tabs[3]:
                 st.session_state.generated_claim = ""
                 st.rerun()
 
-    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS (TODO DENTRO DEL ELSE) ---
+    # --- VISTA B: HERRAMIENTAS (CADA UNA CREA SU PROPIO ESPACIO) ---
     else:
-        # BOTÓN VOLVER (Global para esta pestaña)
         if st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES"):
             st.session_state.nav_reclamar = "MENU"
             st.session_state.generated_claim = ""
             st.rerun()
         
         st.markdown("---")
-        c_rec, c_doc = st.columns([1, 1.3])
 
         # === HERRAMIENTA 1: BUROFAX ===
         if st.session_state.nav_reclamar == "BUROFAX":
-            with c_rec:
+            # DEFINIMOS COLUMNAS AQUÍ DENTRO PARA QUE SEAN NUEVAS
+            c_bur_izq, c_bur_der = st.columns([1, 1.3])
+            
+            with c_bur_izq:
                 with st.container(border=False):
                     st.info("Generador de Burofax")
-                    remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="rem_b")
-                    dest = st.text_input("Destinatario", key="dest_b")
+                    remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bf_remitente")
+                    dest = st.text_input("Destinatario (Empresa/Persona)", key="bf_destinatario")
                     st.markdown("---")
                     
                     motivo = st.selectbox("Motivo", [
                         "Cobro Indebido / Facturas", "Seguros", "Fianza Alquiler", 
                         "Banca", "Transporte", "Otro"
-                    ], key="mot_b")
+                    ], key="bf_motivo")
                     
                     datos_clave = ""
-                    
                     if "Facturas" in motivo:
-                        c_fac1, c_fac2 = st.columns(2)
-                        with c_fac1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
-                        with c_fac2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
+                        c1, c2 = st.columns(2)
+                        with c1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
+                        with c2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
                         fecha_fac = st.date_input("Fecha de la factura", key="bf_date")
                         datos_clave = f"Reclamación de Cantidad. Factura Nº: {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}. Motivo: Cobro indebido o servicio no prestado."
                     
                     elif "Seguros" in motivo:
-                        c_seg1, c_seg2 = st.columns(2)
-                        with c_seg1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
-                        with c_seg2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
+                        c1, c2 = st.columns(2)
+                        with c1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
+                        with c2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
                         fecha_sin = st.date_input("Fecha del Siniestro", key="bf_date_sin")
                         datos_clave = f"Reclamación a Aseguradora. Póliza Nº: {num_poliza}. Siniestro Nº: {num_siniestro}. Fecha Ocurrencia: {fecha_sin}. Exigencia de cumplimiento de contrato y cobertura."
                     
@@ -1317,75 +1316,69 @@ with tabs[3]:
                         datos_clave = f"Reclamación Genérica. Asunto: {asunto}."
 
                     st.write("")
-                    hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="h_b")
+                    hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bf_hechos")
                     
-                    if st.button("🔥 GENERAR BUROFAX", key="btn_b"):
+                    if st.button("🔥 GENERAR BUROFAX", key="btn_bf_gen"):
                         with st.spinner("Redactando..."):
-                            p = f"""
-                            Actúa como abogado experto en derecho civil y mercantil español.
-                            Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
-                            REMITENTE: {remitente}
-                            DESTINATARIO: {dest}
-                            CONTEXTO: {datos_clave}
-                            HECHOS DETALLADOS: {hechos}
-                            INSTRUCCIONES:
-                            1. Usa estructura formal de carta legal.
-                            2. Cita la legislación aplicable según el caso (Ej: Ley Contrato Seguro, Ley General Defensa Consumidores, LAU, etc).
-                            3. Establece un plazo de respuesta (7 días).
-                            """
+                            p = f"Actúa como abogado. Redacta Burofax. De: {remitente}. A: {dest}. Contexto: {datos_clave}. Hechos: {hechos}. Tono formal."
                             st.session_state.generated_claim = groq_engine(p, api_key)
+            
+            # VISOR BUROFAX (USANDO SU COLUMNA DERECHA)
+            with c_bur_der:
+                if st.session_state.generated_claim:
+                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
+                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Legal"); st.download_button("⬇️ PDF", pdf, "legal.pdf")
 
         # === HERRAMIENTA 2: RESPONDER ===
         elif st.session_state.nav_reclamar == "RESPONDER":
-            with c_rec:
+            # DEFINIMOS COLUMNAS NUEVAS
+            c_res_izq, c_res_der = st.columns([1, 1.3])
+            
+            with c_res_izq:
                 with st.container(border=False):
                     st.info("📂 Sube la carta recibida.")
-                    uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="u_gen_r")
-                    mis_argumentos = st.text_area("¿Qué quieres responder?", key="arg_r")
+                    uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
+                    mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
                     
-                    if st.button("📝 GENERAR RESPUESTA", key="btn_r"):
+                    if st.button("📝 GENERAR RESPUESTA", key="btn_rc_gen"):
                         if uploaded_gen and mis_argumentos:
                             with st.spinner("Analizando..."):
                                 if uploaded_gen.type == "application/pdf": txt = extract_text_from_pdf(uploaded_gen)
                                 else: txt = analyze_image_groq(uploaded_gen, "Lee carta", api_key)
-                                
-                                p = f"Actúa como abogado. Recibido: ---{txt[:4000]}---. Quiero responder: {mis_argumentos}. Redacta respuesta formal."
+                                p = f"Abogado. Recibido: {txt[:4000]}. Responder: {mis_argumentos}. Redacta carta."
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
+            
+            with c_res_der:
+                if st.session_state.generated_claim:
+                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
+                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Respuesta"); st.download_button("⬇️ PDF", pdf, "respuesta.pdf")
 
         # === HERRAMIENTA 3: MULTAS ===
         elif st.session_state.nav_reclamar == "MULTA":
-            with c_rec:
+            # DEFINIMOS COLUMNAS NUEVAS
+            c_mul_izq, c_mul_der = st.columns([1, 1.3])
+            
+            with c_mul_izq:
                 with st.container(border=False):
                     st.info("👮 Sube la multa.")
-                    uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_multa_m")
-                    tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="t_m")
-                    mis_datos = st.text_input("Tus Datos", key="d_m")
+                    uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
+                    tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
+                    mis_datos = st.text_input("Tus Datos", key="mul_datos")
                     
-                    if st.button("⚖️ RECURRIR", key="btn_m"):
+                    if st.button("⚖️ RECURRIR", key="btn_mul_gen"):
                         if uploaded_multa and mis_datos:
                             with st.spinner("Auditando..."):
                                 if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
                                 else: txt = analyze_image_groq(uploaded_multa, "Lee multa", api_key)
-                                
-                                p = f"Abogado experto en {tipo_m}. Multa: ---{txt[:5000]}---. Cliente: {mis_datos}. Redacta Recurso alegando defectos de forma."
+                                p = f"Abogado experto en {tipo_m}. Multa: {txt[:5000]}. Cliente: {mis_datos}. Redacta Recurso."
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
-
-        # === VISOR DE RESULTADOS (COMÚN) ===
-        with c_doc:
-            if st.session_state.generated_claim:
-                st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-                st.write("")
-                with st.container(border=False):
-                    ce2, cb2 = st.columns([2,1])
-                    with ce2: m2 = st.text_input("Email (Opcional)", key="mr_tab3")
-                    with cb2:
-                        st.write(""); st.write("")
-                        if st.button("PDF LEGAL", key="br_tab3"):
-                            save_lead(m2, "RECLAMACION", st.session_state.nav_reclamar)
-                            pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
-                            st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
+            
+            with c_mul_der:
+                if st.session_state.generated_claim:
+                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
+                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
                             
 # --- TAB 4: IMPUESTOS (ESTRUCTURA CORREGIDA IDÉNTICA A TAB 2) ---
 with tabs[4]:
@@ -1508,7 +1501,7 @@ with tabs[4]:
                             p_nomina = f"Actúa como asesor laboral experto en España. Analiza esta nómina: {txt}. Genera informe Semáforo Legal (SMI, IRPF, Cotización)."
                             st.session_state.generated_calc = groq_engine(p_nomina, api_key)
 
-            # === SUELDO NETO ===
+            # === SUELDO NETO (Lógica Completa Recuperada) ===
             elif tool == "SUELDO":
                 st.subheader("💶 Simulador Sueldo Neto")
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
@@ -1641,7 +1634,7 @@ with tabs[4]:
                 if t_interes == "Fijo":
                     interes_final = st.number_input("Interés Nominal Anual (%)", value=3.0, key="hip_int")
                 else:
-                    eur_actual = obtener_euribor_actual()
+                    eur = obtener_euribor_actual()
                     st.success(f"📈 Euríbor hoy: **{eur_actual}%**")
                     dif_banco = st.number_input("Diferencial del banco (%)", value=0.75, key="hip_dif")
                     interes_final = eur_actual + dif_banco
@@ -1651,7 +1644,7 @@ with tabs[4]:
                     p_h = f"Calcula hipoteca. Capital: {capital_h}€. Interés total: {interes_final}%. Plazo: {plazo_h} años. Indica cuota mensual y total intereses."
                     st.session_state.generated_calc = groq_engine(p_h, api_key)
 
-        # --- VISOR COMÚN ---
+        # --- VISOR COMÚN (DERECHA) ---
         with c_res:
             if st.session_state.generated_calc:
                 if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
@@ -1706,6 +1699,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
