@@ -1126,6 +1126,13 @@ with tabs[1]:
                     st.rerun() # Para refrescar y mostrar la respuesta
 # --- TAB 2: CREADOR DE CONTRATOS (ESTRATEGIA DASHBOARD) ---
 with tabs[2]:
+
+    with tabs[2]:
+    # --- INICIALIZACIÓN DE SEGURIDAD ---
+    # Esto evita que la app falle si alguna variable no se ha cargado aún
+    tipo_texto = "Documento Legal"
+    data_p = "Datos no especificados"
+    
     # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
     if "nav_crear" not in st.session_state:
         st.session_state.nav_crear = "MENU"
@@ -1307,10 +1314,7 @@ with tabs[2]:
 
                 # ¡¡ESTA LÍNEA FALTABA!! Sin ella, la IA no sabe qué redactar
                 tipo_texto = "Contrato de Compraventa de Vehículo Usado"
-
-                # 1. ¡IMPORTANTE! FALTABA ESTE CAMPO:
-                ciudad = st.text_input("Ciudad donde se firma", value="Madrid", key="veh_ciudad")
-                
+          
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
                 comprador = st.text_input("Comprador (Nombre y DNI)")
@@ -2076,6 +2080,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
