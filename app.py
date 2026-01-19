@@ -1386,7 +1386,7 @@ with tabs[3]:
                                 4. Veredicto breve: ¿Aconsejas recurrir o pagar con descuento?
                                 """
                                 st.session_state.multa_viability = groq_engine(p_viabilidad, api_key)
-                        else:
+                         else:
                             st.warning("Por favor, sube el archivo de la multa.")
 
                     # MOSTRAR RESULTADO VIABILIDAD (Si ya se hizo)
@@ -1796,6 +1796,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
