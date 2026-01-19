@@ -1226,9 +1226,14 @@ with tabs[2]:
 
 # --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[3]:
+    
     # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
     if "nav_reclamar" not in st.session_state:
         st.session_state.nav_reclamar = "MENU"
+        
+    # ... debajo de if "nav_reclamar" ...
+    if "multa_viability" not in st.session_state: st.session_state.multa_viability = ""
+    if "temp_multa_txt" not in st.session_state: st.session_state.temp_multa_txt = ""    
 
     # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
     if st.session_state.nav_reclamar == "MENU":
@@ -1252,6 +1257,8 @@ with tabs[3]:
             if st.button("👮\nRECURRIR MULTA\n(Tráfico/Ayto)", use_container_width=True):
                 st.session_state.nav_reclamar = "MULTA"
                 st.session_state.generated_claim = ""
+                st.session_state.multa_viability = "" # <--- AÑADIR
+                st.session_state.temp_multa_txt = ""  # <--- AÑADIR
                 st.rerun()
 
     # --- VISTA B: FORMULARIO ESPECÍFICO ---
@@ -1346,23 +1353,71 @@ with tabs[3]:
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
 
-            # === HERRAMIENTA 3: MULTAS ===
-            elif modo == "MULTA":
+            # === HERRAMIENTA 3: MULTAS (NUEVO FLUJO FREEMIUM) ===
+        elif modo == "MULTA":
+            with c_mul_izq:
                 with st.container(border=False):
-                    st.info("👮 Sube la multa.")
+                    st.info("👮 Sube la multa para analizarla.")
                     uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
                     tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
                     mis_datos = st.text_input("Tus Datos", key="mul_datos")
                     
-                    if st.button("⚖️ RECURRIR", key="btn_mul_gen"):
-                        if uploaded_multa and mis_datos:
-                            with st.spinner("Auditando..."):
+                    # PASO 1: ANÁLISIS DE VIABILIDAD (GRATIS)
+                    if st.button("🔍 ANALIZAR VIABILIDAD (GRATIS)", key="btn_mul_via"):
+                        if uploaded_multa:
+                            with st.spinner("Buscando defectos de forma..."):
+                                # Leemos el archivo
                                 if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
                                 else: txt = analyze_image_groq(uploaded_multa, "Lee multa", api_key)
                                 
-                                p = f"Abogado experto en {tipo_m}. Multa: {txt[:5000]}. Cliente: {mis_datos}. Redacta Recurso."
-                                st.session_state.generated_claim = groq_engine(p, api_key)
-                        else: st.warning("Faltan datos.")
+                                # Guardamos el texto en memoria para no re-leerlo luego
+                                st.session_state.temp_multa_txt = txt 
+                                
+                                # Prompt de Diagnóstico
+                                p_viabilidad = f"""
+                                Actúa como abogado experto en multas. Analiza este texto:
+                                ---
+                                {txt[:4000]}
+                                ---
+                                NO REDACTES EL RECURSO AÚN. Solo dime:
+                                1. ¿Es recurrible? (Sí/No/Difícil)
+                                2. Probabilidad de éxito estimada (%).
+                                3. Posibles defectos de forma detectados (fechas, falta de foto, márgenes, competencia, etc).
+                                4. Veredicto breve: ¿Aconsejas recurrir o pagar con descuento?
+                                """
+                                st.session_state.multa_viability = groq_engine(p_viabilidad, api_key)
+                        else:
+                            st.warning("Por favor, sube el archivo de la multa.")
+
+                    # MOSTRAR RESULTADO VIABILIDAD (Si ya se hizo)
+                    if st.session_state.multa_viability:
+                        st.success("✅ Análisis Completado")
+                        st.markdown(f"<div style='background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; border-left:4px solid #facc15; font-size:14px;'>{st.session_state.multa_viability}</div>", unsafe_allow_html=True)
+                        st.write("")
+                        
+                        # PASO 2: REDACCIÓN DEL RECURSO (PREMIUM - BOTÓN DESBLOQUEADO)
+                        st.markdown("👇 **¿Quieres que redacte el recurso legal?**")
+                        if st.button("⚖️ REDACTAR RECURSO AHORA", key="btn_mul_gen"):
+                            if mis_datos and st.session_state.temp_multa_txt:
+                                with st.spinner("Redactando Pliego de Descargos..."):
+                                    p_recurso = f"""
+                                    Actúa como Abogado. Redacta el PLIEGO DE DESCARGOS para recurrir la multa analizada anteriormente.
+                                    MULTA: {st.session_state.temp_multa_txt[:4000]}
+                                    CLIENTE: {mis_datos}.
+                                    INSTRUCCIONES: 
+                                    - Formato legal formal para presentar ante la administración.
+                                    - Alega todos los defectos posibles (indefensión, falta de pruebas, márgenes de error radar, etc).
+                                    - Cita leyes y sentencias aplicables.
+                                    """
+                                    st.session_state.generated_claim = groq_engine(p_recurso, api_key)
+                            else:
+                                st.warning("Faltan tus datos personales para completar el escrito.")
+            
+            # VISOR (Se mantiene en la columna derecha)
+            with c_mul_der:
+                if st.session_state.generated_claim:
+                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
+                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
 
         # --- VISOR DE RESULTADOS (COMÚN) ---
         with c_doc:
@@ -1389,13 +1444,11 @@ with tabs[4]:
 
     # --- VISTA A: MENÚ PRINCIPAL ---
     if st.session_state.nav_impuestos == "MENU":
-        # Creamos columnas NUEVAS solo para el menú
-        c_menu_L, c_menu_R = st.columns([1, 1]) 
-        
+             
         with c_menu_L:
             st.subheader("Calculadora Fiscal")
             st.caption("Selecciona una herramienta:")
-            c_nav1, c_nav2, = st.columns(2)
+            c_nav1, c_nav2, = st.columns(3)
 
             
             # Grid de botones (Izquierda)
@@ -1743,6 +1796,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
