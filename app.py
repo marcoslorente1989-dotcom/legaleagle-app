@@ -49,6 +49,8 @@ import gspread
 import requests 
 from oauth2client.service_account import ServiceAccountCredentials
 import re 
+from docx import Document # Para generar Word
+import urllib.parse
 
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
@@ -237,6 +239,29 @@ components.html("""
 # ==============================================================================
 # 2. ESTILOS CSS (V110: SOLUCIÓN FINAL CANDADO Y COLORES)
 # ==============================================================================
+st.markdown("""
+    <style>
+    /* Ocultar menú hamburguesa y footer de Streamlit */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Reducir el espacio blanco excesivo de arriba */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+    
+    /* Estilo botón WhatsApp (Verde) */
+    .stLinkButton a {
+        background-color: #25D366 !important;
+        color: white !important;
+        border: none !important;
+        font-weight: bold !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -677,6 +702,25 @@ def create_pdf(content, title="Documento"):
     safe_content = content.encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 6, safe_content)
     return pdf.output(dest='S').encode('latin-1')
+
+# --- FUNCIÓN PARA GENERAR WORD (.docx) ---
+def create_docx(text, title="Documento"):
+    doc = Document()
+    doc.add_heading(title, 0)
+    for paragraph in text.split('\n'):
+        if paragraph.strip():
+            doc.add_paragraph(paragraph)
+    bio = io.BytesIO()
+    doc.save(bio)
+    bio.seek(0)
+    return bio
+
+# --- FUNCIÓN PARA ENLACE WHATSAPP ---
+def get_whatsapp_link(text):
+    # Cortamos el texto si es muy largo para que quepa en la URL
+    msg = f"Hola, aquí tienes el documento generado por AbogadoIA:\n\n{text[:500]}...\n(Ver documento completo adjunto)"
+    encoded_msg = urllib.parse.quote(msg)
+    return f"https://wa.me/?text={encoded_msg}"
 
 def groq_engine(prompt, key, temp=0.2):
     client = Groq(api_key=key)
@@ -1288,10 +1332,31 @@ with tabs[2]:
                     with ce: m = st.text_input("Email", key="mc_tab2")
                     with cb: 
                         st.write(""); st.write("")
-                        if st.button("PDF OFICIAL", key="bc_tab2"):
-                            save_lead(m, "CREAR", tipo_texto)
-                            pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
-                            st.download_button("⬇️ Bajar PDF", data=pdf_file, file_name=f"{tipo_texto}.pdf", mime="application/pdf")
+                       # --- BLOQUE DE DESCARGAS MEJORADO (PDF + WORD + WHATSAPP) ---
+                        st.write("---")
+                        c_down1, c_down2, c_down3 = st.columns(3)
+                        
+                        # 1. PDF (Existente)
+                        with c_down1:
+                            if st.button("📄 PDF", key="btn_pdf_tab2", use_container_width=True):
+                                save_lead(m, "CREAR", tipo_texto)
+                                pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
+                                # Truco: Usamos session_state para que el botón de descarga aparezca tras generar
+                                st.session_state.pdf_ready = pdf_file
+
+                            if "pdf_ready" in st.session_state:
+                                st.download_button("⬇️ Bajar PDF", data=st.session_state.pdf_ready, file_name=f"{tipo_texto}.pdf", mime="application/pdf", key="dl_pdf_2")
+
+                        # 2. WORD (Mejora 1 - Muy demandado)
+                        with c_down2:
+                            docx_file = create_docx(st.session_state.generated_contract, f"Contrato {tipo_texto}")
+                            st.download_button("📝 Word", data=docx_file, file_name=f"{tipo_texto}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="btn_word_tab2", use_container_width=True)
+
+                        # 3. WHATSAPP (Mejora 2 - Futuro Pago)
+                        with c_down3:
+                            # Generamos el enlace con el texto
+                            wa_link = get_whatsapp_link(st.session_state.generated_contract)
+                            st.link_button("📲 WhatsApp", wa_link, use_container_width=True)
 
 # --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[3]:
@@ -1891,6 +1956,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
