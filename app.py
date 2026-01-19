@@ -1207,20 +1207,40 @@ with tabs[2]:
                 CLÁUSULAS ADICIONALES IMPORTANTES: {clausula_extra}.
                 """
             # === PRÉSTAMO (Con tu calculadora integrada) ===
+            # === PRÉSTAMO (Con DNI añadido) ===
             elif modo == "PRESTAMO":
                 st.subheader("💰 Préstamo entre Particulares")
                 st.info("💡 **Consejo:** Define el plazo y la IA calculará la cuota mensual para que el contrato sea perfecto ante Hacienda.")
                 
-                           
-                c_p1, c_p2 = st.columns(2)
-                with c_p1:
-                    pres_nombre = st.text_input("Prestamista (quien presta)")
-                    pret_nombre = st.text_input("Prestatario (quien recibe)")
-                with c_p2:
-                    monto = st.number_input("Importe (€)", min_value=100.0, step=500.0)
+                tipo_texto = "Préstamo entre Particulares"
+                
+                # 1. DATOS DE LAS PARTES (Añadido DNI)
+                st.caption("👤 Datos de los Intervinientes")
+                c_pres, c_pret = st.columns(2)
+                
+                with c_pres:
+                    st.markdown("**Prestamista (Quien deja el dinero)**")
+                    pres_nombre = st.text_input("Nombre Completo", key="nom_pres")
+                    pres_dni = st.text_input("DNI/NIF Prestamista", key="dni_pres")
+                
+                with c_pret:
+                    st.markdown("**Prestatario (Quien lo recibe)**")
+                    pret_nombre = st.text_input("Nombre Completo", key="nom_pret")
+                    pret_dni = st.text_input("DNI/NIF Prestatario", key="dni_pret")
+
+                st.markdown("---")
+
+                # 2. CONDICIONES ECONÓMICAS
+                st.caption("💸 Condiciones del Préstamo")
+                c_eco1, c_eco2 = st.columns(2)
+                with c_eco1:
+                    monto = st.number_input("Importe a prestar (€)", min_value=100.0, step=500.0)
+                with c_eco2:
                     plazo_meses = st.number_input("Plazo devolución (Meses)", min_value=1, value=12)
 
                 es_gratuito = st.checkbox("¿Es un préstamo sin intereses (0%)?", value=True)
+                
+                # Cálculos de cuota (Lógica matemática)
                 cuota_mensual = 0.0
                 detalles_pago = ""
                 
@@ -1229,21 +1249,25 @@ with tabs[2]:
                     detalles_pago = f"SIN INTERESES (Tipo 0%). Devolución en {plazo_meses} cuotas de {cuota_mensual:.2f} €."
                 else:
                     interes_anual = st.number_input("Tipo de Interés Anual (%)", min_value=0.1, value=3.0, step=0.1)
-                    # Fórmula Sistema Francés (Estándar bancario)
+                    # Fórmula Sistema Francés
                     i = (interes_anual / 100) / 12
                     n = plazo_meses
                     cuota_mensual = monto * (i * (1 + i)**n) / ((1 + i)**n - 1)
                     total_devolver = cuota_mensual * n
                     detalles_pago = f"CON INTERESES ({interes_anual}% anual). Devolución en {plazo_meses} cuotas de {cuota_mensual:.2f} €. Total a devolver: {total_devolver:.2f} €."
                 
-                 # Mostramos el resultado al usuario antes de generar
                 st.success(f"💰 **Plan de Pago calculado:** {detalles_pago}")
                 
-                data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre}. Prestatario: {pret_nombre}. Importe Principal: {monto}€. Plazo: {plazo_meses} meses. CONDICIONES ECONÓMICAS EXACTAS: {detalles_pago}. Incluir cuadro de amortización si es posible."
+                # Prompt actualizado con los DNIs
+                data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre} (DNI: {pres_dni}). Prestatario: {pret_nombre} (DNI: {pret_dni}). Importe Principal: {monto}€. Plazo: {plazo_meses} meses. CONDICIONES ECONÓMICAS EXACTAS: {detalles_pago}. Incluir cuadro de amortización si es posible."
                     
             # === VEHÍCULO ===
             elif modo == "VEHICULO":
                 st.subheader("🚗 Compraventa Vehículo")
+
+                # ¡¡ESTA LÍNEA FALTABA!! Sin ella, la IA no sabe qué redactar
+                tipo_texto = "Contrato de Compraventa de Vehículo Usado"
+                
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
                 comprador = st.text_input("Comprador (Nombre y DNI)")
@@ -2009,6 +2033,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
