@@ -52,6 +52,9 @@ import re
 from docx import Document # Para generar Word
 import urllib.parse
 import io
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from datetime import datetime
 
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
@@ -1358,7 +1361,6 @@ with tabs[2]:
                         Redacta un {tipo_texto} formal y válido legalmente.
                         
                         DATOS CLAVE:
-                        - Lugar y Fecha: En {ciudad}, a {fecha_hoy}.
                         - DETALLES DEL ACUERDO: {data_p}
                         
                         ESTRUCTURA OBLIGATORIA:
@@ -1366,6 +1368,7 @@ with tabs[2]:
                         2. Exponen (Antecedentes).
                         3. ESTIPULACIONES (Cláusulas numeradas).
                         4. Cierre y Firmas.
+                        5. Lugar y Fecha: En {ciudad}, a {fecha_hoy}.
                         
                         Usa lenguaje jurídico preciso. Formato Markdown.
                         """
@@ -2006,6 +2009,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
