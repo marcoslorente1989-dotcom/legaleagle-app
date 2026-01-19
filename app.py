@@ -1585,10 +1585,12 @@ with tabs[4]:
                     estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a"])
                     conyuge_cargo = False
                     if estado == "Casado/a": conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?")
-                with c_fam2: discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
-                    hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
-                    hijos_menores_3 = 0
-                    if hijos > 0: hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
+                with c_fam2:
+                    discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
+                hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
+                hijos_menores_3 = 0
+                if hijos > 0: 
+                    hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
                 
                 if st.button("💶 CALCULAR NETO EXACTO"):
                     with st.spinner("Consultando normativa regional y calculando..."):
@@ -1768,6 +1770,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
