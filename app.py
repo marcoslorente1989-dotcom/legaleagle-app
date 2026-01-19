@@ -1307,7 +1307,7 @@ with tabs[2]:
                 with st.spinner("Redactando..."):
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                     instruccion = f"""
-                    Redacta un contrato legal formal en España de tipo: {tipo}.
+                    Redacta un contrato legal formal en España de tipo: {tipo_texto}.
                     LUGAR Y FECHA: En {ciudad}, a {fecha_hoy}.
                     DATOS: {data_p}
                     
@@ -1956,6 +1956,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
