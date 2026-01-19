@@ -1451,7 +1451,7 @@ with tabs[4]:
 
             
             # Grid de botones (Izquierda)
-            with c_nav1: 
+         with c_nav1: 
                 if st.button("💰\nRENTA\nDeducciones", use_container_width=True): 
                    st.session_state.nav_impuestos = "RENTA"
                    st.session_state.generated_calc = ""
@@ -1471,7 +1471,7 @@ with tabs[4]:
 
                    
             # Grid de botones (Derecha)
-            with c_nav2: 
+         with c_nav2: 
                 if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True): 
                    st.session_state.nav_impuestos = "SUELDO"
                    st.session_state.generated_calc = ""
@@ -1795,6 +1795,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
