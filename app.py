@@ -1224,49 +1224,51 @@ with tabs[2]:
                             pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
                             st.download_button("⬇️ Bajar PDF", data=pdf_file, file_name=f"{tipo_texto}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (ESTRATEGIA DASHBOARD + LÓGICA COMPLETA) ---
+# --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2 + CALLBACKS) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
-    st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    # 1. GESTIÓN DEL ESTADO
     if "nav_reclamar" not in st.session_state:
         st.session_state.nav_reclamar = "MENU"
 
-    # --- VISTA A: MENÚ PRINCIPAL (BOTONES) ---
+    # Función auxiliar para cambio limpio (Callback)
+    def ir_a_reclamar(destino):
+        st.session_state.nav_reclamar = destino
+        st.session_state.generated_claim = ""
+
+    # --- VISTA A: MENÚ PRINCIPAL ---
     if st.session_state.nav_reclamar == "MENU":
         st.info("Selecciona qué trámite quieres iniciar:")
         c_nav1, c_nav2, c_nav3 = st.columns(3)
         
-        # Usamos un contenedor para estilos si fuera necesario
         with c_nav1:
-            if st.button("✍️\nREDACTAR BUROFAX\n(Reclamar Deudas)", use_container_width=True):
-                st.session_state.nav_reclamar = "BUROFAX"
-                st.session_state.generated_claim = "" # Limpieza preventiva
-                st.rerun()
+            st.button("✍️\nREDACTAR BUROFAX\n(Reclamar Deudas)", 
+                     use_container_width=True, 
+                     on_click=ir_a_reclamar, 
+                     args=("BUROFAX",))
         with c_nav2:
-            if st.button("🛡️\nRESPONDER CARTA\n(Vecinos, Seguros...)", use_container_width=True):
-                st.session_state.nav_reclamar = "RESPONDER"
-                st.session_state.generated_claim = ""
-                st.rerun()
+            st.button("🛡️\nRESPONDER CARTA\n(Vecinos, Seguros...)", 
+                     use_container_width=True, 
+                     on_click=ir_a_reclamar, 
+                     args=("RESPONDER",))
         with c_nav3:
-            if st.button("👮\nRECURRIR MULTA\n(Tráfico/Ayto)", use_container_width=True):
-                st.session_state.nav_reclamar = "MULTA"
-                st.session_state.generated_claim = ""
-                st.rerun()
+            st.button("👮\nRECURRIR MULTA\n(Tráfico/Ayto)", 
+                     use_container_width=True, 
+                     on_click=ir_a_reclamar, 
+                     args=("MULTA",))
 
-    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS ---
+    # --- VISTA B: HERRAMIENTAS ---
     else:
-        # BOTÓN VOLVER (Global para esta pestaña)
-        if st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES"):
-            st.session_state.nav_reclamar = "MENU"
-            st.session_state.generated_claim = ""
-            st.rerun()
+        # Botón Volver
+        st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES", 
+                 on_click=ir_a_reclamar, 
+                 args=("MENU",))
         
         st.markdown("---")
         c_rec, c_doc = st.columns([1, 1.3])
 
-        # === HERRAMIENTA 1: BUROFAX (Lógica Completa Recuperada) ===
+        # === HERRAMIENTA 1: BUROFAX ===
         if st.session_state.nav_reclamar == "BUROFAX":
             with c_rec:
                 with st.container(border=False):
@@ -1322,18 +1324,7 @@ with tabs[3]:
                     
                     if st.button("🔥 GENERAR BUROFAX", key="btn_b"):
                         with st.spinner("Redactando..."):
-                            p = f"""
-                            Actúa como abogado experto en derecho civil y mercantil español.
-                            Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
-                            REMITENTE: {remitente}
-                            DESTINATARIO: {dest}
-                            CONTEXTO: {datos_clave}
-                            HECHOS DETALLADOS: {hechos}
-                            INSTRUCCIONES:
-                            1. Usa estructura formal de carta legal.
-                            2. Cita la legislación aplicable según el caso (Ej: Ley Contrato Seguro, Ley General Defensa Consumidores, LAU, etc).
-                            3. Establece un plazo de respuesta (7 días).
-                            """
+                            p = f"Actúa como abogado. Redacta Burofax. De: {remitente}. A: {dest}. Contexto: {datos_clave}. Hechos: {hechos}. Tono formal."
                             st.session_state.generated_claim = groq_engine(p, api_key)
 
         # === HERRAMIENTA 2: RESPONDER ===
@@ -1350,7 +1341,7 @@ with tabs[3]:
                                 if uploaded_gen.type == "application/pdf": txt = extract_text_from_pdf(uploaded_gen)
                                 else: txt = analyze_image_groq(uploaded_gen, "Lee carta", api_key)
                                 
-                                p = f"Actúa como abogado. Recibido: ---{txt[:4000]}---. Quiero responder: {mis_argumentos}. Redacta respuesta formal."
+                                p = f"Abogado. Recibido: {txt[:4000]}. Responder: {mis_argumentos}. Redacta carta."
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
 
@@ -1369,11 +1360,11 @@ with tabs[3]:
                                 if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
                                 else: txt = analyze_image_groq(uploaded_multa, "Lee multa", api_key)
                                 
-                                p = f"Abogado experto en {tipo_m}. Multa: ---{txt[:5000]}---. Cliente: {mis_datos}. Redacta Recurso alegando defectos de forma."
+                                p = f"Abogado experto en {tipo_m}. Multa: {txt[:5000]}. Cliente: {mis_datos}. Redacta Recurso alegando defectos de forma."
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
 
-        # === VISOR DE RESULTADOS (COMÚN) ===
+        # === VISOR DE RESULTADOS ===
         with c_doc:
             if st.session_state.generated_claim:
                 st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
@@ -1388,15 +1379,20 @@ with tabs[3]:
                             pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
                             st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
 
- # # --- TAB 4: IMPUESTOS (ESTRATEGIA DASHBOARD + LÓGICA COMPLETA) ---
+# --- TAB 4: IMPUESTOS (ESTRUCTURA IDÉNTICA A TAB 2 + CALLBACKS) ---
 with tabs[4]:
-    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    # 1. GESTIÓN DEL ESTADO
     if "nav_impuestos" not in st.session_state:
         st.session_state.nav_impuestos = "MENU"
 
+    # Función auxiliar para cambio limpio
+    def ir_a_impuestos(destino):
+        st.session_state.nav_impuestos = destino
+        st.session_state.generated_calc = ""
+
     c_cal, c_res = st.columns([1, 1.3])
 
-    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
+    # --- VISTA A: MENÚ PRINCIPAL ---
     if st.session_state.nav_impuestos == "MENU":
         with c_cal:
             st.subheader("Calculadora Fiscal")
@@ -1404,72 +1400,45 @@ with tabs[4]:
             
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("💰\nRENTA\nDeducciones", use_container_width=True):
-                    st.session_state.nav_impuestos = "RENTA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True):
-                    st.session_state.nav_impuestos = "ESCÁNER"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True):
-                    st.session_state.nav_impuestos = "VENTA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📈\nIPC\nAlquiler", use_container_width=True):
-                    st.session_state.nav_impuestos = "IPC"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
+                st.button("💰\nRENTA\nDeducciones", use_container_width=True, on_click=ir_a_impuestos, args=("RENTA",))
+                st.button("🔍\nNÓMINA\nEscáner", use_container_width=True, on_click=ir_a_impuestos, args=("ESCANER",))
+                st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True, on_click=ir_a_impuestos, args=("VENTA",))
+                st.button("📈\nIPC\nAlquiler", use_container_width=True, on_click=ir_a_impuestos, args=("IPC",))
 
             with c2:
-                if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True):
-                    st.session_state.nav_impuestos = "SUELDO"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📝\nGASTOS\nCompraventa", use_container_width=True):
-                    st.session_state.nav_impuestos = "GASTOS"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📉\nHIPOTECA\nCuota", use_container_width=True):
-                    st.session_state.nav_impuestos = "HIPOTECA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("❓\nOTRO\nTrámite", use_container_width=True):
-                    st.session_state.nav_impuestos = "OTRO"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
+                st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True, on_click=ir_a_impuestos, args=("SUELDO",))
+                st.button("📝\nGASTOS\nCompraventa", use_container_width=True, on_click=ir_a_impuestos, args=("GASTOS",))
+                st.button("📉\nHIPOTECA\nCuota", use_container_width=True, on_click=ir_a_impuestos, args=("HIPOTECA",))
+                st.button("❓\nOTRO\nTrámite", use_container_width=True, on_click=ir_a_impuestos, args=("OTRO",))
 
-    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS (LÓGICA DETALLADA) ---
+    # --- VISTA B: HERRAMIENTAS ---
     else:
         with c_cal:
-            if st.button("⬅️ VOLVER AL MENÚ DE IMPUESTOS"):
-                st.session_state.nav_impuestos = "MENU"
-                st.session_state.generated_calc = ""
-                st.rerun()
+            st.button("⬅️ VOLVER AL MENÚ DE IMPUESTOS", on_click=ir_a_impuestos, args=("MENU",))
             
             st.markdown("---")
             tool = st.session_state.nav_impuestos
             anio_actual = datetime.now().year
 
-            # === RENTA (Lógica Completa: Hijos, Guardería, etc.) ===
+            # === RENTA ===
             if tool == "RENTA":
                 st.subheader("💰 Deducciones Renta")
                 st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
-                ccaa = st.selectbox("📍 Tu Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"])
-                st.markdown("👇 **Marca tu situación:**")
+                ccaa = st.selectbox("📍 Tu Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"], key="ren_ccaa")
                 
-                hijos = st.checkbox("👶 Tengo hijos (< 25 años)")
+                hijos = st.checkbox("Tengo hijos (< 25 años)", key="ren_hijos")
                 detalles_hijos = ""
                 if hijos:
                     st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Detalles para filtrar deducciones:</small></div>""", unsafe_allow_html=True)
-                    anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)")
+                    anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)", key="ren_ah")
+                    
                     c_h1, c_h2 = st.columns(2)
                     with c_h1:
-                        guarderia = st.checkbox("Gastos de Guardería (0-3 años)")
-                        material = st.checkbox("Gastos Material Escolar / Libros")
+                        guarderia = st.checkbox("Gastos de Guardería (0-3 años)", key="ren_guar")
+                        material = st.checkbox("Gastos Material Escolar / Libros", key="ren_mat")
                     with c_h2:
-                        fam_mono = st.checkbox("Familia Monoparental / Numerosa")
-                        discap_hijo = st.checkbox("Algún hijo con Discapacidad")
+                        fam_mono = st.checkbox("Familia Monoparental / Numerosa", key="ren_fam")
+                        discap_hijo = st.checkbox("Algún hijo con Discapacidad", key="ren_dis_h")
                     
                     detalles_hijos = f"Hijos nacidos en: {anios_hijos}. "
                     if guarderia: detalles_hijos += "Paga Guardería. "
@@ -1480,78 +1449,53 @@ with tabs[4]:
                 st.markdown("---")
                 c1, c2 = st.columns(2)
                 with c1:
-                    alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
-                    hipoteca = st.checkbox("Hipoteca (Anterior 2013)")
-                    discapacidad = st.checkbox("Mi Discapacidad (>33%)")
+                    alquiler = st.checkbox("Alquiler", key="ren_alq")
+                    hipoteca = st.checkbox("Hipoteca", key="ren_hip")
                 with c2:
-                    donaciones = st.checkbox("Hago Donaciones")
-                    idiomas = st.checkbox("Idiomas extraescolares")
-                    rural = st.checkbox("Zona Rural / Despoblada")
+                    discapacidad = st.checkbox("Discapacidad", key="ren_dis")
+                    donaciones = st.checkbox("Donaciones", key="ren_don")
                 
-                otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)")
-
-                if st.button("🔍 BUSCAR DEDUCCIONES"):
-                    situaciones = []
-                    if hijos: situaciones.append(f"HIJOS: {detalles_hijos}")
-                    else: situaciones.append("No tiene hijos.")
-                    if alquiler: situaciones.append("Vive de Alquiler")
-                    if hipoteca: situaciones.append("Paga Hipoteca")
-                    if discapacidad: situaciones.append("Tiene Discapacidad propia")
-                    if donaciones: situaciones.append("Hace Donaciones")
-                    if idiomas: situaciones.append("Gastos Educación Idiomas")
-                    if rural: situaciones.append("Residencia en zona Rural")
-                    if otros: situaciones.append(f"Otros gastos: {otros}")
-                    
-                    perfil_txt = " | ".join(situaciones)
-                    
-                    prompt_renta = f"""
-                    Actúa como Asesor Fiscal experto en IRPF España.
-                    PERFIL EXACTO: Residente en {ccaa}. SITUACIÓN: {perfil_txt}.
-                    TAREA: Lista ÚNICAMENTE las deducciones aplicables REALMENTE.
-                    FORMATO:✅ TUS DEDUCCIONES CONFIRMADAS (Iconos, Nombre, Cuantía, Casilla del modelo 100).
-                    """
-                    st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
+                if st.button("🔍 BUSCAR DEDUCCIONES", key="btn_ren"):
+                    perfil = f"CCAA: {ccaa}. Hijos: {detalles_hijos}. Alquiler: {alquiler}. Hipoteca: {hipoteca}. Discapacidad: {discapacidad}. Donaciones: {donaciones}."
+                    p = f"Asesor Fiscal IRPF. Perfil: {perfil}. Lista DEDUCCIONES APLICABLES (Nombre, Cuantía, Casilla)."
+                    st.session_state.generated_calc = groq_engine(p, api_key)
 
             # === ESCÁNER NÓMINA ===
-            elif tool == "ESCÁNER":
+            elif tool == "ESCANER":
                 st.subheader("🔍 Escáner de Nómina")
-                st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
-                file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png"], key="u_nomina")
-                if file_nomina:
-                    if st.button("🚀 ANALIZAR MI NÓMINA"):
-                        with st.spinner("Revisando conceptos salariales y retenciones..."):
-                            if file_nomina.type == "application/pdf": txt = extract_text_from_pdf(file_nomina)
-                            else: txt = analyze_image_groq(file_nomina, "Transcribe conceptos y retenciones.", api_key)
-                            
-                            p_nomina = f"Actúa como asesor laboral experto en España. Analiza esta nómina: {txt}. Genera informe Semáforo Legal (SMI, IRPF, Cotización)."
-                            st.session_state.generated_calc = groq_engine(p_nomina, api_key)
+                st.info("📸 Sube una foto o PDF de tu nómina.")
+                file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png"], key="u_nom_scan")
+                if file_nomina and st.button("🚀 ANALIZAR", key="btn_scan"):
+                    with st.spinner("Analizando..."):
+                        if file_nomina.type == "application/pdf": txt = extract_text_from_pdf(file_nomina)
+                        else: txt = analyze_image_groq(file_nomina, "Lee nómina", api_key)
+                        st.session_state.generated_calc = groq_engine(f"Analiza nómina: {txt}. Informe Semáforo: SMI, IRPF, Cotización.", api_key)
 
-            # === SUELDO NETO (CORREGIDO ERROR DE INDENTACIÓN AQUÍ) ===
+            # === SUELDO NETO ===
             elif tool == "SUELDO":
                 st.subheader("💶 Simulador Sueldo Neto")
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                 
-                bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
-                edad = st.number_input("Edad", 18, 70, 30)
-                comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"])
-                movilidad = st.checkbox("¿Movilidad Geográfica?")
+                bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0, key="su_bru")
+                edad = st.number_input("Edad", 18, 70, 30, key="su_edad")
+                comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"], key="su_ccaa")
                 
                 st.markdown("---")
                 c_fam1, c_fam2 = st.columns(2)
                 with c_fam1: 
-                    estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a"])
+                    estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a"], key="su_est")
                     conyuge_cargo = False
                     if estado == "Casado/a": 
-                        conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?")
+                        conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?", key="su_con")
                 with c_fam2: 
-                    discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
+                    discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"], key="su_dis")
                 
-                hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
+                hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0, key="su_hij")
                 hijos_menores_3 = 0
                 if hijos > 0: 
-                    hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
+                    hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0, key="su_hij3")
                 
-                if st.button("💶 CALCULAR NETO EXACTO"):
+                if st.button("💶 CALCULAR NETO EXACTO", key="btn_su"):
                     with st.spinner("Consultando normativa regional y calculando..."):
                         prompt_irpf = f"""
                         Actúa como experto fiscal en España 2025.
@@ -1564,6 +1508,8 @@ with tabs[4]:
                         - Cónyuge a cargo: {conyuge_cargo}
                         - Hijos < 3 años: {hijos_menores_3}
                         IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
+                        Ejemplo de respuesta válida: 14.20
+                        NO escribas texto, ni símbolos de porcentaje, solo el número.
                         """
                         try:
                             respuesta_ia = groq_engine(prompt_irpf, api_key, temp=0.0)
@@ -1607,86 +1553,70 @@ with tabs[4]:
                         """
                         st.session_state.generated_calc = html_nomina
 
-                if st.session_state.generated_calc:
-                      st.write("")
-                      if st.button("🔄 Calcular de nuevo", use_container_width=True):
-                          st.session_state.generated_calc = ""
-                          st.rerun()
-
-            # === VENTA ===
+            # === VENTA INMUEBLE ===
             elif tool == "VENTA":
                 st.subheader("🏠 Impuestos Venta")
-                st.caption("Plusvalía Municipal + IRPF")
-                f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015)
-                p_compra = st.number_input("Precio Compra (€)", min_value=0.0)
-                f_venta = st.number_input("Año Venta", value=anio_actual, disabled=True)
-                p_venta = st.number_input("Precio Venta (€)", min_value=0.0)
-                municipio = st.text_input("Municipio")
-                v_suelo = st.number_input("Valor Catastral SUELO (€)", min_value=0.0)
-                
-                if st.button("🧮 CALCULAR IMPUESTOS"):
-                    if v_suelo > 0:
-                        anios = anio_actual - f_compra
-                        ganancia = p_venta - p_compra
-                        p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
-                        st.session_state.generated_calc = groq_engine(p, api_key)
+                f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015, key="ven_fc")
+                p_compra = st.number_input("Precio Compra (€)", min_value=0.0, key="ven_pc")
+                p_venta = st.number_input("Precio Venta (€)", min_value=0.0, key="ven_pv")
+                municipio = st.text_input("Municipio", key="ven_mun")
+                v_suelo = st.number_input("Valor Suelo (€)", min_value=0.0, key="ven_vs")
+                if st.button("🧮 CALCULAR", key="btn_ven"):
+                    anios = anio_actual - f_compra
+                    st.session_state.generated_calc = groq_engine(f"Calcula impuestos venta piso {municipio}. Compra: {p_compra}. Venta: {p_venta}. Suelo: {v_suelo}. Años: {anios}.", api_key)
 
-            # === GASTOS ===
+            # === GASTOS COMPRAVENTA ===
             elif tool == "GASTOS":
                 st.subheader("📝 Gastos Compraventa")
-                precio = st.number_input("Precio (€)", 150000.0)
-                ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"])
-                tipo = st.radio("Tipo", ["Segunda Mano", "Obra Nueva"])
-                if st.button("🧮 CALCULAR"):
+                precio = st.number_input("Precio Vivienda (€)", 150000.0, key="gas_pre")
+                ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"], key="gas_ccaa")
+                tipo = st.radio("Tipo", ["Segunda Mano", "Obra Nueva"], key="gas_tipo")
+                if st.button("🧮 CALCULAR", key="btn_gas"):
                     st.session_state.generated_calc = groq_engine(f"Calcula gastos compraventa {ccaa}. Precio: {precio}. Tipo: {tipo}.", api_key)
 
             # === IPC ===
             elif tool == "IPC":
                 st.subheader("📈 Actualizar IPC")
-                renta = st.number_input("Renta (€)", 800.0)
-                mes = st.selectbox("Mes", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])
-                if st.button("📈 ACTUALIZAR"):
+                renta = st.number_input("Renta actual (€)", 800.0, key="ipc_ren")
+                mes = st.selectbox("Mes actualización", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], key="ipc_mes")
+                if st.button("📈 ACTUALIZAR", key="btn_ipc"):
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta} con IPC {mes}.", api_key)
 
             # === HIPOTECA ===
             elif tool == "HIPOTECA":
                 st.subheader("📉 Cuota Hipoteca")
-                st.caption("Calculadora Cuota Mensual Inteligente")
-                capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
-                plazo_h = st.number_input("Plazo (Años)", value=25)
-                
-                t_interes = st.radio("Tipo de Interés", ["Fijo", "Variable"], horizontal=True)
-                
-                if t_interes == "Fijo":
-                    interes_final = st.number_input("Interés Nominal Anual (%)", value=3.0)
+                cap = st.number_input("Capital (€)", value=150000.0, key="hip_cap")
+                plazo = st.number_input("Años", value=25, key="hip_pla")
+                tipo_i = st.radio("Tipo", ["Fijo", "Variable"], key="hip_tip")
+                inte = 0.0
+                if tipo_i == "Fijo":
+                    inte = st.number_input("Interés Final %", 3.0, key="hip_int") 
                 else:
-                    eur_actual = obtener_euribor_actual()
-                    st.success(f"📈 Euríbor hoy: **{eur_actual}%**")
-                    dif_banco = st.number_input("Diferencial del banco (%)", value=0.75)
-                    interes_final = eur_actual + dif_banco
-                    st.caption(f"Interés total aplicado: {interes_final}%")
-
-                if st.button("🧮 CALCULAR CUOTA"):
-                    p_h = f"Calcula hipoteca. Capital: {capital_h}€. Interés total: {interes_final}%. Plazo: {plazo_h} años. Indica cuota mensual y total intereses."
+                    eur = obtener_euribor_actual()
+                    st.success(f"📈 Euríbor: {eur}%")
+                    dif = st.number_input("Diferencial %", 0.75, key="hip_dif")
+                    inte = eur + dif
+                if st.button("🧮 CALCULAR", key="btn_hip"):
+                    p_h = f"Calcula hipoteca {cap}€ a {plazo} años, interés {inte}%. Dime cuota mensual y total intereses."
                     st.session_state.generated_calc = groq_engine(p_h, api_key)
 
-        # --- VISOR COMÚN ---
-        with c_res:
-            if st.session_state.generated_calc:
-                if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
-                    st.markdown(st.session_state.generated_calc, unsafe_allow_html=True)
-                else:
-                    st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
-                st.write("")
-                with st.container(border=False):
-                    ce3, cb3 = st.columns([2,1])
-                    with ce3: m3 = st.text_input("Email", key="mf")
-                    with cb3: 
-                        st.write(""); st.write("")
-                        if st.button("PDF RESULTADO", key="bf"):
-                            pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
-                            if m3: save_lead(m3, "CALCULO", "Fiscalidad")
-                            st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
+    # --- VISOR COMÚN (DERECHA) ---
+    with c_res:
+        if st.session_state.generated_calc:
+            if "<div" in st.session_state.generated_calc:
+                st.markdown(st.session_state.generated_calc, unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
+            st.write("")
+            with st.container(border=False):
+                ce3, cb3 = st.columns([2,1])
+                with ce3: m3 = st.text_input("Email", key="mf_tab4")
+                with cb3: 
+                    st.write(""); st.write("")
+                    if st.button("PDF RESULTADO", key="btn_pdf_tab4"):
+                        pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
+                        if m3: save_lead(m3, "CALCULO", "Fiscalidad")
+                        st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
 
 # ==============================================================================
 # 5. FOOTER (LEGAL & CONTACTO & ADMIN)
@@ -1725,6 +1655,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
