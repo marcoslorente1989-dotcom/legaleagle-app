@@ -1127,7 +1127,7 @@ with tabs[1]:
 # --- TAB 2: CREADOR DE CONTRATOS (ESTRATEGIA DASHBOARD) ---
 with tabs[2]:
 
-    with tabs[2]:
+    
     # --- INICIALIZACIÓN DE SEGURIDAD ---
     # Esto evita que la app falle si alguna variable no se ha cargado aún
     tipo_texto = "Documento Legal"
@@ -2080,6 +2080,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
