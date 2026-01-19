@@ -1143,17 +1143,17 @@ with tabs[2]:
                         st.success("Hecho")
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (SOLUCIÓN FINAL FANTASMA) ---
+# --- TAB 3: RECLAMAR / RECURRIR (CORREGIDO NAME_ERROR) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. MEMORIA ESTABLE
-    if "modo_t3_estable" not in st.session_state:
-        st.session_state.modo_t3_estable = "Selecciona una opción..."
+    # 1. MEMORIA DE LA PESTAÑA
+    if "t3_estado_actual" not in st.session_state:
+        st.session_state.t3_estado_actual = "Selecciona una opción..."
 
     # 2. SELECTOR (INPUT)
-    modo_input = st.selectbox(
+    seleccion_usuario = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
             "Selecciona una opción...", 
@@ -1161,18 +1161,18 @@ with tabs[3]:
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        key="selector_t3_final"
+        key="selector_t3_final_v2"
     )
 
-    # 3. SINCRONIZACIÓN Y RECARGA
-    # Si el usuario cambia el input, actualizamos la memoria y RECARGAMOS
-    if modo_input != st.session_state.modo_t3_estable:
-        st.session_state.modo_t3_estable = modo_input
-        st.session_state.generated_claim = "" # Limpiamos resultado
-        st.rerun()                            # Recarga forzosa (Borra campos viejos)
+    # 3. DETECTOR DE CAMBIOS Y RECARGA
+    # Si el usuario cambia la opción, guardamos y recargamos la página
+    if seleccion_usuario != st.session_state.t3_estado_actual:
+        st.session_state.t3_estado_actual = seleccion_usuario
+        st.session_state.generated_claim = "" # Limpiamos resultado anterior
+        st.rerun() # <-- ESTO BORRA LOS CAMPOS FANTASMA
 
-    # 4. VARIABLE DE CONTROL (Usamos la memoria estable)
-    modo_final = st.session_state.modo_t3_estable
+    # 4. DEFINICIÓN DE LA VARIABLE MAESTRA (Aquí arreglamos el NameError)
+    modo_reclamacion = st.session_state.t3_estado_actual
     
     c_rec, c_doc = st.columns([1, 1.3])
     
@@ -1287,12 +1287,11 @@ with tabs[3]:
                     st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
                     
 
-   # --- TAB 4: IMPUESTOS (SOLUCIÓN EFECTO FANTASMA) ---
-# --- TAB 4: IMPUESTOS (SOLUCIÓN FINAL FANTASMA) ---
+  # --- TAB 4: IMPUESTOS (CORREGIDO) ---
 with tabs[4]:
-    # 1. MEMORIA ESTABLE
-    if "modo_t4_estable" not in st.session_state:
-        st.session_state.modo_t4_estable = "Selecciona..."
+    # 1. MEMORIA DE LA PESTAÑA
+    if "t4_estado_actual" not in st.session_state:
+        st.session_state.t4_estado_actual = "Selecciona..."
 
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
@@ -1301,7 +1300,7 @@ with tabs[4]:
             st.caption("Herramientas fiscales, laborales e inmobiliarias.")
             
             # 2. SELECTOR (INPUT)
-            tipo_input = st.selectbox("Trámite", [
+            seleccion_impuestos = st.selectbox("Trámite", [
                 "Selecciona...", 
                 "💰 DEDUCCIONES RENTA (Buscador de Ahorro)",
                 "🔍 ESCÁNER DE NÓMINA (Foto/PDF)", 
@@ -1310,20 +1309,20 @@ with tabs[4]:
                 "Gastos Compraventa (Notaría/Impuestos)", 
                 "IPC Alquiler (Actualizar Renta)",        
                 "Cuota Hipoteca (Simulador)"    
-            ], key="selector_t4_final")
+            ], key="selector_t4_final_v2")
             
-            # 3. SINCRONIZACIÓN Y RECARGA
-            if tipo_input != st.session_state.modo_t4_estable:
-                st.session_state.modo_t4_estable = tipo_input
-                st.session_state.generated_calc = "" # Limpiamos resultado
-                st.rerun()                           # Recarga forzosa
+            # 3. DETECTOR Y RECARGA
+            if seleccion_impuestos != st.session_state.t4_estado_actual:
+                st.session_state.t4_estado_actual = seleccion_impuestos
+                st.session_state.generated_calc = "" 
+                st.rerun()
 
-            # 4. VARIABLE DE CONTROL
-            tipo_final = st.session_state.modo_t4_estable
+            # 4. VARIABLE MAESTRA (Estable)
+            tipo_calc = st.session_state.t4_estado_actual
 
             anio_actual = datetime.now().year
             st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
-
+            
             # --- A. LÓGICA RENTA (CON DETALLE HIJOS) ---
             if "RENTA" in tipo_calc:
                 st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
@@ -1620,6 +1619,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
