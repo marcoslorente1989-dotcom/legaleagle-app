@@ -1414,7 +1414,7 @@ with tabs[3]:
                                 st.warning("Faltan tus datos personales para completar el escrito.")
             
             
-                    if st.session_state.generated_claim:
+                      if st.session_state.generated_claim:
                        st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
                        st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
 
@@ -1794,6 +1794,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
