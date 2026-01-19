@@ -1321,7 +1321,7 @@ with tabs[3]:
                     hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bf_hechos")
                     
                     if st.button("🔥 GENERAR BUROFAX"):
-                    with st.spinner("Redactando reclamación jurídica..."):
+                        with st.spinner("Redactando reclamación jurídica..."):
                         prompt_claim = f"""
                         Actúa como abogado experto en derecho civil y mercantil español.
                         Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
