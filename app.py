@@ -1503,7 +1503,7 @@ with tabs[4]:
                 st.markdown("---")
                 c1, c2 = st.columns(2)
                 with c1:
-                     alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
+                    alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
                     hipoteca = st.checkbox("Hipoteca (Anterior 2013)")
                     discapacidad = st.checkbox("Mi Discapacidad (>33%)")
                 with c2:
@@ -1586,47 +1586,47 @@ with tabs[4]:
                     conyuge_cargo = False
                     if estado == "Casado/a": conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?")
                 with c_fam2: discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"])
-                hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
-                hijos_menores_3 = 0
+                    hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0)
+                    hijos_menores_3 = 0
                 if hijos > 0: hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0)
                 
                 if st.button("💶 CALCULAR NETO EXACTO"):
                     with st.spinner("Consultando normativa regional y calculando..."):
-                        prompt_irpf = f"""
-                        Actúa como experto fiscal en España 2025.
-                        Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) para este perfil:
-                        - Salario Bruto: {bruto}€
-                        - Región: {comunidad}
-                        - Edad: {edad}
-                        - Hijos: {hijos}
-                        - Discapacidad: {discapacidad}
-                        - Cónyuge a cargo: {conyuge_cargo}
-                        - Hijos < 3 años: {hijos_menores_3}
-                        IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
-                        Ejemplo de respuesta válida: 14.20
-                        NO escribas texto, ni símbolos de porcentaje, solo el número.
-                        """
-                        try:
+                         prompt_irpf = f"""
+                         Actúa como experto fiscal en España 2025.
+                         Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) para este perfil:
+                         - Salario Bruto: {bruto}€
+                         - Región: {comunidad}
+                         - Edad: {edad}
+                         - Hijos: {hijos}
+                         - Discapacidad: {discapacidad}
+                         - Cónyuge a cargo: {conyuge_cargo}
+                         - Hijos < 3 años: {hijos_menores_3}
+                         IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
+                         Ejemplo de respuesta válida: 14.20
+                         NO escribas texto, ni símbolos de porcentaje, solo el número.
+                         """
+                         try:
                             respuesta_ia = groq_engine(prompt_irpf, api_key, temp=0.0)
                             import re
                             match = re.search(r"(\d+[.,]\d+)", respuesta_ia)
                             if match: tipo_irpf = float(match.group(1).replace(",", "."))
                             else: tipo_irpf = 15.0
-                        except: tipo_irpf = 15.0
+                         except: tipo_irpf = 15.0
 
-                        ss_anual = bruto * 0.0635
-                        irpf_anual = bruto * (tipo_irpf / 100)
-                        neto_anual = bruto - ss_anual - irpf_anual
-                        mes_12 = neto_anual / 12
-                        mes_14 = neto_anual / 14 
+                         ss_anual = bruto * 0.0635
+                         irpf_anual = bruto * (tipo_irpf / 100)
+                         neto_anual = bruto - ss_anual - irpf_anual
+                         mes_12 = neto_anual / 12
+                         mes_14 = neto_anual / 14 
 
-                        f_mes_12 = "{:,.2f}".format(mes_12).replace(",", "X").replace(".", ",").replace("X", ".")
-                        f_mes_14 = "{:,.2f}".format(mes_14).replace(",", "X").replace(".", ",").replace("X", ".")
-                        f_irpf_mensual = "{:,.2f}".format(irpf_anual/12).replace(",", "X").replace(".", ",").replace("X", ".")
-                        f_tipo = "{:,.2f}".format(tipo_irpf).replace(",", "X").replace(".", ",").replace("X", ".")
+                         f_mes_12 = "{:,.2f}".format(mes_12).replace(",", "X").replace(".", ",").replace("X", ".")
+                         f_mes_14 = "{:,.2f}".format(mes_14).replace(",", "X").replace(".", ",").replace("X", ".")
+                         f_irpf_mensual = "{:,.2f}".format(irpf_anual/12).replace(",", "X").replace(".", ",").replace("X", ".")
+                         f_tipo = "{:,.2f}".format(tipo_irpf).replace(",", "X").replace(".", ",").replace("X", ".")
 
-                        html_nomina = f"""
-                        <div style="background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #ffffff !important; padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; max-width: 500px; margin: auto;">
+                         html_nomina = f"""
+                         <div style="background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #ffffff !important; padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center; max-width: 500px; margin: auto;">
                             <div style="color: #94a3b8 !important; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Neto Mensual (12 pagas)</div>
                             <div style="color: #38bdf8 !important; font-size: 48px; font-weight: 900; margin: 10px 0; line-height: 1; text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);">{f_mes_12} €</div>
                             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed rgba(255, 255, 255, 0.2);">
@@ -1645,15 +1645,15 @@ with tabs[4]:
                                 </div>
                             </div>
                             <div style="margin-top: 10px; font-size: 10px; color: #64748b !important;">*Cálculo basado en normativa autonómica de {comunidad}.</div>
-                        </div>
-                        """
-                        st.session_state.generated_calc = html_nomina
+                         </div>
+                         """
+                         st.session_state.generated_calc = html_nomina
 
                 if st.session_state.generated_calc:
                       st.write("")
                       if st.button("🔄 Calcular de nuevo", use_container_width=True):
-                          st.session_state.generated_calc = ""
-                          st.rerun()
+                         st.session_state.generated_calc = ""
+                         st.rerun()
                           
             # === VENTA INMUEBLE ===
             elif tool == "VENTA":
@@ -1680,7 +1680,7 @@ with tabs[4]:
                 ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"], key="gas_ccaa")
                 tipo = st.radio("Tipo", ["Segunda Mano", "Obra Nueva"], key="gas_tipo")
                 if st.button("🧮 CALCULAR", key="btn_gas"):
-                    st.session_state.generated_calc = groq_engine(f"Calcula gastos compraventa {ccaa}. Precio: {precio}. Tipo: {tipo}.", api_key)
+                   st.session_state.generated_calc = groq_engine(f"Calcula gastos compraventa {ccaa}. Precio: {precio}. Tipo: {tipo}.", api_key)
 
             # === IPC ===
             elif tool == "IPC":
@@ -1688,7 +1688,7 @@ with tabs[4]:
                 renta = st.number_input("Renta actual (€)", 800.0, key="ipc_ren")
                 mes = st.selectbox("Mes actualización", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], key="ipc_mes")
                 if st.button("📈 ACTUALIZAR", key="btn_ipc"):
-                    st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta} con IPC {mes}.", api_key)
+                   st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta} con IPC {mes}.", api_key)
 
             # === HIPOTECA ===
             elif tool == "HIPOTECA":
@@ -1768,6 +1768,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
