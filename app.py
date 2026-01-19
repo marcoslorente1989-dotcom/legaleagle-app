@@ -1322,18 +1322,18 @@ with tabs[3]:
                     
                     if st.button("🔥 GENERAR BUROFAX"):
                         with st.spinner("Redactando reclamación jurídica..."):
-                        prompt_claim = f"""
-                        Actúa como abogado experto en derecho civil y mercantil español.
-                        Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
-                        REMITENTE: {remitente}
-                        DESTINATARIO: {dest}
-                        CONTEXTO: {datos_clave}
-                        HECHOS DETALLADOS: {hechos}
-                        INSTRUCCIONES:
-                        1. Usa estructura formal de carta legal.
-                        2. Cita la legislación aplicable según el caso (Ej: Ley Contrato Seguro, Ley General Defensa Consumidores, LAU, etc).
-                        3. Establece un plazo de respuesta (7 días).
-                        """
+                            prompt_claim = f"""
+                            Actúa como abogado experto en derecho civil y mercantil español.
+                            Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
+                            REMITENTE: {remitente}
+                            DESTINATARIO: {dest}
+                            CONTEXTO: {datos_clave}
+                            HECHOS DETALLADOS: {hechos}
+                            INSTRUCCIONES:
+                            1. Usa estructura formal de carta legal.
+                            2. Cita la legislación aplicable según el caso (Ej: Ley Contrato Seguro, Ley General Defensa Consumidores, LAU, etc).
+                            3. Establece un plazo de respuesta (7 días).
+                           """ 
                         st.session_state.generated_claim = groq_engine(prompt_claim, api_key)
 
         # === HERRAMIENTA 2: RESPONDER ===
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
