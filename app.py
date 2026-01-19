@@ -986,43 +986,43 @@ with tabs[2]:
         
         # Usamos un div para agrupar visualmente si tienes CSS personalizado, si no, funciona igual
         with c1:
-            if st.button("🏠\ALQUILER\VIVIENDA", use_container_width=True):
+            if st.button("🏠\nALQUILER\nVIVIENDA", use_container_width=True):
                 st.session_state.nav_crear = "ALQUILER"
                 st.session_state.generated_contract = ""
                 st.rerun()
-            if st.button("💼\CONTRATO\TRABAJO", use_container_width=True):
+            if st.button("💼\nCONTRATO\nTRABAJO", use_container_width=True):
                 st.session_state.nav_crear = "TRABAJO"
                 st.session_state.generated_contract = ""
                 st.rerun()
-            if st.button("🏡\COMPRAVENTA\VIVIENDA", use_container_width=True):
+            if st.button("🏡\nCOMPRAVENTA\nVIVIENDA", use_container_width=True):
                 st.session_state.nav_crear = "C_VIVIENDA"
                 st.session_state.generated_contract = ""
                 st.rerun()
 
         with c2:
-            if st.button("💰\PRÉSTAMO\PARTICULARES", use_container_width=True):
+            if st.button("💰\nPRÉSTAMO\nPARTICULARES", use_container_width=True):
                 st.session_state.nav_crear = "PRESTAMO"
                 st.session_state.generated_contract = ""
                 st.rerun()
-            if st.button("🤝\SERVICIOS\FREELANCE", use_container_width=True):
+            if st.button("🤝\nSERVICIOS\nFREELANCE", use_container_width=True):
                 st.session_state.nav_crear = "SERVICIOS"
                 st.session_state.generated_contract = ""
                 st.rerun()
-            if st.button("📝\CONTRATO\DE ARRAS", use_container_width=True):
+            if st.button("📝\nCONTRATO\nDE ARRAS", use_container_width=True):
                 st.session_state.nav_crear = "ARRAS"
                 st.session_state.generated_contract = ""
                 st.rerun()
 
         with c3:
-            if st.button("🚗\COMPRAVENTA\VEHÍCULO", use_container_width=True):
+            if st.button("🚗\nCOMPRAVENTA\nVEHÍCULO", use_container_width=True):
                 st.session_state.nav_crear = "VEHICULO"
                 st.session_state.generated_contract = ""
                 st.rerun()
-            if st.button("🤫\NDA\CONFIDENCIALIDAD", use_container_width=True):
+            if st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True):
                 st.session_state.nav_crear = "NDA"
                 st.session_state.generated_contract = ""
                 st.rerun()
-            if st.button("❌\CANCELACIÓN\CONTRATO", use_container_width=True):
+            if st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True):
                 st.session_state.nav_crear = "CANCELACION"
                 st.session_state.generated_contract = ""
                 st.rerun()
@@ -1423,37 +1423,37 @@ with tabs[4]:
             
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("💰\RENTA\Deducciones", use_container_width=True):
+                if st.button("💰\nRENTA\nDeducciones", use_container_width=True):
                     st.session_state.nav_impuestos = "RENTA"
                     st.session_state.generated_calc = ""
                     st.rerun()
-                if st.button("🔍\NÓMINA\Escáner", use_container_width=True):
+                if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True):
                     st.session_state.nav_impuestos = "ESCANER"
                     st.session_state.generated_calc = ""
                     st.rerun()
-                if st.button("🏠\VENTA PISO\Impuestos", use_container_width=True):
+                if st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True):
                     st.session_state.nav_impuestos = "VENTA"
                     st.session_state.generated_calc = ""
                     st.rerun()
-                if st.button("📈\IPC\Alquiler", use_container_width=True):
+                if st.button("📈\nIPC\nAlquiler", use_container_width=True):
                     st.session_state.nav_impuestos = "IPC"
                     st.session_state.generated_calc = ""
                     st.rerun()
 
             with c2:
-                if st.button("💶\SUELDO NETO\Simulador", use_container_width=True):
+                if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True):
                     st.session_state.nav_impuestos = "SUELDO"
                     st.session_state.generated_calc = ""
                     st.rerun()
-                if st.button("📝\GASTOS\Compraventa", use_container_width=True):
+                if st.button("📝\nGASTOS\nCompraventa", use_container_width=True):
                     st.session_state.nav_impuestos = "GASTOS"
                     st.session_state.generated_calc = ""
                     st.rerun()
-                if st.button("📉\HIPOTECA\Cuota", use_container_width=True):
+                if st.button("📉\nHIPOTECA\nCuota", use_container_width=True):
                     st.session_state.nav_impuestos = "HIPOTECA"
                     st.session_state.generated_calc = ""
                     st.rerun()
-                if st.button("❓\OTRO\Trámite", use_container_width=True):
+                if st.button("❓\nOTRO\nTrámite", use_container_width=True):
                     st.session_state.nav_impuestos = "OTRO"
                     st.session_state.generated_calc = ""
                     st.rerun()
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
