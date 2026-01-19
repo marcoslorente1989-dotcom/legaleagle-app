@@ -1211,10 +1211,7 @@ with tabs[2]:
                 st.subheader("💰 Préstamo entre Particulares")
                 st.info("💡 **Consejo:** Define el plazo y la IA calculará la cuota mensual para que el contrato sea perfecto ante Hacienda.")
                 
-                tipo_texto = "Préstamo entre Particulares"
-                st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
-                st.info("💡 **Consejo:** Define el plazo y la IA calculará la cuota mensual para evitar problemas con Hacienda.")
-                
+                           
                 c_p1, c_p2 = st.columns(2)
                 with c_p1:
                     pres_nombre = st.text_input("Prestamista (quien presta)")
@@ -2012,6 +2009,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
