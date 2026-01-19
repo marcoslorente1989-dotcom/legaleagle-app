@@ -1512,7 +1512,7 @@ with tabs[4]:
                     rural = st.checkbox("Zona Rural / Despoblada")
                     otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)")
                 
-                f st.button("🔍 BUSCAR DEDUCCIONES"):
+                if st.button("🔍 BUSCAR DEDUCCIONES"):
                     situaciones = []
                     if hijos: situaciones.append(f"HIJOS: {detalles_hijos}")
                     else: situaciones.append("No tiene hijos.")
@@ -1768,6 +1768,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
