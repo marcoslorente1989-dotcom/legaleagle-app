@@ -1097,7 +1097,7 @@ with tabs[2]:
             # === VEHÍCULO ===
             elif modo == "VEHICULO":
                 st.subheader("🚗 Compraventa Vehículo")
-               st.caption("👤 Intervinientes")
+                st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
                 comprador = st.text_input("Comprador (Nombre y DNI)")
                 st.caption("🚗 Datos del Vehículo")
@@ -1114,7 +1114,7 @@ with tabs[2]:
             # === TRABAJO ===
             elif modo == "TRABAJO":
                 st.subheader("💼 Contrato de Trabajo")
-               st.caption("👤 Las Partes")
+                st.caption("👤 Las Partes")
                 empresa = st.text_input("Empresa (Nombre y CIF)")
                 trabajador = st.text_input("Trabajador (Nombre y DNI)")
                 st.caption("💼 Condiciones Laborales")
@@ -1152,7 +1152,7 @@ with tabs[2]:
             # === VENTA VIVIENDA ===
             elif modo == "C_VIVIENDA":
                 st.subheader("🏡 Compraventa Vivienda")
-                 st.caption("👤 Intervinientes")
+                st.caption("👤 Intervinientes")
                 vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
                 comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
                 st.caption("🏠 Inmueble")
@@ -1164,7 +1164,7 @@ with tabs[2]:
             # === ARRAS ===
             elif modo == "ARRAS":
                 st.subheader("📝 Contrato de Arras")
-               st.caption("📝 Datos para Arras")
+                st.caption("📝 Datos para Arras")
                 vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
                 comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
                 st.caption("🏠 Inmueble y Condiciones")
@@ -1659,7 +1659,7 @@ with tabs[4]:
             # === VENTA INMUEBLE ===
             elif tool == "VENTA":
                 st.subheader("🏠 Impuestos Venta")
-                f st.caption("Plusvalía Municipal + IRPF")
+                st.caption("Plusvalía Municipal + IRPF")
                 f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015)
                 p_compra = st.number_input("Precio Compra (€)", min_value=0.0)
                 f_venta = st.number_input("Año Venta", value=anio_actual, disabled=True)
@@ -1694,7 +1694,7 @@ with tabs[4]:
             # === HIPOTECA ===
             elif tool == "HIPOTECA":
                 st.subheader("📉 Cuota Hipoteca")
-                 st.caption("Calculadora Cuota Mensual Inteligente")
+                st.caption("Calculadora Cuota Mensual Inteligente")
                 capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
                 plazo_h = st.number_input("Plazo (Años)", value=25)
                 
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
