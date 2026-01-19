@@ -1359,7 +1359,7 @@ with tabs[3]:
                                TAREA: Redacta una carta formal de respuesta/alegaciones.
                                Cita leyes si aplica al contexto.
                                """
-                           st.session_state.generated_claim = groq_engine(p_gen, api_key)
+                               st.session_state.generated_claim = groq_engine(p_gen, api_key)
                             
                             js_scroll_up = """<script>var topAnchor = window.parent.document.getElementById('top-of-page'); if (topAnchor) { topAnchor.scrollIntoView({behavior: "smooth", block: "start"}); }</script>"""
                             components.html(js_scroll_up, height=0)
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
