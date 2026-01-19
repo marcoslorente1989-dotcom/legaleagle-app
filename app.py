@@ -1354,17 +1354,17 @@ with tabs[3]:
                         else: st.warning("Faltan datos.")
 
             # === HERRAMIENTA 3: MULTAS (NUEVO FLUJO FREEMIUM) ===
-        elif modo == "MULTA":
-            with c_mul_izq:
-                with st.container(border=False):
-                    st.info("👮 Sube la multa para analizarla.")
-                    uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
-                    tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
-                    mis_datos = st.text_input("Tus Datos", key="mul_datos")
+            elif modo == "MULTA":
+                with c_mul_izq:
+                 with st.container(border=False):
+                      st.info("👮 Sube la multa para analizarla.")
+                      uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
+                      tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
+                      mis_datos = st.text_input("Tus Datos", key="mul_datos")
                     
-                    # PASO 1: ANÁLISIS DE VIABILIDAD (GRATIS)
-                    if st.button("🔍 ANALIZAR VIABILIDAD (GRATIS)", key="btn_mul_via"):
-                        if uploaded_multa:
+                      # PASO 1: ANÁLISIS DE VIABILIDAD (GRATIS)
+                      if st.button("🔍 ANALIZAR VIABILIDAD (GRATIS)", key="btn_mul_via"):
+                         if uploaded_multa:
                             with st.spinner("Buscando defectos de forma..."):
                                 # Leemos el archivo
                                 if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
@@ -1390,10 +1390,10 @@ with tabs[3]:
                             st.warning("Por favor, sube el archivo de la multa.")
 
                     # MOSTRAR RESULTADO VIABILIDAD (Si ya se hizo)
-                    if st.session_state.multa_viability:
-                        st.success("✅ Análisis Completado")
-                        st.markdown(f"<div style='background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; border-left:4px solid #facc15; font-size:14px;'>{st.session_state.multa_viability}</div>", unsafe_allow_html=True)
-                        st.write("")
+                      if st.session_state.multa_viability:
+                         st.success("✅ Análisis Completado")
+                         st.markdown(f"<div style='background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; border-left:4px solid #facc15; font-size:14px;'>{st.session_state.multa_viability}</div>", unsafe_allow_html=True)
+                         st.write("")
                         
                         # PASO 2: REDACCIÓN DEL RECURSO (PREMIUM - BOTÓN DESBLOQUEADO)
                         st.markdown("👇 **¿Quieres que redacte el recurso legal?**")
@@ -1796,6 +1796,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
