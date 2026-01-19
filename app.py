@@ -1448,7 +1448,7 @@ with tabs[4]:
          st.subheader("Calculadora Fiscal")
          st.caption("Selecciona una herramienta:")
         
-         c_nav1, c_nav2, = st.columns(3)
+         c_nav1, c_nav2, = st.columns(2)
 
             
             # Grid de botones (Izquierda)
@@ -1796,6 +1796,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
