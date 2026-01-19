@@ -61,39 +61,6 @@ st.set_page_config(
         'About': "LegalApp AI"
     }
 )
-# --- BARRA LATERAL (SIDEBAR) ---
-with st.sidebar:
-    # Puedes poner tu logo aquí si tienes uno, si no, un icono queda bien
-    st.markdown("## ⚖️ Abogado IA")
-    st.caption("Tu asistente legal 24/7")
-    
-    st.markdown("---")
-    
-    # Sección de Donación / Monetización Suave
-    st.markdown("### ☕ Apoya el proyecto")
-    st.caption("Esta herramienta es gratuita. Si te ha ahorrado dinero en un abogado o gestor, considera invitarme a un café para mantener los servidores activos.")
-    
-    # Botón HTML de Buy Me A Coffee
-    # IMPORTANTE: Regístrate en buymeacoffee.com y cambia 'TU_USUARIO' por el tuyo real.
-    st.markdown(
-        """
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="https://www.buymeacoffee.com/legalapp" target="_blank">
-                <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 50px !important; width: 217px !important;" >
-            </a>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    
-    st.markdown("---")
-    
-    # Aviso Legal (Importante para generar confianza y evitar problemas)
-    st.warning("⚠️ **Aviso:** Esta IA proporciona información orientativa basada en la ley española, pero no sustituye el asesoramiento profesional de un letrado colegiado.")
-    
-    # Pie de página
-    st.markdown("---")
-    st.caption("© 2026 Abogado IA v1.0")
 
 # ... después de st.set_page_config ...
 
@@ -1862,13 +1829,17 @@ with tabs[4]:
 # ==============================================================================
 # 5. FOOTER (LEGAL & CONTACTO & ADMIN)
 # ==============================================================================
+# --- PIE DE PÁGINA (FOOTER) ALINEADO Y COMPLETO ---
 st.write(""); st.write(""); st.write("") 
 
 with st.container():
     st.markdown("---") 
     
-    c_legal, c_contact, c_admin = st.columns([4, 2, 1])
+    # TRUCO DE ALINEACIÓN: Usamos 'vertical_alignment="center"'
+    # Dividimos en 4: Legal (ancho) | Café | Contacto | Admin (estrecho)
+    c_legal, c_coffee, c_contact, c_admin = st.columns([3, 1.2, 1.2, 0.5], vertical_alignment="center")
     
+    # 1. DATOS LEGALES (Tus datos conservados)
     with c_legal:
         st.caption("⚖️ **legalapp.es** | Inteligencia Jurídica para España.")
         with st.expander("📜 Avisos Legales, Privacidad y Cookies"):
@@ -1886,16 +1857,24 @@ with st.container():
             Esta herramienta utiliza Inteligencia Artificial. Los resultados son orientativos y no constituyen un consejo legal vinculante. Se recomienda la revisión por un abogado colegiado para procesos judiciales.
             """)
 
+    # 2. BUY ME A COFFEE (Integrado y alineado)
+    with c_coffee:
+        # Usamos link_button para que tenga el mismo tamaño y forma que el de contacto
+        st.link_button("☕ Invitar Café", "https://www.buymeacoffee.com/legalapp", help="Apoya el mantenimiento de la App", use_container_width=True)
+
+    # 3. CONTACTO
     with c_contact:
-        st.link_button("✉️ Contactar Soporte", "mailto:marcoslorente@legalapp.es")
+        st.link_button("✉️ Soporte", "mailto:marcoslorente@legalapp.es", use_container_width=True)
             
+    # 4. ADMIN (Candado)
     with c_admin:
-        with st.popover("🔐", help="Admin"):
+        with st.popover("🔐", help="Acceso Administrador"):
             pass_admin = st.text_input("Clave", type="password")
             if pass_admin == "admin123": 
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
