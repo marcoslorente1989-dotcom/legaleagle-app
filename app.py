@@ -1344,7 +1344,7 @@ with tabs[3]:
                      uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
                      mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
                     
-                    if st.button("📝 GENERAR RESPUESTA"):
+                     if st.button("📝 GENERAR RESPUESTA"):
                         if uploaded_gen and mis_argumentos:
                            with st.spinner("Analizando documento y redactando respuesta..."):
                                if uploaded_gen.type == "application/pdf": txt_gen = extract_text_from_pdf(uploaded_gen)
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
