@@ -1444,11 +1444,10 @@ with tabs[4]:
 
     # --- VISTA A: MENÚ PRINCIPAL ---
     if st.session_state.nav_impuestos == "MENU":
-             
-        with c_menu_L:
-            st.subheader("Calculadora Fiscal")
-            st.caption("Selecciona una herramienta:")
-            c_nav1, c_nav2, = st.columns(3)
+         st.subheader("Calculadora Fiscal")
+         st.caption("Selecciona una herramienta:")
+        
+         c_nav1, c_nav2, = st.columns(3)
 
             
             # Grid de botones (Izquierda)
@@ -1796,6 +1795,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
