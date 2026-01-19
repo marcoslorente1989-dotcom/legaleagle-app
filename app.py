@@ -1190,7 +1190,7 @@ with tabs[2]:
             st.write(""); st.write("")
             ciudad = st.text_input("📍 Ciudad de firma", value="Madrid")
             
-             if st.button("✨ REDACTAR"):
+            if st.button("✨ REDACTAR"):
                 with st.spinner("Redactando..."):
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                     instruccion = f"""
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
