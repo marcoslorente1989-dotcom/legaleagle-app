@@ -7,5 +7,6 @@ fpdf
 gspread
 oauth2client
 requests
-pip install python-docx
+python-docx
+
 
