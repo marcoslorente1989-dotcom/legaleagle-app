@@ -675,35 +675,75 @@ def analyze_image_groq(image_file, prompt_instruction, key):
         return chat_completion.choices[0].message.content
     except Exception as e: return f"Error Vision AI: {str(e)}"
 
-class PDFReport(FPDF):
-    def header(self):
-        self.set_font('Helvetica', 'B', 15)
-        self.set_text_color(30, 41, 59)
-        self.cell(0, 10, 'LegalApp AI - Documento Oficial', align='C')
-        self.ln(10)
-        self.set_draw_color(37, 99, 235)
-        self.set_line_width(0.5)
-        self.line(10, 25, 200, 25)
-        self.ln(15)
-    def footer(self):
-        self.set_y(-15)
-        self.set_font('Helvetica', 'I', 8)
-        self.set_text_color(128)
-        self.cell(0, 10, f'Pagina {self.page_no()} | LegalApp', align='C')
+# --- FUNCIÓN GENERAR PDF (DISEÑO LIMPIO Y FORMAL) ---
+def create_pdf(text, title="Documento Legal"):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    
+    # Configuración de fuente
+    c.setFont("Helvetica", 10)
+    
+    # Título del Documento (Centrado y en Negrita)
+    c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(width / 2, height - 50, title)
+    
+    # Línea separadora fina debajo del título (opcional, queda elegante)
+    c.setLineWidth(0.5)
+    c.line(50, height - 60, width - 50, height - 60)
+    
+    # Cuerpo del texto
+    text_object = c.beginText(50, height - 80)
+    text_object.setFont("Helvetica", 10)
+    text_object.setLeading(14) # Espaciado entre líneas cómodo
+    
+    # Procesar texto para saltos de línea automáticos
+    max_width = width - 100
+    for paragraph in text.split('\n'):
+        # Si es un encabezado en Markdown (##), lo ponemos en negrita
+        if paragraph.strip().startswith("##") or paragraph.strip().startswith("**"):
+            c.setFont("Helvetica-Bold", 11)
+            clean_para = paragraph.replace("#", "").replace("*", "").strip()
+            # Dividir líneas largas
+            words = clean_para.split()
+            line = ""
+            for word in words:
+                if c.stringWidth(line + word, "Helvetica-Bold", 11) < max_width:
+                    line += word + " "
+                else:
+                    text_object.textLine(line)
+                    line = word + " "
+            text_object.textLine(line)
+            c.setFont("Helvetica", 10) # Volver a normal
+            
+        else:
+            # Texto normal
+            words = paragraph.split()
+            line = ""
+            for word in words:
+                if c.stringWidth(line + word, "Helvetica", 10) < max_width:
+                    line += word + " "
+                else:
+                    text_object.textLine(line)
+                    line = word + " "
+            text_object.textLine(line)
+        
+        # Salto de párrafo extra
+        text_object.textLine("") 
+        
+        # Control de fin de página
+        if text_object.getY() < 50:
+            c.drawText(text_object)
+            c.showPage() # Nueva página
+            # Reiniciar objeto de texto en nueva página
+            text_object = c.beginText(50, height - 50)
+            text_object.setFont("Helvetica", 10)
+            text_object.setLeading(14)
 
-def create_pdf(content, title="Documento"):
-    pdf = PDFReport()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 10, title, ln=True)
-    pdf.ln(5)
-    pdf.set_font("Times", size=11)
-    # Codificación segura para PDF
-    safe_content = content.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 6, safe_content)
-    return pdf.output(dest='S').encode('latin-1')
-
+    c.drawText(text_object)
+    c.save()
+    buffer.seek(0)
+    return buffer
 # --- FUNCIÓN PARA GENERAR WORD (.docx) ---
 def create_docx(text, title="Documento"):
     doc = Document()
@@ -2033,6 +2073,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
