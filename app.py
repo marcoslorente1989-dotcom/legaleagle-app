@@ -1414,11 +1414,7 @@ with tabs[4]:
                 st.session_state.generated_calc = ""
                 st.rerun()
 
-        with c_menu_R:
-            st.write("") # Espaciador para alinear título
-            st.write("") 
-            st.write("") 
-            
+                   
             # Grid de botones (Derecha)
             if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True): 
                 st.session_state.nav_impuestos = "SUELDO"
@@ -1453,7 +1449,7 @@ with tabs[4]:
             anio_actual = datetime.now().year
 
             # === RENTA (Lógica Completa) ===
-            if tool == "RENTA":
+            if modo == "RENTA":
                 st.subheader("💰 Deducciones Renta")
                 st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
                 ccaa = st.selectbox("📍 Tu Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"], key="ren_ccaa")
@@ -1520,7 +1516,7 @@ with tabs[4]:
                     st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
 
             # === ESCÁNER NÓMINA ===
-            elif tool == "ESCANER":
+            elif modo == "ESCANER":
                 st.subheader("🔍 Escáner de Nómina")
                 st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
                 file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png"], key="u_nomina")
@@ -1543,7 +1539,7 @@ with tabs[4]:
                             st.session_state.generated_calc = groq_engine(p_nomina, api_key)
 
             # === SUELDO NETO (Lógica Matemática + IA) ===
-            elif tool == "SUELDO":
+            elif modo == "SUELDO":
                 st.subheader("💶 Simulador Sueldo Neto")
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                 
@@ -1633,7 +1629,7 @@ with tabs[4]:
                           st.rerun()
 
             # === VENTA ===
-            elif tool == "VENTA":
+            elif modo == "VENTA":
                 st.subheader("🏠 Impuestos Venta")
                 st.caption("Plusvalía Municipal + IRPF")
                 f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015, key="ven_fc")
@@ -1651,7 +1647,7 @@ with tabs[4]:
                         st.session_state.generated_calc = groq_engine(p, api_key)
 
             # === GASTOS ===
-            elif tool == "GASTOS":
+            elif modo == "GASTOS":
                 st.subheader("📝 Gastos Compraventa")
                 precio = st.number_input("Precio (€)", 150000.0, key="gas_pre")
                 ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"], key="gas_ccaa")
@@ -1660,7 +1656,7 @@ with tabs[4]:
                     st.session_state.generated_calc = groq_engine(f"Calcula gastos compraventa {ccaa}. Precio: {precio}. Tipo: {tipo}.", api_key)
 
             # === IPC ===
-            elif tool == "IPC":
+            elif modo == "IPC":
                 st.subheader("📈 Actualizar IPC")
                 renta = st.number_input("Renta (€)", 800.0, key="ipc_ren")
                 mes = st.selectbox("Mes", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], key="ipc_mes")
@@ -1668,7 +1664,7 @@ with tabs[4]:
                     st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta} con IPC {mes}.", api_key)
 
             # === HIPOTECA ===
-            elif tool == "HIPOTECA":
+            elif modo == "HIPOTECA":
                 st.subheader("📉 Cuota Hipoteca")
                 st.caption("Calculadora Cuota Mensual Inteligente")
                 capital_h = st.number_input("Capital Pendiente (€)", value=150000.0, key="hip_cap")
@@ -1743,6 +1739,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
