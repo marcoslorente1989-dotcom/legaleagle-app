@@ -1284,8 +1284,7 @@ with tabs[3]:
                     pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
                     st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
                     
-with tabs[4]:
-    
+
    # --- TAB 4: IMPUESTOS (SOLUCIÓN EFECTO FANTASMA) ---
 with tabs[4]:
     # 1. INICIALIZAMOS MEMORIA
@@ -1615,6 +1614,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
