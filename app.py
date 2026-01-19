@@ -679,7 +679,7 @@ class PDFReport(FPDF):
     def header(self):
         self.set_font('Helvetica', 'B', 15)
         self.set_text_color(30, 41, 59)
-        self.cell(0, 10, 'LegalEagle AI - Documento Oficial', align='C')
+        self.cell(0, 10, 'LegalApp AI - Documento Oficial', align='C')
         self.ln(10)
         self.set_draw_color(37, 99, 235)
         self.set_line_width(0.5)
@@ -689,7 +689,7 @@ class PDFReport(FPDF):
         self.set_y(-15)
         self.set_font('Helvetica', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, f'Pagina {self.page_no()} | LegalEagle Suite', align='C')
+        self.cell(0, 10, f'Pagina {self.page_no()} | LegalApp', align='C')
 
 def create_pdf(content, title="Documento"):
     pdf = PDFReport()
@@ -726,7 +726,7 @@ def get_whatsapp_link(text):
 def groq_engine(prompt, key, temp=0.2):
     client = Groq(api_key=key)
     try:
-        sys_msg = "Eres LegalEagle, abogado y asesor fiscal experto en España. Responde de forma directa, compacta y profesional. Cita leyes."
+        sys_msg = "Eres LegalApp, abogado y asesor fiscal experto en España. Responde de forma directa, compacta y profesional. Cita leyes."
         return client.chat.completions.create(model="llama-3.3-70b-versatile", messages=[
             {"role":"system", "content": sys_msg},
             {"role":"user","content":prompt}
@@ -744,7 +744,7 @@ def save_lead(email, action, details):
             client = gspread.authorize(creds)
             
             # Asegúrate de que esta hoja existe en tu Drive
-            sheet = client.open("Base de Datos LegalEagle").sheet1 
+            sheet = client.open("Base de Datos LegalApp").sheet1 
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             sheet.append_row([timestamp, email, action, details])
             print(f"✅ Guardado en Google: {email}")
@@ -776,7 +776,7 @@ with c_logo2:
             unsafe_allow_html=True
         )
     else:
-        st.markdown("<h1 style='text-align: center; color: white;'>🦅 LegalEagle AI</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: white;'>🦅 LegalApp AI</h1>", unsafe_allow_html=True)
 
 st.write("") 
 
@@ -1362,38 +1362,57 @@ with tabs[2]:
         # --- VISOR DE RESULTADOS ---
         with c2:
             if st.session_state.generated_contract:
-                st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
-                st.write("")
-                with st.container(border=False):
-                    ce, cb = st.columns([2,1])
-                    with ce: m = st.text_input("Email", key="mc_tab2")
-                    with cb: 
-                        st.write(""); st.write("")
-                       # --- BLOQUE DE DESCARGAS MEJORADO (PDF + WORD + WHATSAPP) ---
-                        st.write("---")
-                        c_down1, c_down2, c_down3 = st.columns(3)
-                        
-                        # 1. PDF (Existente)
-                        with c_down1:
-                            if st.button("📄 PDF", key="btn_pdf_tab2", use_container_width=True):
-                                save_lead(m, "CREAR", tipo_texto)
-                                pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
-                                # Truco: Usamos session_state para que el botón de descarga aparezca tras generar
-                                st.session_state.pdf_ready = pdf_file
+                # --- ZONA DE DESCARGAS (DISEÑO MEJORADO: BOTONES ABAJO) ---
+                st.write("") 
+                st.markdown("### 📥 Exportar Documento")
+                
+                # 1. El Email ocupa todo el ancho ahora
+                m = st.text_input("Email para guardar copia (Opcional)", key="mc_tab2")
+                
+                st.write("") # Un poco de aire
+                
+                # 2. Botones alineados horizontalmente DEBAJO del email
+                c_btn1, c_btn2, c_btn3 = st.columns(3)
+                
+                # --- BOTÓN PDF ---
+                with c_btn1:
+                    # Lógica de doble paso para PDF (Generar -> Descargar)
+                    if st.button("📄 Generar PDF", key="btn_gen_pdf_2", use_container_width=True):
+                        save_lead(m, "CREAR", tipo_texto)
+                        st.session_state.pdf_ready = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
+                    
+                    # Si el PDF ya está listo, mostramos el botón de descarga
+                    if "pdf_ready" in st.session_state and st.session_state.pdf_ready:
+                        st.download_button(
+                            label="⬇️ Bajar PDF", 
+                            data=st.session_state.pdf_ready, 
+                            file_name=f"{tipo_texto}.pdf", 
+                            mime="application/pdf", 
+                            key="dl_pdf_2",
+                            use_container_width=True
+                        )
 
-                            if "pdf_ready" in st.session_state:
-                                st.download_button("⬇️ Bajar PDF", data=st.session_state.pdf_ready, file_name=f"{tipo_texto}.pdf", mime="application/pdf", key="dl_pdf_2")
+                # --- BOTÓN WORD ---
+                with c_btn2:
+                    # Generamos el Word al vuelo
+                    docx_file = create_docx(st.session_state.generated_contract, f"Contrato {tipo_texto}")
+                    st.download_button(
+                        label="📝 Word (.docx)", 
+                        data=docx_file, 
+                        file_name=f"{tipo_texto}.docx", 
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", 
+                        key="btn_word_tab2", 
+                        use_container_width=True # Esto hace que se estire
+                    )
 
-                        # 2. WORD (Mejora 1 - Muy demandado)
-                        with c_down2:
-                            docx_file = create_docx(st.session_state.generated_contract, f"Contrato {tipo_texto}")
-                            st.download_button("📝 Word", data=docx_file, file_name=f"{tipo_texto}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="btn_word_tab2", use_container_width=True)
-
-                        # 3. WHATSAPP (Mejora 2 - Futuro Pago)
-                        with c_down3:
-                            # Generamos el enlace con el texto
-                            wa_link = get_whatsapp_link(st.session_state.generated_contract)
-                            st.link_button("📲 WhatsApp", wa_link, use_container_width=True)
+                # --- BOTÓN WHATSAPP ---
+                with c_btn3:
+                    wa_link = get_whatsapp_link(st.session_state.generated_contract)
+                    st.link_button(
+                        label="📲 WhatsApp", 
+                        url=wa_link, 
+                        use_container_width=True # Esto hace que se estire
+                    )
 
 # --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[3]:
@@ -1993,6 +2012,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
