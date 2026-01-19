@@ -1283,6 +1283,11 @@ with tabs[3]:
                     st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
                     
 with tabs[4]:
+    
+    # 1. CORRECCIÓN DEL ERROR: Inicializar variable ANTES de usarla
+    if "last_mode_tab4" not in st.session_state:
+        st.session_state.last_mode_tab4 = "Selecciona..."
+    
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
         with st.container(border=False):
@@ -1606,6 +1611,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
