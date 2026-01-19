@@ -1307,6 +1307,9 @@ with tabs[2]:
 
                 # ¡¡ESTA LÍNEA FALTABA!! Sin ella, la IA no sabe qué redactar
                 tipo_texto = "Contrato de Compraventa de Vehículo Usado"
+
+                # 1. ¡IMPORTANTE! FALTABA ESTE CAMPO:
+                ciudad = st.text_input("Ciudad donde se firma", value="Madrid", key="veh_ciudad")
                 
                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
@@ -2073,6 +2076,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
