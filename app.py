@@ -1224,23 +1224,24 @@ with tabs[2]:
                             pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
                             st.download_button("⬇️ Bajar PDF", data=pdf_file, file_name=f"{tipo_texto}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (AISLAMIENTO TOTAL) ---
+# --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[3]:
-    st.subheader("Centro de Reclamaciones")
-    
-    # 1. GESTIÓN DEL ESTADO
+    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
     if "nav_reclamar" not in st.session_state:
         st.session_state.nav_reclamar = "MENU"
 
-    # --- VISTA A: MENÚ PRINCIPAL ---
+    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
     if st.session_state.nav_reclamar == "MENU":
-        st.info("Selecciona qué trámite quieres iniciar:")
+        st.subheader("Centro de Reclamaciones")
+        st.caption("Selecciona qué trámite quieres iniciar:")
+        
+        # Definimos columnas AQUÍ (no fuera)
         c_nav1, c_nav2, c_nav3 = st.columns(3)
         
         with c_nav1:
             if st.button("✍️\nREDACTAR BUROFAX\n(Reclamar Deudas)", use_container_width=True):
                 st.session_state.nav_reclamar = "BUROFAX"
-                st.session_state.generated_claim = ""
+                st.session_state.generated_claim = "" 
                 st.rerun()
         with c_nav2:
             if st.button("🛡️\nRESPONDER CARTA\n(Vecinos, Seguros...)", use_container_width=True):
@@ -1253,21 +1254,25 @@ with tabs[3]:
                 st.session_state.generated_claim = ""
                 st.rerun()
 
-    # --- VISTA B: HERRAMIENTAS (CADA UNA CREA SU PROPIO ESPACIO) ---
+    # --- VISTA B: FORMULARIO ESPECÍFICO ---
     else:
-        if st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES"):
-            st.session_state.nav_reclamar = "MENU"
-            st.session_state.generated_claim = ""
-            st.rerun()
+        # Definimos columnas NUEVAS para el formulario (Igual que en Tab 2)
+        c_rec, c_doc = st.columns([1, 1.3])
         
-        st.markdown("---")
-
-        # === HERRAMIENTA 1: BUROFAX ===
-        if st.session_state.nav_reclamar == "BUROFAX":
-            # DEFINIMOS COLUMNAS AQUÍ DENTRO PARA QUE SEAN NUEVAS
-            c_bur_izq, c_bur_der = st.columns([1, 1.3])
+        with c_rec:
+            # Botón Volver DENTRO de la columna
+            if st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES"):
+                st.session_state.nav_reclamar = "MENU"
+                st.session_state.generated_claim = ""
+                st.rerun()
             
-            with c_bur_izq:
+            st.markdown("---")
+            
+            # Recuperamos el modo
+            modo = st.session_state.nav_reclamar
+
+            # === HERRAMIENTA 1: BUROFAX ===
+            if modo == "BUROFAX":
                 with st.container(border=False):
                     st.info("Generador de Burofax")
                     remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bf_remitente")
@@ -1280,17 +1285,18 @@ with tabs[3]:
                     ], key="bf_motivo")
                     
                     datos_clave = ""
+                    
                     if "Facturas" in motivo:
-                        c1, c2 = st.columns(2)
-                        with c1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
-                        with c2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
+                        c_fac1, c_fac2 = st.columns(2)
+                        with c_fac1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
+                        with c_fac2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
                         fecha_fac = st.date_input("Fecha de la factura", key="bf_date")
                         datos_clave = f"Reclamación de Cantidad. Factura Nº: {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}. Motivo: Cobro indebido o servicio no prestado."
                     
                     elif "Seguros" in motivo:
-                        c1, c2 = st.columns(2)
-                        with c1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
-                        with c2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
+                        c_seg1, c_seg2 = st.columns(2)
+                        with c_seg1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
+                        with c_seg2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
                         fecha_sin = st.date_input("Fecha del Siniestro", key="bf_date_sin")
                         datos_clave = f"Reclamación a Aseguradora. Póliza Nº: {num_poliza}. Siniestro Nº: {num_siniestro}. Fecha Ocurrencia: {fecha_sin}. Exigencia de cumplimiento de contrato y cobertura."
                     
@@ -1322,19 +1328,9 @@ with tabs[3]:
                         with st.spinner("Redactando..."):
                             p = f"Actúa como abogado. Redacta Burofax. De: {remitente}. A: {dest}. Contexto: {datos_clave}. Hechos: {hechos}. Tono formal."
                             st.session_state.generated_claim = groq_engine(p, api_key)
-            
-            # VISOR BUROFAX (USANDO SU COLUMNA DERECHA)
-            with c_bur_der:
-                if st.session_state.generated_claim:
-                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Legal"); st.download_button("⬇️ PDF", pdf, "legal.pdf")
 
-        # === HERRAMIENTA 2: RESPONDER ===
-        elif st.session_state.nav_reclamar == "RESPONDER":
-            # DEFINIMOS COLUMNAS NUEVAS
-            c_res_izq, c_res_der = st.columns([1, 1.3])
-            
-            with c_res_izq:
+            # === HERRAMIENTA 2: RESPONDER ===
+            elif modo == "RESPONDER":
                 with st.container(border=False):
                     st.info("📂 Sube la carta recibida.")
                     uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
@@ -1345,21 +1341,13 @@ with tabs[3]:
                             with st.spinner("Analizando..."):
                                 if uploaded_gen.type == "application/pdf": txt = extract_text_from_pdf(uploaded_gen)
                                 else: txt = analyze_image_groq(uploaded_gen, "Lee carta", api_key)
+                                
                                 p = f"Abogado. Recibido: {txt[:4000]}. Responder: {mis_argumentos}. Redacta carta."
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
-            
-            with c_res_der:
-                if st.session_state.generated_claim:
-                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Respuesta"); st.download_button("⬇️ PDF", pdf, "respuesta.pdf")
 
-        # === HERRAMIENTA 3: MULTAS ===
-        elif st.session_state.nav_reclamar == "MULTA":
-            # DEFINIMOS COLUMNAS NUEVAS
-            c_mul_izq, c_mul_der = st.columns([1, 1.3])
-            
-            with c_mul_izq:
+            # === HERRAMIENTA 3: MULTAS ===
+            elif modo == "MULTA":
                 with st.container(border=False):
                     st.info("👮 Sube la multa.")
                     uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
@@ -1371,69 +1359,61 @@ with tabs[3]:
                             with st.spinner("Auditando..."):
                                 if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
                                 else: txt = analyze_image_groq(uploaded_multa, "Lee multa", api_key)
+                                
                                 p = f"Abogado experto en {tipo_m}. Multa: {txt[:5000]}. Cliente: {mis_datos}. Redacta Recurso."
                                 st.session_state.generated_claim = groq_engine(p, api_key)
                         else: st.warning("Faltan datos.")
-            
-            with c_mul_der:
-                if st.session_state.generated_claim:
-                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-                    st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
+
+        # --- VISOR DE RESULTADOS (COMÚN) ---
+        with c_doc:
+            if st.session_state.generated_claim:
+                st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
+                st.write("")
+                with st.container(border=False):
+                    ce2, cb2 = st.columns([2,1])
+                    with ce2: m2 = st.text_input("Email (Opcional)", key="mr_tab3")
+                    with cb2:
+                        st.write(""); st.write("")
+                        if st.button("PDF LEGAL", key="br_tab3"):
+                            save_lead(m2, "RECLAMACION", st.session_state.nav_reclamar)
+                            pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
+                            st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
                             
-# --- TAB 4: IMPUESTOS (ESTRUCTURA CORREGIDA IDÉNTICA A TAB 2) ---
+# --- TAB 4: IMPUESTOS (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[4]:
-    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    # 1. GESTIÓN DEL ESTADO
     if "nav_impuestos" not in st.session_state:
         st.session_state.nav_impuestos = "MENU"
 
-    c_cal, c_res = st.columns([1, 1.3])
-
-    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
+    # --- VISTA A: MENÚ PRINCIPAL (GRID) ---
     if st.session_state.nav_impuestos == "MENU":
+        # Columnas exclusivas para el MENÚ
+        c_cal, c_res = st.columns([1, 1.3])
+        
         with c_cal:
             st.subheader("Calculadora Fiscal")
             st.caption("Selecciona una herramienta para abrirla:")
             
             c1, c2 = st.columns(2)
             with c1:
-                if st.button("💰\nRENTA\nDeducciones", use_container_width=True):
-                    st.session_state.nav_impuestos = "RENTA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True):
-                    st.session_state.nav_impuestos = "ESCANER"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True):
-                    st.session_state.nav_impuestos = "VENTA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📈\nIPC\nAlquiler", use_container_width=True):
-                    st.session_state.nav_impuestos = "IPC"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
+                if st.button("💰\nRENTA\nDeducciones", use_container_width=True): st.session_state.nav_impuestos="RENTA"; st.session_state.generated_calc=""; st.rerun()
+                if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True): st.session_state.nav_impuestos="ESCANER"; st.session_state.generated_calc=""; st.rerun()
+                if st.button("🏠\nVENTA PISO\nImpuestos", use_container_width=True): st.session_state.nav_impuestos="VENTA"; st.session_state.generated_calc=""; st.rerun()
+                if st.button("📈\nIPC\nAlquiler", use_container_width=True): st.session_state.nav_impuestos="IPC"; st.session_state.generated_calc=""; st.rerun()
 
             with c2:
-                if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True):
-                    st.session_state.nav_impuestos = "SUELDO"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📝\nGASTOS\nCompraventa", use_container_width=True):
-                    st.session_state.nav_impuestos = "GASTOS"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📉\nHIPOTECA\nCuota", use_container_width=True):
-                    st.session_state.nav_impuestos = "HIPOTECA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("❓\nOTRO\nTrámite", use_container_width=True):
-                    st.session_state.nav_impuestos = "OTRO"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
+                if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True): st.session_state.nav_impuestos="SUELDO"; st.session_state.generated_calc=""; st.rerun()
+                if st.button("📝\nGASTOS\nCompraventa", use_container_width=True): st.session_state.nav_impuestos="GASTOS"; st.session_state.generated_calc=""; st.rerun()
+                if st.button("📉\nHIPOTECA\nCuota", use_container_width=True): st.session_state.nav_impuestos="HIPOTECA"; st.session_state.generated_calc=""; st.rerun()
+                if st.button("❓\nOTRO\nTrámite", use_container_width=True): st.session_state.nav_impuestos="OTRO"; st.session_state.generated_calc=""; st.rerun()
 
-    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS (TODO DENTRO DEL ELSE) ---
+    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS (CON SU PROPIO ESPACIO) ---
     else:
+        # Columnas NUEVAS exclusivas para la HERRAMIENTA
+        c_cal, c_res = st.columns([1, 1.3])
+        
         with c_cal:
+            # Botón Volver DENTRO de la columna
             if st.button("⬅️ VOLVER AL MENÚ DE IMPUESTOS"):
                 st.session_state.nav_impuestos = "MENU"
                 st.session_state.generated_calc = ""
@@ -1443,7 +1423,7 @@ with tabs[4]:
             tool = st.session_state.nav_impuestos
             anio_actual = datetime.now().year
 
-            # === RENTA (Lógica Completa: Hijos, Guardería, etc.) ===
+            # === RENTA ===
             if tool == "RENTA":
                 st.subheader("💰 Deducciones Renta")
                 st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
@@ -1454,7 +1434,6 @@ with tabs[4]:
                 if hijos:
                     st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Detalles para filtrar deducciones:</small></div>""", unsafe_allow_html=True)
                     anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)", key="ren_ah")
-                    
                     c_h1, c_h2 = st.columns(2)
                     with c_h1:
                         guarderia = st.checkbox("Gastos de Guardería (0-3 años)", key="ren_guar")
@@ -1462,7 +1441,6 @@ with tabs[4]:
                     with c_h2:
                         fam_mono = st.checkbox("Familia Monoparental / Numerosa", key="ren_fam")
                         discap_hijo = st.checkbox("Algún hijo con Discapacidad", key="ren_dis_h")
-                    
                     detalles_hijos = f"Hijos nacidos en: {anios_hijos}. "
                     if guarderia: detalles_hijos += "Paga Guardería. "
                     if material: detalles_hijos += "Paga Material Escolar/Libros. "
@@ -1472,36 +1450,29 @@ with tabs[4]:
                 st.markdown("---")
                 c1, c2 = st.columns(2)
                 with c1:
-                    alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
-                    hipoteca = st.checkbox("Hipoteca (Anterior 2013)")
-                    discapacidad = st.checkbox("Mi Discapacidad (>33%)")
+                    alquiler = st.checkbox("Alquiler", key="ren_alq")
+                    hipoteca = st.checkbox("Hipoteca", key="ren_hip")
                 with c2:
-                    donaciones = st.checkbox("Hago Donaciones")
-                    idiomas = st.checkbox("Idiomas extraescolares")
-                    rural = st.checkbox("Zona Rural / Despoblada")
+                    discapacidad = st.checkbox("Discapacidad", key="ren_dis")
+                    donaciones = st.checkbox("Donaciones", key="ren_don")
                 
-                otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)")
-
                 if st.button("🔍 BUSCAR DEDUCCIONES", key="btn_ren"):
                     perfil = f"CCAA: {ccaa}. Hijos: {detalles_hijos}. Alquiler: {alquiler}. Hipoteca: {hipoteca}. Discapacidad: {discapacidad}. Donaciones: {donaciones}."
                     p = f"Asesor Fiscal IRPF. Perfil: {perfil}. Lista DEDUCCIONES APLICABLES (Nombre, Cuantía, Casilla)."
                     st.session_state.generated_calc = groq_engine(p, api_key)
 
-            # === ESCÁNER NÓMINA ===
+            # === ESCÁNER ===
             elif tool == "ESCANER":
                 st.subheader("🔍 Escáner de Nómina")
                 st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
-                file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png"], key="u_nomina")
-                if file_nomina:
-                    if st.button("🚀 ANALIZAR MI NÓMINA"):
-                        with st.spinner("Revisando conceptos salariales y retenciones..."):
-                            if file_nomina.type == "application/pdf": txt = extract_text_from_pdf(file_nomina)
-                            else: txt = analyze_image_groq(file_nomina, "Transcribe conceptos y retenciones.", api_key)
-                            
-                            p_nomina = f"Actúa como asesor laboral experto en España. Analiza esta nómina: {txt}. Genera informe Semáforo Legal (SMI, IRPF, Cotización)."
-                            st.session_state.generated_calc = groq_engine(p_nomina, api_key)
+                file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png"], key="u_nom_scan")
+                if file_nomina and st.button("🚀 ANALIZAR", key="btn_scan"):
+                    with st.spinner("Analizando..."):
+                        if file_nomina.type == "application/pdf": txt = extract_text_from_pdf(file_nomina)
+                        else: txt = analyze_image_groq(file_nomina, "Lee nómina", api_key)
+                        st.session_state.generated_calc = groq_engine(f"Analiza nómina: {txt}. Informe Semáforo.", api_key)
 
-            # === SUELDO NETO (Lógica Completa Recuperada) ===
+            # === SUELDO NETO ===
             elif tool == "SUELDO":
                 st.subheader("💶 Simulador Sueldo Neto")
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
@@ -1581,16 +1552,9 @@ with tabs[4]:
                         """
                         st.session_state.generated_calc = html_nomina
 
-                if st.session_state.generated_calc:
-                      st.write("")
-                      if st.button("🔄 Calcular de nuevo", use_container_width=True):
-                          st.session_state.generated_calc = ""
-                          st.rerun()
-
             # === VENTA ===
             elif tool == "VENTA":
                 st.subheader("🏠 Impuestos Venta")
-                st.caption("Plusvalía Municipal + IRPF")
                 f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015, key="ven_fc")
                 p_compra = st.number_input("Precio Compra (€)", min_value=0.0, key="ven_pc")
                 f_venta = st.number_input("Año Venta", value=anio_actual, disabled=True)
@@ -1598,7 +1562,7 @@ with tabs[4]:
                 municipio = st.text_input("Municipio", key="ven_mun")
                 v_suelo = st.number_input("Valor Catastral SUELO (€)", min_value=0.0, key="ven_vs")
                 
-                if st.button("🧮 CALCULAR IMPUESTOS"):
+                if st.button("🧮 CALCULAR IMPUESTOS", key="btn_ven"):
                     if v_suelo > 0:
                         anios = anio_actual - f_compra
                         ganancia = p_venta - p_compra
@@ -1625,12 +1589,9 @@ with tabs[4]:
             # === HIPOTECA ===
             elif tool == "HIPOTECA":
                 st.subheader("📉 Cuota Hipoteca")
-                st.caption("Calculadora Cuota Mensual Inteligente")
-                capital_h = st.number_input("Capital Pendiente (€)", value=150000.0, key="hip_cap")
-                plazo_h = st.number_input("Plazo (Años)", value=25, key="hip_pla")
-                
+                cap = st.number_input("Capital (€)", value=150000.0, key="hip_cap")
+                plazo = st.number_input("Años", value=25, key="hip_pla")
                 t_interes = st.radio("Tipo de Interés", ["Fijo", "Variable"], horizontal=True, key="hip_tip")
-                
                 if t_interes == "Fijo":
                     interes_final = st.number_input("Interés Nominal Anual (%)", value=3.0, key="hip_int")
                 else:
@@ -1641,10 +1602,10 @@ with tabs[4]:
                     st.caption(f"Interés total aplicado: {interes_final}%")
 
                 if st.button("🧮 CALCULAR CUOTA", key="btn_hip"):
-                    p_h = f"Calcula hipoteca. Capital: {capital_h}€. Interés total: {interes_final}%. Plazo: {plazo_h} años. Indica cuota mensual y total intereses."
+                    p_h = f"Calcula hipoteca. Capital: {cap}€. Interés total: {interes_final}%. Plazo: {plazo} años. Indica cuota mensual y total intereses."
                     st.session_state.generated_calc = groq_engine(p_h, api_key)
 
-        # --- VISOR COMÚN (DERECHA) ---
+        # --- VISOR COMÚN ---
         with c_res:
             if st.session_state.generated_calc:
                 if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
@@ -1699,6 +1660,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
