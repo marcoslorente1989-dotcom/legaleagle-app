@@ -1263,6 +1263,10 @@ with tabs[3]:
             st.rerun()
         
         st.markdown("---")
+        # Recuperamos la lógica original basada en el estado
+        modo = st.session_state.nav_crear
+        tipo_texto = "" # Para el prompt
+        data_p = ""     # Para los datos
         c_rec, c_doc = st.columns([1, 1.3])
 
         # === HERRAMIENTA 1: BUROFAX ===
@@ -1466,6 +1470,10 @@ with tabs[4]:
                 st.rerun()
             
             st.markdown("---")
+            # Recuperamos la lógica original basada en el estado
+            modo = st.session_state.nav_crear
+            tipo_texto = "" # Para el prompt
+            data_p = ""     # Para los datos
             tool = st.session_state.nav_impuestos
             anio_actual = datetime.now().year
 
@@ -1770,6 +1778,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
