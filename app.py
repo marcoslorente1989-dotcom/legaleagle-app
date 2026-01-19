@@ -1826,20 +1826,16 @@ with tabs[4]:
                             pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
                             if m3: save_lead(m3, "CALCULO", "Fiscalidad")
                             st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
-# ==============================================================================
-# 5. FOOTER (LEGAL & CONTACTO & ADMIN)
-# ==============================================================================
-# --- PIE DE PÁGINA (FOOTER) ALINEADO Y COMPLETO ---
+# --- PIE DE PÁGINA (FOOTER) ALINEADO Y CORREGIDO ---
 st.write(""); st.write(""); st.write("") 
 
 with st.container():
     st.markdown("---") 
     
-    # TRUCO DE ALINEACIÓN: Usamos 'vertical_alignment="center"'
-    # Dividimos en 4: Legal (ancho) | Café | Contacto | Admin (estrecho)
+    # Alineación vertical centrada
     c_legal, c_coffee, c_contact, c_admin = st.columns([3, 1.2, 1.2, 0.5], vertical_alignment="center")
     
-    # 1. DATOS LEGALES (Tus datos conservados)
+    # 1. DATOS LEGALES (Tus datos)
     with c_legal:
         st.caption("⚖️ **legalapp.es** | Inteligencia Jurídica para España.")
         with st.expander("📜 Avisos Legales, Privacidad y Cookies"):
@@ -1857,16 +1853,37 @@ with st.container():
             Esta herramienta utiliza Inteligencia Artificial. Los resultados son orientativos y no constituyen un consejo legal vinculante. Se recomienda la revisión por un abogado colegiado para procesos judiciales.
             """)
 
-    # 2. BUY ME A COFFEE (Integrado y alineado)
+    # 2. BUY ME A COFFEE (Botón HTML Amarillo - Tooltip Nativo)
     with c_coffee:
-        # Usamos link_button para que tenga el mismo tamaño y forma que el de contacto
-        st.link_button("☕ Invitar Café", "https://www.buymeacoffee.com/legalapp", help="Apoya el mantenimiento de la App", use_container_width=True)
+        # Usamos HTML 'title' que el navegador muestra correctamente siempre
+        st.markdown(
+            """
+            <a href="https://www.buymeacoffee.com/TU_USUARIO" target="_blank" style="text-decoration:none;" title="☕ Apoya el mantenimiento de la App">
+                <div style="
+                    background-color: #FFDD00; 
+                    color: #000000; 
+                    padding: 7px 15px; 
+                    border-radius: 8px; 
+                    text-align: center; 
+                    font-weight: bold;
+                    font-size: 14px;
+                    border: 1px solid #eab308;
+                    box-shadow: 0px 2px 0px 0px #c29606;
+                    transition: 0.2s;
+                    display: flex; align-items: center; justify-content: center;
+                ">
+                    ☕ Invitar Café
+                </div>
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
 
-    # 3. CONTACTO
+    # 3. CONTACTO (Botón Streamlit Estándar)
     with c_contact:
         st.link_button("✉️ Soporte", "mailto:marcoslorente@legalapp.es", use_container_width=True)
             
-    # 4. ADMIN (Candado)
+    # 4. ADMIN
     with c_admin:
         with st.popover("🔐", help="Acceso Administrador"):
             pass_admin = st.text_input("Clave", type="password")
@@ -1874,6 +1891,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
