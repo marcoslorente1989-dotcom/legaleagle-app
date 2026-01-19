@@ -1368,10 +1368,10 @@ with tabs[3]:
         elif st.session_state.nav_reclamar == "MULTA":
             with c_rec:
                 with st.container(border=False):
-                st.info("👮 **Especialista en Tráfico:** Busca defectos de forma.")
-                uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_multa")
-                tipo_multa = st.selectbox("Tipo", ["Tráfico (DGT/Ayto)", "Hacienda", "Otros"])
-                mis_datos = st.text_input("Tus Datos (Nombre y DNI)", key="d_multa")
+                     st.info("👮 **Especialista en Tráfico:** Busca defectos de forma.")
+                     uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_multa")
+                     tipo_multa = st.selectbox("Tipo", ["Tráfico (DGT/Ayto)", "Hacienda", "Otros"])
+                     mis_datos = st.text_input("Tus Datos (Nombre y DNI)", key="d_multa")
                 
                 if st.button("⚖️ ANALIZAR Y RECURRIR"):
                     if uploaded_multa and mis_datos:
@@ -1768,6 +1768,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
