@@ -1396,8 +1396,8 @@ with tabs[3]:
                          st.write("")
                         
                         # PASO 2: REDACCIÓN DEL RECURSO (PREMIUM - BOTÓN DESBLOQUEADO)
-                        st.markdown("👇 **¿Quieres que redacte el recurso legal?**")
-                        if st.button("⚖️ REDACTAR RECURSO AHORA", key="btn_mul_gen"):
+                         st.markdown("👇 **¿Quieres que redacte el recurso legal?**")
+                         if st.button("⚖️ REDACTAR RECURSO AHORA", key="btn_mul_gen"):
                             if mis_datos and st.session_state.temp_multa_txt:
                                 with st.spinner("Redactando Pliego de Descargos..."):
                                     p_recurso = f"""
@@ -1796,6 +1796,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
