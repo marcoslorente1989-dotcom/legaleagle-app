@@ -970,63 +970,116 @@ with tabs[1]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun()
 
-# --- TAB 2: CREADOR (DETALLADO) ---
+# --- TAB 2: CREADOR DE CONTRATOS (ESTRATEGIA DASHBOARD) ---
 with tabs[2]:
-    c1, c2 = st.columns([1, 1.3])
-    with c1:
-        with st.container(border=False):
-            st.subheader("Generador de Contratos")
-            st.caption("Selecciona el tipo de contrato y rellena los datos. La IA redactará un documento legal válido en España y listo para firmar.")
+    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    if "nav_crear" not in st.session_state:
+        st.session_state.nav_crear = "MENU"
+
+    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
+    if st.session_state.nav_crear == "MENU":
+        st.subheader("Generador de Contratos")
+        st.caption("Selecciona el tipo de contrato y rellena los datos. La IA redactará un documento legal válido en España y listo para firmar.")
+        
+        # Grid de botones (3x3)
+        c1, c2, c3 = st.columns(3)
+        
+        # Usamos un div para agrupar visualmente si tienes CSS personalizado, si no, funciona igual
+        with c1:
+            if st.button("🏠\ALQUILER\VIVIENDA", use_container_width=True):
+                st.session_state.nav_crear = "ALQUILER"
+                st.session_state.generated_contract = ""
+                st.rerun()
+            if st.button("💼\CONTRATO\TRABAJO", use_container_width=True):
+                st.session_state.nav_crear = "TRABAJO"
+                st.session_state.generated_contract = ""
+                st.rerun()
+            if st.button("🏡\COMPRAVENTA\VIVIENDA", use_container_width=True):
+                st.session_state.nav_crear = "C_VIVIENDA"
+                st.session_state.generated_contract = ""
+                st.rerun()
+
+        with c2:
+            if st.button("💰\PRÉSTAMO\PARTICULARES", use_container_width=True):
+                st.session_state.nav_crear = "PRESTAMO"
+                st.session_state.generated_contract = ""
+                st.rerun()
+            if st.button("🤝\SERVICIOS\FREELANCE", use_container_width=True):
+                st.session_state.nav_crear = "SERVICIOS"
+                st.session_state.generated_contract = ""
+                st.rerun()
+            if st.button("📝\CONTRATO\DE ARRAS", use_container_width=True):
+                st.session_state.nav_crear = "ARRAS"
+                st.session_state.generated_contract = ""
+                st.rerun()
+
+        with c3:
+            if st.button("🚗\COMPRAVENTA\VEHÍCULO", use_container_width=True):
+                st.session_state.nav_crear = "VEHICULO"
+                st.session_state.generated_contract = ""
+                st.rerun()
+            if st.button("🤫\NDA\CONFIDENCIALIDAD", use_container_width=True):
+                st.session_state.nav_crear = "NDA"
+                st.session_state.generated_contract = ""
+                st.rerun()
+            if st.button("❌\CANCELACIÓN\CONTRATO", use_container_width=True):
+                st.session_state.nav_crear = "CANCELACION"
+                st.session_state.generated_contract = ""
+                st.rerun()
+
+    # --- VISTA B: FORMULARIO ESPECÍFICO ---
+    else:
+        c1, c2 = st.columns([1, 1.3])
+        
+        with c1:
+            if st.button("⬅️ VOLVER AL MENÚ DE CONTRATOS"):
+                st.session_state.nav_crear = "MENU"
+                st.session_state.generated_contract = ""
+                st.rerun()
             
-            tipo = st.selectbox("Documento", [
-                "Alquiler Vivienda", 
-                "Préstamo entre Particulares", # NUEVA OPCIÓN
-                "Compraventa Vehículo", 
-                "Contrato Trabajo",
-                "Servicios Freelance", 
-                "NDA (Confidencialidad)",
-                "Compraventa Vivienda (Piso/Casa)",
-                "Contrato de Arras",
-                "Desistimiento / Cancelación"
-            ],
-            index=0,
-        on_change=limpiar_cache_reclamacion # <--- ESTA ES LA CLAVE
-        )
-            st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
+            st.markdown("---")
             
-            data_p = ""
+            # Recuperamos la lógica original basada en el estado
+            modo = st.session_state.nav_crear
+            tipo_texto = "" # Para el prompt
+            data_p = ""     # Para los datos
             
-             # --- LÓGICA DE CAMPOS ESPECÍFICOS ---
-            if "Alquiler" in tipo: 
-                st.caption("🏠 Datos del Alquiler")
+            # === ALQUILER ===
+            if modo == "ALQUILER":
+                st.subheader("🏠 Alquiler Vivienda")
+                tipo_texto = "Alquiler Vivienda"
+                st.caption("Datos de las partes")
                 prop = st.text_input('Propietario (Nombre y DNI/CIF)')
                 inq = st.text_input('Inquilino (Nombre y DNI/CIF)')
-                dir_piso = st.text_input('Dirección completa')
+                dir_piso = st.text_input('Dirección completa del inmueble')
                 ref_cat = st.text_input('Referencia Catastral (Opcional)')
-                renta = st.number_input('Renta Mensual (€)')
+                renta = st.number_input('Renta Mensual (€)', step=50.0)
                 data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
 
-    
-            elif "Préstamo" in tipo:
+            # === PRÉSTAMO (Con tu calculadora integrada) ===
+            elif modo == "PRESTAMO":
+                st.subheader("💰 Préstamo entre Particulares")
                 st.info("💡 **Consejo:** Define el plazo y la IA calculará la cuota mensual para que el contrato sea perfecto ante Hacienda.")
+                
+                tipo_texto = "Préstamo entre Particulares"
+                st.markdown("<div id='prestamos'></div>", unsafe_allow_html=True)
+                st.info("💡 **Consejo:** Define el plazo y la IA calculará la cuota mensual para evitar problemas con Hacienda.")
                 
                 c_p1, c_p2 = st.columns(2)
                 with c_p1:
-                    pres_nombre = st.text_input("Prestamista (quien presta el dinero)")
-                    pret_nombre = st.text_input("Prestatario (quien lo recibe)")
+                    pres_nombre = st.text_input("Prestamista (quien presta)")
+                    pret_nombre = st.text_input("Prestatario (quien recibe)")
                 with c_p2:
-                    monto = st.number_input("Importe del Préstamo (€)", min_value=100.0, step=500.0)
-                    plazo_meses = st.number_input("Plazo de devolución (Meses)", min_value=1, value=12)
+                    monto = st.number_input("Importe (€)", min_value=100.0, step=500.0)
+                    plazo_meses = st.number_input("Plazo devolución (Meses)", min_value=1, value=12)
 
-                # Calculadora de Cuota Integrada
                 es_gratuito = st.checkbox("¿Es un préstamo sin intereses (0%)?", value=True)
-                
                 cuota_mensual = 0.0
                 detalles_pago = ""
                 
                 if es_gratuito:
                     cuota_mensual = monto / plazo_meses
-                    detalles_pago = f"SIN INTERESES (Tipo 0%). Devolución en {plazo_meses} cuotas mensuales consecutivas de {cuota_mensual:.2f} € cada una."
+                    detalles_pago = f"SIN INTERESES (Tipo 0%). Devolución en {plazo_meses} cuotas de {cuota_mensual:.2f} €."
                 else:
                     interes_anual = st.number_input("Tipo de Interés Anual (%)", min_value=0.1, value=3.0, step=0.1)
                     # Fórmula Sistema Francés (Estándar bancario)
@@ -1035,15 +1088,16 @@ with tabs[2]:
                     cuota_mensual = monto * (i * (1 + i)**n) / ((1 + i)**n - 1)
                     total_devolver = cuota_mensual * n
                     detalles_pago = f"CON INTERESES ({interes_anual}% anual). Devolución en {plazo_meses} cuotas de {cuota_mensual:.2f} €. Total a devolver: {total_devolver:.2f} €."
-
-                # Mostramos el resultado al usuario antes de generar
+                
+                 # Mostramos el resultado al usuario antes de generar
                 st.success(f"💰 **Plan de Pago calculado:** {detalles_pago}")
                 
                 data_p = f"Préstamo entre particulares. Prestamista: {pres_nombre}. Prestatario: {pret_nombre}. Importe Principal: {monto}€. Plazo: {plazo_meses} meses. CONDICIONES ECONÓMICAS EXACTAS: {detalles_pago}. Incluir cuadro de amortización si es posible."
                     
-            
-            elif "Vehículo" in tipo: 
-                st.caption("👤 Intervinientes")
+            # === VEHÍCULO ===
+            elif modo == "VEHICULO":
+                st.subheader("🚗 Compraventa Vehículo")
+               st.caption("👤 Intervinientes")
                 vendedor = st.text_input("Vendedor (Nombre y DNI)")
                 comprador = st.text_input("Comprador (Nombre y DNI)")
                 st.caption("🚗 Datos del Vehículo")
@@ -1056,9 +1110,11 @@ with tabs[2]:
                     kms = st.number_input("Kilómetros", min_value=0, step=1000)
                 precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
                 data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
-            
-            elif "Contrato Trabajo" in tipo:
-                st.caption("👤 Las Partes")
+
+            # === TRABAJO ===
+            elif modo == "TRABAJO":
+                st.subheader("💼 Contrato de Trabajo")
+               st.caption("👤 Las Partes")
                 empresa = st.text_input("Empresa (Nombre y CIF)")
                 trabajador = st.text_input("Trabajador (Nombre y DNI)")
                 st.caption("💼 Condiciones Laborales")
@@ -1073,12 +1129,30 @@ with tabs[2]:
                     cantidad_var = st.text_input("Detalles del Variable", placeholder="Ej: 10% sobre objetivos o 3.000€")
                     variable_txt = f"Con retribución variable: {cantidad_var}."
                 data_p = f"Contrato de Trabajo. Modalidad: {modalidad}. Empresa: {empresa}. Trabajador: {trabajador}. Duración: {duracion_txt}. Salario Fijo: {salario}€ Brutos/Año. Variable: {variable_txt}. Convenio aplicable: Según sector."
+                
+            # === SERVICIOS ===
+            elif modo == "SERVICIOS":
+                st.subheader("🤝 Servicios Freelance")
+                tipo_texto = "Contrato Prestación Servicios"
+                cliente = st.text_input("Cliente")
+                proveedor = st.text_input("Prestador del Servicio")
+                servicios = st.text_area("Descripción de los servicios")
+                precio = st.text_input("Honorarios y Forma de Pago")
+                data_p = f"Servicios Freelance. Cliente: {cliente}. Proveedor: {proveedor}. Servicios: {servicios}. Honorarios: {precio}."
 
-            elif "NDA" in tipo: 
-                data_p = f"Acuerdo Confidencialidad. Parte Reveladora: {st.text_input('Parte Reveladora (Nombre y CIF/DNI)')}. Parte Receptora: {st.text_input('Parte Receptora (Nombre y CIF/DNI)')}. Información a proteger: {st.text_area('Motivo/Información')}."
-            
-            elif "Compraventa Vivienda" in tipo:
-                st.caption("👤 Intervinientes")
+            # === NDA ===
+            elif modo == "NDA":
+                st.subheader("🤫 Acuerdo Confidencialidad (NDA)")
+                tipo_texto = "NDA"
+                revelador = st.text_input("Parte Reveladora")
+                receptor = st.text_input("Parte Receptora")
+                motivo = st.text_area("Información a proteger / Motivo")
+                data_p = f"NDA. Revelador: {revelador}. Receptor: {receptor}. Info: {motivo}."
+
+            # === VENTA VIVIENDA ===
+            elif modo == "C_VIVIENDA":
+                st.subheader("🏡 Compraventa Vivienda")
+                 st.caption("👤 Intervinientes")
                 vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
                 comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
                 st.caption("🏠 Inmueble")
@@ -1087,8 +1161,10 @@ with tabs[2]:
                 precio = st.number_input('Precio Venta (€)', step=1000.0)
                 data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas."
             
-            elif "Arras" in tipo:
-                st.caption("📝 Datos para Arras")
+            # === ARRAS ===
+            elif modo == "ARRAS":
+                st.subheader("📝 Contrato de Arras")
+               st.caption("📝 Datos para Arras")
                 vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
                 comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
                 st.caption("🏠 Inmueble y Condiciones")
@@ -1099,17 +1175,22 @@ with tabs[2]:
                 with col_arras2: senal = st.number_input('Señal/Arras (€)', step=500.0)
                 plazo = st.date_input('Fecha Límite Escritura')
                 data_p = f"Contrato de Arras. Vendedor: {vendedor}. Comprador: {comprador}. Inmueble: {inmueble}. Ref. Catastral: {ref_catastral}. Precio Total: {precio}. Señal entregada: {senal}. Fecha límite: {plazo}. Tipo: Arras Penitenciales (Art 1454 CC)."
-            
-            elif "Cancelación" in tipo:
-                data_p = f"Acuerdo de Terminación. Contrato a cancelar: {st.text_input('¿Qué contrato?')}. Partes: {st.text_input('Partes implicadas (Nombres y DNI/CIF)')}. Fecha Efectiva: {st.date_input('Fecha Fin')}."
 
-            else: 
-                data_p = f"{tipo}. Partes: {st.text_input('Partes (Nombres y DNI/CIF)')}. Detalles: {st.text_area('Detalles')}."
-            
-            st.write("")
+            # === CANCELACIÓN ===
+            elif modo == "CANCELACION":
+                st.subheader("❌ Acuerdo de Terminación")
+                tipo_texto = "Acuerdo de Terminación de Contrato"
+                contrato_origen = st.text_input("¿Qué contrato se cancela?")
+                partes = st.text_input("Partes implicadas")
+                fecha_efecto = st.date_input("Fecha Efectiva")
+                motivo = st.text_input("Motivo (Opcional)")
+                data_p = f"Terminación Contrato. Origen: {contrato_origen}. Partes: {partes}. Fecha fin: {fecha_efecto}. Motivo: {motivo}."
+
+            # --- BOTÓN GENERAR COMÚN ---
+            st.write(""); st.write("")
             ciudad = st.text_input("📍 Ciudad de firma", value="Madrid")
             
-            if st.button("✨ REDACTAR"):
+             if st.button("✨ REDACTAR"):
                 with st.spinner("Redactando..."):
                     fecha_hoy = datetime.now().strftime("%d/%m/%Y")
                     instruccion = f"""
@@ -1127,204 +1208,271 @@ with tabs[2]:
                     - Usa cláusulas claras y formato profesional.
                     """
                     st.session_state.generated_contract = groq_engine(instruccion, api_key, 0.3)
-    
-    with c2:
-        if st.session_state.generated_contract:
-            st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
-            st.write("")
-            with st.container(border=False):
-                ce, cb = st.columns([2,1])
-                with ce: m = st.text_input("Email", key="mc")
-                with cb: 
-                    st.write(""); st.write("")
-                    if st.button("PDF OFICIAL", key="bc"):
-                        save_lead(m,"CREAR",tipo)
-                        pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo}")
-                        st.success("Hecho")
-                        st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (CORREGIDO NAME_ERROR) ---
+        # --- VISOR DE RESULTADOS ---
+        with c2:
+            if st.session_state.generated_contract:
+                st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
+                st.write("")
+                with st.container(border=False):
+                    ce, cb = st.columns([2,1])
+                    with ce: m = st.text_input("Email", key="mc_tab2")
+                    with cb: 
+                        st.write(""); st.write("")
+                        if st.button("PDF OFICIAL", key="bc_tab2"):
+                            save_lead(m, "CREAR", tipo_texto)
+                            pdf_file = create_pdf(st.session_state.generated_contract, f"Contrato {tipo_texto}")
+                            st.download_button("⬇️ Bajar PDF", data=pdf_file, file_name=f"{tipo_texto}.pdf", mime="application/pdf")
+
+# --- TAB 3: RECLAMAR / RECURRIR (ESTRATEGIA DASHBOARD) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. MEMORIA DE LA PESTAÑA
-    if "t3_estado_actual" not in st.session_state:
-        st.session_state.t3_estado_actual = "Selecciona una opción..."
+    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    if "nav_reclamar" not in st.session_state:
+        st.session_state.nav_reclamar = "MENU"
 
-    # 2. SELECTOR (INPUT)
-    seleccion_usuario = st.selectbox(
-        "¿Qué trámite quieres realizar?", 
-        [
-            "Selecciona una opción...", 
-            "✍️ Redactar Burofax (Reclamar Dinero/Derechos)", 
-            "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
-            "👮 Recurrir Multa Tráfico (DGT/Ayto)"
-        ],
-        key="selector_t3_final_v2"
-    )
-
-    # 3. DETECTOR DE CAMBIOS Y RECARGA
-    # Si el usuario cambia la opción, guardamos y recargamos la página
-    if seleccion_usuario != st.session_state.t3_estado_actual:
-        st.session_state.t3_estado_actual = seleccion_usuario
-        st.session_state.generated_claim = "" # Limpiamos resultado anterior
-        st.rerun() # <-- ESTO BORRA LOS CAMPOS FANTASMA
-
-    # 4. DEFINICIÓN DE LA VARIABLE MAESTRA (Aquí arreglamos el NameError)
-    modo_reclamacion = st.session_state.t3_estado_actual
-    
-    c_rec, c_doc = st.columns([1, 1.3])
-    
-    # --- CASO A: BUROFAX ---
-    if "Redactar" in modo_reclamacion:
-        with c_rec:
-            with st.container(border=False):
-                st.info("Generador de cartas legales.")
-                remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="rem_b")
-                dest = st.text_input("Destinatario", key="dest_b")
-                st.markdown("---")
-                
-                motivo = st.selectbox("Motivo", [
-                    "Cobro Indebido / Facturas", "Seguros", "Fianza Alquiler", 
-                    "Banca", "Transporte", "Otro"
-                ], key="mot_b")
-                
-                datos_clave = ""
-                
-                if "Facturas" in motivo:
-                    c_fac1, c_fac2 = st.columns(2)
-                    with c_fac1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
-                    with c_fac2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
-                    fecha_fac = st.date_input("Fecha de la factura", key="bf_date")
-                    datos_clave = f"Reclamación de Cantidad. Factura Nº: {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}. Motivo: Cobro indebido o servicio no prestado."
-                
-                elif "Seguros" in motivo:
-                    c_seg1, c_seg2 = st.columns(2)
-                    with c_seg1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
-                    with c_seg2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
-                    fecha_sin = st.date_input("Fecha del Siniestro", key="bf_date_sin")
-                    datos_clave = f"Reclamación a Aseguradora. Póliza Nº: {num_poliza}. Siniestro Nº: {num_siniestro}. Fecha Ocurrencia: {fecha_sin}. Exigencia de cumplimiento de contrato y cobertura."
-                
-                elif "Fianza" in motivo:
-                    direccion = st.text_input("Dirección del Inmueble alquilado", key="bf_dir")
-                    fecha_llaves = st.date_input("Fecha devolución llaves", key="bf_date_llaves")
-                    importe_fianza = st.number_input("Importe Fianza (€)", min_value=0.0, key="bf_fianza")
-                    datos_clave = f"Reclamación de Fianza. Inmueble: {direccion}. Fecha fin contrato: {fecha_llaves}. Importe retenido: {importe_fianza}€. Aplicación de la LAU."
-                
-                elif "Banca" in motivo:
-                    producto = st.text_input("Producto (Cuenta/Tarjeta)", key="bf_prod")
-                    concepto = st.text_input("Concepto reclamado (Ej: Comisión mantenimiento)", key="bf_con")
-                    importe = st.number_input("Importe (€)", min_value=0.0, key="bf_imp_banca")
-                    datos_clave = f"Reclamación Bancaria. Producto: {producto}. Concepto: {concepto}. Importe: {importe}€. Solicitud de retrocesión."
-                
-                elif "Transporte" in motivo:
-                    vuelo = st.text_input("Nº Vuelo / Localizador", key="bf_vuelo")
-                    incidencia = st.selectbox("Incidencia", ["Retraso > 3h", "Cancelación", "Pérdida Equipaje"], key="bf_incid")
-                    datos_clave = f"Reclamación Transporte. Referencia: {vuelo}. Incidencia: {incidencia}. Solicitud de indemnización según Reglamento Europeo 261/2004."
-                
-                else: 
-                    asunto = st.text_input("Asunto", key="bf_asunto")
-                    datos_clave = f"Reclamación Genérica. Asunto: {asunto}."
-                st.write("")
-                hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="h_b")
-                
-                if st.button("🔥 GENERAR BUROFAX", key="btn_b"):
-                    with st.spinner("Redactando..."):
-                        p = f"Actúa como abogado. Redacta Burofax. De: {remitente}. A: {dest}. Contexto: {datos_clave}. Hechos: {hechos}. Tono formal."
-                        st.session_state.generated_claim = groq_engine(p, api_key)
-
-    # --- CASO B: RESPONDER ---
-    elif "Responder" in modo_reclamacion:
-        with c_rec:
-            with st.container(border=False):
-                st.info("📂 Sube la carta recibida.")
-                uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="u_gen_r")
-                mis_argumentos = st.text_area("¿Qué quieres responder?", key="arg_r")
-                
-                if st.button("📝 GENERAR RESPUESTA", key="btn_r"):
-                    if uploaded_gen and mis_argumentos:
-                        with st.spinner("Analizando..."):
-                            if uploaded_gen.type == "application/pdf": txt = extract_text_from_pdf(uploaded_gen)
-                            else: txt = analyze_image_groq(uploaded_gen, "Lee carta", api_key)
-                            
-                            p = f"Actúa como abogado. Recibido: ---{txt[:4000]}---. Quiero responder: {mis_argumentos}. Redacta respuesta formal."
-                            st.session_state.generated_claim = groq_engine(p, api_key)
-                    else: st.warning("Faltan datos.")
-
-    # --- CASO C: MULTAS ---
-    elif "Multa" in modo_reclamacion:
-        with c_rec:
-            with st.container(border=False):
-                st.info("👮 Sube la multa.")
-                uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_multa_m")
-                tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="t_m")
-                mis_datos = st.text_input("Tus Datos", key="d_m")
-                
-                if st.button("⚖️ RECURRIR", key="btn_m"):
-                    if uploaded_multa and mis_datos:
-                        with st.spinner("Auditando..."):
-                            if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
-                            else: txt = analyze_image_groq(uploaded_multa, "Lee multa", api_key)
-                            
-                            p = f"Abogado experto en {tipo_m}. Multa: ---{txt[:5000]}---. Cliente: {mis_datos}. Redacta Recurso alegando defectos de forma."
-                            st.session_state.generated_claim = groq_engine(p, api_key)
-                    else: st.warning("Faltan datos.")
-
-    # --- VISOR RESULTADOS ---
-    with c_doc:
-        # Solo mostramos resultado si NO estamos en la opción "Selecciona..."
-        if st.session_state.generated_claim and "Selecciona" not in modo_reclamacion:
-            st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-            st.write("")
-            ce2, cb2 = st.columns([2,1])
-            with ce2: m2 = st.text_input("Email (Opcional)", key="mr_tab3")
-            with cb2:
-                st.write(""); st.write("")
-                if st.button("PDF LEGAL", key="br_tab3"):
-                    save_lead(m2, "RECLAMACION", modo_reclamacion)
-                    pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
-                    st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
-                    
-
-  # --- TAB 4: IMPUESTOS (CORREGIDO) ---
-with tabs[4]:
-    # 1. MEMORIA DE LA PESTAÑA
-    if "t4_estado_actual" not in st.session_state:
-        st.session_state.t4_estado_actual = "Selecciona..."
-
-    c_cal, c_res = st.columns([1, 1.3])
-    with c_cal:
-        with st.container(border=False):
-            st.subheader("Calculadora Fiscal")
-            st.caption("Herramientas fiscales, laborales e inmobiliarias.")
-            
-            # 2. SELECTOR (INPUT)
-            seleccion_impuestos = st.selectbox("Trámite", [
-                "Selecciona...", 
-                "💰 DEDUCCIONES RENTA (Buscador de Ahorro)",
-                "🔍 ESCÁNER DE NÓMINA (Foto/PDF)", 
-                "Sueldo Neto (Simulador)", 
-                "Venta Inmueble (Plusvalía+IRPF)", 
-                "Gastos Compraventa (Notaría/Impuestos)", 
-                "IPC Alquiler (Actualizar Renta)",        
-                "Cuota Hipoteca (Simulador)"    
-            ], key="selector_t4_final_v2")
-            
-            # 3. DETECTOR Y RECARGA
-            if seleccion_impuestos != st.session_state.t4_estado_actual:
-                st.session_state.t4_estado_actual = seleccion_impuestos
-                st.session_state.generated_calc = "" 
+    # --- VISTA A: MENÚ PRINCIPAL (BOTONES) ---
+    if st.session_state.nav_reclamar == "MENU":
+        st.info("Selecciona qué trámite quieres iniciar:")
+        c_nav1, c_nav2, c_nav3 = st.columns(3)
+        
+        with c_nav1:
+            if st.button("✍️\nREDACTAR BUROFAX\n(Reclamar Deudas)", use_container_width=True):
+                st.session_state.nav_reclamar = "BUROFAX"
+                st.session_state.generated_claim = "" # Limpieza preventiva
+                st.rerun()
+        with c_nav2:
+            if st.button("🛡️\nRESPONDER CARTA\n(Vecinos, Seguros...)", use_container_width=True):
+                st.session_state.nav_reclamar = "RESPONDER"
+                st.session_state.generated_claim = ""
+                st.rerun()
+        with c_nav3:
+            if st.button("👮\nRECURRIR MULTA\n(Tráfico/Ayto)", use_container_width=True):
+                st.session_state.nav_reclamar = "MULTA"
+                st.session_state.generated_claim = ""
                 st.rerun()
 
-            # 4. VARIABLE MAESTRA (Estable)
-            tipo_calc = st.session_state.t4_estado_actual
+    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS ---
+    else:
+        # BOTÓN VOLVER (Global para esta pestaña)
+        if st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES"):
+            st.session_state.nav_reclamar = "MENU"
+            st.session_state.generated_claim = ""
+            st.rerun()
+        
+        st.markdown("---")
+        c_rec, c_doc = st.columns([1, 1.3])
 
-            anio_actual = datetime.now().year
-            st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
+        # === HERRAMIENTA 1: BUROFAX ===
+        if st.session_state.nav_reclamar == "BUROFAX":
+            with c_rec:
+                with st.container(border=False):
+                    st.info("Generador de Burofax")
+                    remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bf_remitente")
+                    dest = st.text_input("Destinatario (Empresa/Persona)", key="bf_destinatario")
+                    st.markdown("---")
+                    
+                    # Recuperamos tu lógica detallada de motivos
+                    motivo = st.selectbox("Motivo", [
+                        "Cobro Indebido / Facturas", "Seguros", "Fianza Alquiler", 
+                        "Banca", "Transporte", "Otro"
+                    ], key="bf_motivo")
+                    
+                    datos_clave = ""
+                    
+                    if "Facturas" in motivo:
+                        c_fac1, c_fac2 = st.columns(2)
+                        with c_fac1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
+                        with c_fac2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
+                        fecha_fac = st.date_input("Fecha de la factura", key="bf_date")
+                        datos_clave = f"Reclamación de Cantidad. Factura Nº: {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}. Motivo: Cobro indebido o servicio no prestado."
+                    
+                    elif "Seguros" in motivo:
+                        c_seg1, c_seg2 = st.columns(2)
+                        with c_seg1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
+                        with c_seg2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
+                        fecha_sin = st.date_input("Fecha del Siniestro", key="bf_date_sin")
+                        datos_clave = f"Reclamación a Aseguradora. Póliza Nº: {num_poliza}. Siniestro Nº: {num_siniestro}. Fecha Ocurrencia: {fecha_sin}. Exigencia de cumplimiento de contrato y cobertura."
+                    
+                    elif "Fianza" in motivo:
+                        direccion = st.text_input("Dirección del Inmueble alquilado", key="bf_dir")
+                        fecha_llaves = st.date_input("Fecha devolución llaves", key="bf_date_llaves")
+                        importe_fianza = st.number_input("Importe Fianza (€)", min_value=0.0, key="bf_fianza")
+                        datos_clave = f"Reclamación de Fianza. Inmueble: {direccion}. Fecha fin contrato: {fecha_llaves}. Importe retenido: {importe_fianza}€. Aplicación de la LAU."
+                    
+                    elif "Banca" in motivo:
+                        producto = st.text_input("Producto (Cuenta/Tarjeta)", key="bf_prod")
+                        concepto = st.text_input("Concepto reclamado (Ej: Comisión mantenimiento)", key="bf_con")
+                        importe = st.number_input("Importe (€)", min_value=0.0, key="bf_imp_banca")
+                        datos_clave = f"Reclamación Bancaria. Producto: {producto}. Concepto: {concepto}. Importe: {importe}€. Solicitud de retrocesión."
+                    
+                    elif "Transporte" in motivo:
+                        vuelo = st.text_input("Nº Vuelo / Localizador", key="bf_vuelo")
+                        incidencia = st.selectbox("Incidencia", ["Retraso > 3h", "Cancelación", "Pérdida Equipaje"], key="bf_incid")
+                        datos_clave = f"Reclamación Transporte. Referencia: {vuelo}. Incidencia: {incidencia}. Solicitud de indemnización según Reglamento Europeo 261/2004."
+                    
+                    else: 
+                        asunto = st.text_input("Asunto", key="bf_asunto")
+                        datos_clave = f"Reclamación Genérica. Asunto: {asunto}."
+
+                    st.write("")
+                    hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bf_hechos")
+                    
+                     if st.button("🔥 GENERAR BUROFAX"):
+                    with st.spinner("Redactando reclamación jurídica..."):
+                        prompt_claim = f"""
+                        Actúa como abogado experto en derecho civil y mercantil español.
+                        Redacta un BUROFAX DE RECLAMACIÓN PRE-CONTENCIOSO (Tono formal, firme y amenazante legalmente).
+                        REMITENTE: {remitente}
+                        DESTINATARIO: {dest}
+                        CONTEXTO: {datos_clave}
+                        HECHOS DETALLADOS: {hechos}
+                        INSTRUCCIONES:
+                        1. Usa estructura formal de carta legal.
+                        2. Cita la legislación aplicable según el caso (Ej: Ley Contrato Seguro, Ley General Defensa Consumidores, LAU, etc).
+                        3. Establece un plazo de respuesta (7 días).
+                        """
+                        st.session_state.generated_claim = groq_engine(prompt_claim, api_key)
+
+        # === HERRAMIENTA 2: RESPONDER ===
+        elif st.session_state.nav_reclamar == "RESPONDER":
+            with c_rec:
+                with st.container(border=False):
+                    st.info("📂 Sube la carta recibida.")
+                    uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
+                    mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
+                    
+                    if st.button("📝 GENERAR RESPUESTA"):
+                    if uploaded_gen and mis_argumentos:
+                        with st.spinner("Analizando documento y redactando respuesta..."):
+                            if uploaded_gen.type == "application/pdf": txt_gen = extract_text_from_pdf(uploaded_gen)
+                            else: txt_gen = analyze_image_groq(uploaded_gen, "Lee esta carta.", api_key)
+                            
+                            p_gen = f"""
+                            Actúa como abogado. He recibido esta notificación:
+                            ---
+                            {txt_gen[:4000]}
+                            ---
+                            QUIERO RESPONDER ESTO: {mis_argumentos}
+                            TAREA: Redacta una carta formal de respuesta/alegaciones.
+                            Cita leyes si aplica al contexto.
+                            """
+                            st.session_state.generated_claim = groq_engine(p_gen, api_key)
+                            
+                            js_scroll_up = """<script>var topAnchor = window.parent.document.getElementById('top-of-page'); if (topAnchor) { topAnchor.scrollIntoView({behavior: "smooth", block: "start"}); }</script>"""
+                            components.html(js_scroll_up, height=0)
+                    else: st.warning("Sube el archivo y tus argumentos.")
+
+        # === HERRAMIENTA 3: MULTAS ===
+        elif st.session_state.nav_reclamar == "MULTA":
+            with c_rec:
+                with st.container(border=False):
+                st.info("👮 **Especialista en Tráfico:** Busca defectos de forma.")
+                uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="u_multa")
+                tipo_multa = st.selectbox("Tipo", ["Tráfico (DGT/Ayto)", "Hacienda", "Otros"])
+                mis_datos = st.text_input("Tus Datos (Nombre y DNI)", key="d_multa")
+                
+                if st.button("⚖️ ANALIZAR Y RECURRIR"):
+                    if uploaded_multa and mis_datos:
+                        with st.spinner("Auditando multa..."):
+                            if uploaded_multa.type == "application/pdf": txt_multa = extract_text_from_pdf(uploaded_multa)
+                            else: txt_multa = analyze_image_groq(uploaded_multa, "Lee esta multa entera.", api_key)
+                            
+                            p_multa = f"""
+                            Actúa como Abogado experto en {tipo_multa}. Sanción recibida: ---{txt_multa[:5000]}---.
+                            DATOS CLIENTE: {mis_datos}.
+                            TAREA: Redacta PLIEGO DE DESCARGOS. Busca defectos forma (fechas, fotos, márgenes). Cita ley. Solicita nulidad.
+                            """
+                            st.session_state.generated_claim = groq_engine(p_multa, api_key)
+                            
+                            js_scroll_up = """<script>var topAnchor = window.parent.document.getElementById('top-of-page'); if (topAnchor) { topAnchor.scrollIntoView({behavior: "smooth", block: "start"}); }</script>"""
+                            components.html(js_scroll_up, height=0)
+                    else: st.warning("Faltan datos.")
+
+        # === VISOR DE RESULTADOS (COMÚN) ===
+        with c_doc:
+            if st.session_state.generated_claim:
+                st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
+                st.write("")
+                with st.container(border=False):
+                    ce2, cb2 = st.columns([2,1])
+                    with ce2: m2 = st.text_input("Email (Opcional)", key="mr_tab3")
+                    with cb2:
+                        st.write(""); st.write("")
+                        if st.button("PDF LEGAL", key="br_tab3"):
+                            save_lead(m2, "RECLAMACION", st.session_state.nav_reclamar)
+                            pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
+                            st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
+                    
+
+ # --- TAB 4: IMPUESTOS (ESTRATEGIA DASHBOARD) ---
+with tabs[4]:
+    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
+    if "nav_impuestos" not in st.session_state:
+        st.session_state.nav_impuestos = "MENU"
+
+    c_cal, c_res = st.columns([1, 1.3])
+
+    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
+    if st.session_state.nav_impuestos == "MENU":
+        with c_cal:
+            st.subheader("Calculadora Fiscal")
+            st.caption("Selecciona una herramienta para abrirla:")
             
-            # --- A. LÓGICA RENTA (CON DETALLE HIJOS) ---
-            if "RENTA" in tipo_calc:
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("💰\RENTA\Deducciones", use_container_width=True):
+                    st.session_state.nav_impuestos = "RENTA"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+                if st.button("🔍\NÓMINA\Escáner", use_container_width=True):
+                    st.session_state.nav_impuestos = "ESCANER"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+                if st.button("🏠\VENTA PISO\Impuestos", use_container_width=True):
+                    st.session_state.nav_impuestos = "VENTA"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+                if st.button("📈\IPC\Alquiler", use_container_width=True):
+                    st.session_state.nav_impuestos = "IPC"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+
+            with c2:
+                if st.button("💶\SUELDO NETO\Simulador", use_container_width=True):
+                    st.session_state.nav_impuestos = "SUELDO"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+                if st.button("📝\GASTOS\Compraventa", use_container_width=True):
+                    st.session_state.nav_impuestos = "GASTOS"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+                if st.button("📉\HIPOTECA\Cuota", use_container_width=True):
+                    st.session_state.nav_impuestos = "HIPOTECA"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+                if st.button("❓\OTRO\Trámite", use_container_width=True):
+                    st.session_state.nav_impuestos = "OTRO"
+                    st.session_state.generated_calc = ""
+                    st.rerun()
+
+    # --- VISTA B: HERRAMIENTAS ESPECÍFICAS ---
+    else:
+        with c_cal:
+            if st.button("⬅️ VOLVER AL MENÚ DE IMPUESTOS"):
+                st.session_state.nav_impuestos = "MENU"
+                st.session_state.generated_calc = ""
+                st.rerun()
+            
+            st.markdown("---")
+            tool = st.session_state.nav_impuestos
+            anio_actual = datetime.now().year
+
+            # === RENTA (Lógica Completa Recuperada) ===
+            if tool == "RENTA":
+                st.subheader("💰 Deducciones Renta")
                 st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
                 ccaa = st.selectbox("📍 Tu Comunidad Autónoma", [
                     "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", 
@@ -1333,38 +1481,39 @@ with tabs[4]:
                 ])
                 st.markdown("👇 **Marca tu situación:**")
                 
-                # Sub-menú Hijos
-                hijos = st.checkbox("👶 Tengo hijos (< 25 años)")
+                hijos = st.checkbox("Tengo hijos (< 25 años)", key="ren_hijos")
                 detalles_hijos = ""
                 if hijos:
                     st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Detalles para filtrar deducciones:</small></div>""", unsafe_allow_html=True)
-                    anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)")
+                    anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)", key="ren_ah")
+                    
                     c_h1, c_h2 = st.columns(2)
                     with c_h1:
-                        guarderia = st.checkbox("Gastos de Guardería (0-3 años)")
-                        material = st.checkbox("Gastos Material Escolar / Libros")
+                        guarderia = st.checkbox("Gastos de Guardería (0-3 años)", key="ren_guar")
+                        material = st.checkbox("Gastos Material Escolar / Libros", key="ren_mat")
                     with c_h2:
-                        fam_mono = st.checkbox("Familia Monoparental / Numerosa")
-                        discap_hijo = st.checkbox("Algún hijo con Discapacidad")
-                    detalles_hijos = f"Tiene hijos nacidos en: {anios_hijos}. "
+                        fam_mono = st.checkbox("Familia Monoparental / Numerosa", key="ren_fam")
+                        discap_hijo = st.checkbox("Algún hijo con Discapacidad", key="ren_dis_h")
+                    
+                    detalles_hijos = f"Hijos nacidos en: {anios_hijos}. "
                     if guarderia: detalles_hijos += "Paga Guardería. "
                     if material: detalles_hijos += "Paga Material Escolar/Libros. "
                     if fam_mono: detalles_hijos += "Es Familia Monoparental/Numerosa. "
                     if discap_hijo: detalles_hijos += "Hijo con discapacidad. "
 
                 st.markdown("---")
-                c_chk1, c_chk2 = st.columns(2)
-                with c_chk1:
-                    alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
+                c1, c2 = st.columns(2)
+                with c1:
+                     alquiler = st.checkbox("Vivo de alquiler (Inquilino)")
                     hipoteca = st.checkbox("Hipoteca (Anterior 2013)")
                     discapacidad = st.checkbox("Mi Discapacidad (>33%)")
-                with c_chk2:
+                with c2:
                     donaciones = st.checkbox("Hago Donaciones")
                     idiomas = st.checkbox("Idiomas extraescolares")
                     rural = st.checkbox("Zona Rural / Despoblada")
-                otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)")
+                    otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)")
                 
-                if st.button("🔍 BUSCAR DEDUCCIONES"):
+                f st.button("🔍 BUSCAR DEDUCCIONES"):
                     situaciones = []
                     if hijos: situaciones.append(f"HIJOS: {detalles_hijos}")
                     else: situaciones.append("No tiene hijos.")
@@ -1392,20 +1541,10 @@ with tabs[4]:
                     (Solo 1 o 2 deducciones muy famosas de {ccaa} que no haya marcado, brevemente).
                     """
                     st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
-                    
-                    js_scroll_up = """
-                        <script>
-                            var topAnchor = window.parent.document.getElementById('top-of-page');
-                            if (topAnchor) {
-                                topAnchor.scrollIntoView({behavior: "smooth", block: "start", inline: "nearest"});
-                            }
-                        </script>
-                    """
-                    components.html(js_scroll_up, height=0)
 
-            
-
-            elif "ESCÁNER" in tipo_calc:
+            # === ESCÁNER NÓMINA ===
+            elif tool == "ESCANER":
+                st.subheader("🔍 Escáner de Nómina")
                 st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
                 file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png", "jpeg"], key="u_nomina")
                 
@@ -1432,24 +1571,10 @@ with tabs[4]:
                             Usa un lenguaje muy claro y formato de 'Semáforo'.
                             """
                             st.session_state.generated_calc = groq_engine(p_nomina, api_key)
-            
-               # --- BLOQUE VENTA (Corregido con elif y alineación exacta) ---
-            elif "Venta" in tipo_calc:
-                st.caption("Plusvalía Municipal + IRPF")
-                f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015)
-                p_compra = st.number_input("Precio Compra (€)", min_value=0.0)
-                f_venta = st.number_input("Año Venta", value=anio_actual, disabled=True)
-                p_venta = st.number_input("Precio Venta (€)", min_value=0.0)
-                municipio = st.text_input("Municipio")
-                v_suelo = st.number_input("Valor Catastral SUELO (€)", min_value=0.0)
-                
-                if st.button("🧮 CALCULAR IMPUESTOS"):
-                    if v_suelo > 0:
-                        anios = anio_actual - f_compra
-                        ganancia = p_venta - p_compra
-                        p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
-                        st.session_state.generated_calc = groq_engine(p, api_key)
-            elif "Sueldo" in tipo_calc:
+
+            # === SUELDO NETO (Lógica Completa Recuperada) ===
+            elif tool == "SUELDO":
+                st.subheader("💶 Simulador Sueldo Neto")
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                 bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0)
                 edad = st.number_input("Edad", 18, 70, 30)
@@ -1530,23 +1655,46 @@ with tabs[4]:
                       if st.button("🔄 Calcular de nuevo", use_container_width=True):
                           st.session_state.generated_calc = ""
                           st.rerun()
+                          
+            # === VENTA INMUEBLE ===
+            elif tool == "VENTA":
+                st.subheader("🏠 Impuestos Venta")
+                f st.caption("Plusvalía Municipal + IRPF")
+                f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015)
+                p_compra = st.number_input("Precio Compra (€)", min_value=0.0)
+                f_venta = st.number_input("Año Venta", value=anio_actual, disabled=True)
+                p_venta = st.number_input("Precio Venta (€)", min_value=0.0)
+                municipio = st.text_input("Municipio")
+                v_suelo = st.number_input("Valor Catastral SUELO (€)", min_value=0.0)
+                
+                if st.button("🧮 CALCULAR IMPUESTOS"):
+                    if v_suelo > 0:
+                        anios = anio_actual - f_compra
+                        ganancia = p_venta - p_compra
+                        p = f"Calcula impuestos venta piso {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
+                        st.session_state.generated_calc = groq_engine(p, api_key)
 
-            elif "Compraventa" in tipo_calc:
-                precio = st.number_input("Precio (€)", 150000.0)
-                ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"])
-                tipo = st.radio("Tipo", ["Segunda Mano", "Obra Nueva"])
-                if st.button("🧮 CALCULAR"):
-                    st.session_state.generated_calc = groq_engine(f"Gastos compraventa {ccaa}. Precio {precio}. Tipo {tipo}.", api_key)
+            # === GASTOS COMPRAVENTA ===
+            elif tool == "GASTOS":
+                st.subheader("📝 Gastos Compraventa")
+                precio = st.number_input("Precio Vivienda (€)", 150000.0, key="gas_pre")
+                ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"], key="gas_ccaa")
+                tipo = st.radio("Tipo", ["Segunda Mano", "Obra Nueva"], key="gas_tipo")
+                if st.button("🧮 CALCULAR", key="btn_gas"):
+                    st.session_state.generated_calc = groq_engine(f"Calcula gastos compraventa {ccaa}. Precio: {precio}. Tipo: {tipo}.", api_key)
 
-            elif "IPC" in tipo_calc:
-                renta = st.number_input("Renta (€)", 800.0)
-                mes = st.selectbox("Mes", ["Enero", "Febrero", "Marzo", "Abril"])
-                if st.button("🧮 CALCULAR"):
-                    st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta}. Mes IPC {mes}.", api_key)
-                    
-            
-            elif "Hipoteca" in tipo_calc:
-                st.caption("Calculadora Cuota Mensual Inteligente")
+            # === IPC ===
+            elif tool == "IPC":
+                st.subheader("📈 Actualizar IPC")
+                renta = st.number_input("Renta actual (€)", 800.0, key="ipc_ren")
+                mes = st.selectbox("Mes actualización", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], key="ipc_mes")
+                if st.button("📈 ACTUALIZAR", key="btn_ipc"):
+                    st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta} con IPC {mes}.", api_key)
+
+            # === HIPOTECA ===
+            elif tool == "HIPOTECA":
+                st.subheader("📉 Cuota Hipoteca")
+                 st.caption("Calculadora Cuota Mensual Inteligente")
                 capital_h = st.number_input("Capital Pendiente (€)", value=150000.0)
                 plazo_h = st.number_input("Plazo (Años)", value=25)
                 
@@ -1565,21 +1713,23 @@ with tabs[4]:
                 if st.button("🧮 CALCULAR CUOTA"):
                     p_h = f"Calcula hipoteca. Capital: {capital_h}€. Interés total: {interes_final}%. Plazo: {plazo_h} años. Indica cuota mensual y total intereses."
                     st.session_state.generated_calc = groq_engine(p_h, api_key)
+    
+    # --- VISOR COMÚN (DERECHA) ---
     with c_res:
         if st.session_state.generated_calc:
-            if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
+            if "<div" in st.session_state.generated_calc:
                 st.markdown(st.session_state.generated_calc, unsafe_allow_html=True)
             else:
                 st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
             st.write("")
             with st.container(border=False):
                 ce3, cb3 = st.columns([2,1])
-                with ce3: m3 = st.text_input("Email", key="mf")
+                with ce3: m3 = st.text_input("Email", key="mf_tab4")
                 with cb3: 
                     st.write(""); st.write("")
-                    if st.button("PDF RESULTADO", key="bf"):
-                        save_lead(m3, "CALCULO", "Fiscalidad")
+                    if st.button("PDF RESULTADO", key="btn_pdf_tab4"):
                         pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
+                        if m3: save_lead(m3, "CALCULO", "Fiscalidad")
                         st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
 
 # ==============================================================================
@@ -1619,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
