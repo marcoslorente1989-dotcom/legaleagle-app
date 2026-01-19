@@ -1355,8 +1355,7 @@ with tabs[3]:
 
             # === HERRAMIENTA 3: MULTAS (NUEVO FLUJO FREEMIUM) ===
             elif modo == "MULTA":
-                c_mul_izq, c_mul_der = st.columns([1, 1.3])
-                with c_mul_izq:
+                
                  with st.container(border=False):
                       st.info("👮 Sube la multa para analizarla.")
                       uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
@@ -1414,8 +1413,7 @@ with tabs[3]:
                             else:
                                 st.warning("Faltan tus datos personales para completar el escrito.")
             
-            # VISOR (Se mantiene en la columna derecha)
-                with c_mul_der:
+            
                     if st.session_state.generated_claim:
                        st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
                        st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
@@ -1796,6 +1794,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
