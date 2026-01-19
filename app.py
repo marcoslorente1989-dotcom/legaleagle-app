@@ -1288,7 +1288,8 @@ with tabs[4]:
         with st.container(border=False):
             st.subheader("Calculadora Fiscal")
             st.caption("Calcula con precisión tu sueldo neto real, los impuestos por venta de vivienda o tu cuota hipotecaria actual.")
-            1. SELECTOR
+           
+            # 1. SELECTOR
             tipo_calc = st.selectbox("Trámite", [
                 "Selecciona...", # Opción neutra para empezar limpio
                 "💰 DEDUCCIONES RENTA (Buscador de Ahorro)",
@@ -1605,6 +1606,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
