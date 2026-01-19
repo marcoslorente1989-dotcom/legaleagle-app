@@ -1320,7 +1320,7 @@ with tabs[3]:
                     st.write("")
                     hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bf_hechos")
                     
-                     if st.button("🔥 GENERAR BUROFAX"):
+                    if st.button("🔥 GENERAR BUROFAX"):
                     with st.spinner("Redactando reclamación jurídica..."):
                         prompt_claim = f"""
                         Actúa como abogado experto en derecho civil y mercantil español.
@@ -1769,6 +1769,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
