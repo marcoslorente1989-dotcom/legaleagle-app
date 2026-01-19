@@ -1143,17 +1143,17 @@ with tabs[2]:
                         st.success("Hecho")
                         st.download_button("⬇️ Bajar Archivo PDF", data=pdf_file, file_name=f"{tipo}.pdf", mime="application/pdf")
 
-# --- TAB 3: RECLAMAR / RECURRIR (SOLUCIÓN EFECTO FANTASMA) ---
+# --- TAB 3: RECLAMAR / RECURRIR (SOLUCIÓN FINAL FANTASMA) ---
 with tabs[3]:
     st.subheader("Centro de Reclamaciones")
     st.caption("Genera burofaxes, responde cartas o recurre multas.")
     
-    # 1. INICIALIZAMOS LA MEMORIA DEL SELECTOR
-    if "tab3_actual" not in st.session_state:
-        st.session_state.tab3_actual = "Selecciona una opción..."
+    # 1. MEMORIA ESTABLE
+    if "modo_t3_estable" not in st.session_state:
+        st.session_state.modo_t3_estable = "Selecciona una opción..."
 
-    # 2. EL SELECTOR (Guardamos lo que elige el usuario en una variable temporal)
-    seleccion = st.selectbox(
+    # 2. SELECTOR (INPUT)
+    modo_input = st.selectbox(
         "¿Qué trámite quieres realizar?", 
         [
             "Selecciona una opción...", 
@@ -1161,17 +1161,19 @@ with tabs[3]:
             "🛡️ Responder Carta/Notificación (Vecinos, Seguros...)", 
             "👮 Recurrir Multa Tráfico (DGT/Ayto)"
         ],
-        key="selector_tab3_ghost_fix"
+        key="selector_t3_final"
     )
 
-    # 3. DETECTOR DE CAMBIO Y REPINTADO (AQUÍ SE ARREGLA EL ERROR VISUAL)
-    # Si la selección es diferente a lo que teníamos guardado:
-    if seleccion != st.session_state.tab3_actual:
-        st.session_state.tab3_actual = seleccion  # 1. Guardamos la nueva selección
-        st.session_state.generated_claim = ""     # 2. Borramos textos generados
-        st.rerun()                                # 3. ¡RECARGAMOS YA! (Esto borra los campos viejos)
+    # 3. SINCRONIZACIÓN Y RECARGA
+    # Si el usuario cambia el input, actualizamos la memoria y RECARGAMOS
+    if modo_input != st.session_state.modo_t3_estable:
+        st.session_state.modo_t3_estable = modo_input
+        st.session_state.generated_claim = "" # Limpiamos resultado
+        st.rerun()                            # Recarga forzosa (Borra campos viejos)
 
-    # A partir de aquí, la página ya se ha recargado limpia.
+    # 4. VARIABLE DE CONTROL (Usamos la memoria estable)
+    modo_final = st.session_state.modo_t3_estable
+    
     c_rec, c_doc = st.columns([1, 1.3])
     
     # --- CASO A: BUROFAX ---
@@ -1286,10 +1288,11 @@ with tabs[3]:
                     
 
    # --- TAB 4: IMPUESTOS (SOLUCIÓN EFECTO FANTASMA) ---
+# --- TAB 4: IMPUESTOS (SOLUCIÓN FINAL FANTASMA) ---
 with tabs[4]:
-    # 1. INICIALIZAMOS MEMORIA
-    if "tab4_actual" not in st.session_state:
-        st.session_state.tab4_actual = "Selecciona..."
+    # 1. MEMORIA ESTABLE
+    if "modo_t4_estable" not in st.session_state:
+        st.session_state.modo_t4_estable = "Selecciona..."
 
     c_cal, c_res = st.columns([1, 1.3])
     with c_cal:
@@ -1297,8 +1300,8 @@ with tabs[4]:
             st.subheader("Calculadora Fiscal")
             st.caption("Herramientas fiscales, laborales e inmobiliarias.")
             
-            # 2. SELECTOR
-            seleccion_imp = st.selectbox("Trámite", [
+            # 2. SELECTOR (INPUT)
+            tipo_input = st.selectbox("Trámite", [
                 "Selecciona...", 
                 "💰 DEDUCCIONES RENTA (Buscador de Ahorro)",
                 "🔍 ESCÁNER DE NÓMINA (Foto/PDF)", 
@@ -1307,13 +1310,16 @@ with tabs[4]:
                 "Gastos Compraventa (Notaría/Impuestos)", 
                 "IPC Alquiler (Actualizar Renta)",        
                 "Cuota Hipoteca (Simulador)"    
-            ], key="selector_tab4_ghost_fix")
+            ], key="selector_t4_final")
             
-            # 3. DETECTOR DE CAMBIO Y REPINTADO
-            if seleccion_imp != st.session_state.tab4_actual:
-                st.session_state.tab4_actual = seleccion_imp # Guardamos selección
-                st.session_state.generated_calc = ""         # Borramos cálculos viejos
-                st.rerun()                                   # RECARGAMOS LA PÁGINA
+            # 3. SINCRONIZACIÓN Y RECARGA
+            if tipo_input != st.session_state.modo_t4_estable:
+                st.session_state.modo_t4_estable = tipo_input
+                st.session_state.generated_calc = "" # Limpiamos resultado
+                st.rerun()                           # Recarga forzosa
+
+            # 4. VARIABLE DE CONTROL
+            tipo_final = st.session_state.modo_t4_estable
 
             anio_actual = datetime.now().year
             st.markdown("<div id='hipoteca'></div>", unsafe_allow_html=True)
@@ -1614,6 +1620,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
