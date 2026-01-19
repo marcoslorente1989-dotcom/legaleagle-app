@@ -51,6 +51,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import re 
 from docx import Document # Para generar Word
 import urllib.parse
+import io
 
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
@@ -1161,14 +1162,50 @@ with tabs[2]:
             if modo == "ALQUILER":
                 st.subheader("🏠 Alquiler Vivienda")
                 tipo_texto = "Alquiler Vivienda"
+                
                 st.caption("Datos de las partes")
                 prop = st.text_input('Propietario (Nombre y DNI/CIF)')
                 inq = st.text_input('Inquilino (Nombre y DNI/CIF)')
+                
+                st.caption("📍 Datos del Inmueble")
                 dir_piso = st.text_input('Dirección completa del inmueble')
-                ref_cat = st.text_input('Referencia Catastral (Opcional)')
-                renta = st.number_input('Renta Mensual (€)', step=50.0)
-                data_p = f"Alquiler. Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref. Catastral: {ref_cat}. Renta: {renta} euros/mes."
+                
+                c_datos1, c_datos2 = st.columns(2)
+                with c_datos1: 
+                    ref_cat = st.text_input('Referencia Catastral (Opcional)')
+                with c_datos2: 
+                    renta = st.number_input('Renta Mensual (€)', step=50.0, value=800.0)
 
+                st.caption("📅 Duración y Cláusulas")
+                
+                # --- NUEVA LÓGICA DE FECHAS ---
+                c_fechas1, c_fechas2 = st.columns(2)
+                with c_fechas1:
+                    fecha_inicio = st.date_input("Fecha Inicio Contrato", value=datetime.now())
+                with c_fechas2:
+                    duracion_anos = st.number_input("Duración (Años)", min_value=1, max_value=20, value=5, help="La LAU estipula mínimo 5 años para particulares.")
+                
+                # Cálculo automático Fecha Fin (Manejo simple de años)
+                try:
+                    fecha_fin = fecha_inicio.replace(year=fecha_inicio.year + duracion_anos)
+                except ValueError: # Manejo de bisiestos (29 feb -> 1 mar)
+                    fecha_fin = fecha_inicio.replace(year=fecha_inicio.year + duracion_anos, month=3, day=1)
+                
+                # Mostramos el cálculo visualmente
+                st.info(f"📆 El contrato finalizará automáticamente el: **{fecha_fin.strftime('%d/%m/%Y')}**")
+                
+                # Cláusulas extra
+                clausula_extra = st.text_area("¿Alguna cláusula especial?", placeholder="Ej: No se admiten mascotas. Se prohíbe subarrendar habitaciones. El inquilino paga la comunidad...")
+                
+                # Construimos el prompt con los nuevos datos
+                data_p = f"""
+                Contrato de Alquiler de Vivienda Habitual (LAU). 
+                Propietario: {prop}. Inquilino: {inq}. 
+                Inmueble: {dir_piso}. Ref. Catastral: {ref_cat}. 
+                Renta: {renta} euros/mes.
+                FECHAS: Inicio el {fecha_inicio.strftime('%d/%m/%Y')}. Duración de {duracion_anos} años. Finaliza el {fecha_fin.strftime('%d/%m/%Y')}.
+                CLÁUSULAS ADICIONALES IMPORTANTES: {clausula_extra}.
+                """
             # === PRÉSTAMO (Con tu calculadora integrada) ===
             elif modo == "PRESTAMO":
                 st.subheader("💰 Préstamo entre Particulares")
@@ -1956,6 +1993,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
