@@ -2,20 +2,15 @@
 headless = true
 enableCORS = false
 enableXsrfProtection = false
+maxUploadSize = 500
+runOnSave = true
 
 [browser]
 gatherUsageStats = false
 
 [client]
-toolbarMode = "viewer"
 showErrorDetails = false
 
 [theme]
 base = "light"
 primaryColor = "#3b82f6"
-
-[server]
-maxUploadSize = 500  # Límite en MB (ej: 500MB)
-runOnSave = true
-enableCORS = false
-enableXsrfProtection = false
