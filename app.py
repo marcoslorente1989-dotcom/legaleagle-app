@@ -994,161 +994,188 @@ with tabs[0]:
     with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
             st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).")    
     
-# --- TAB 1: ANALIZADOR INTELIGENTE (FUSIÓN DASHBOARD + CHAT + HERRAMIENTAS) ---
+# --- TAB 1: ANALIZADOR INTELIGENTE (OPTIMIZADO Y BLINDADO) ---
 with tabs[1]:
-    st.subheader("Analizador de Documentos")
-    
-    if "nav_analizar" not in st.session_state:
-        st.session_state.nav_analizar = "MENU"
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+    # 1. GESTIÓN DEL ESTADO
+    if "nav_analizar" not in st.session_state: st.session_state.nav_analizar = "MENU"
+    if "chat_history" not in st.session_state: st.session_state.chat_history = []
+    if "contract_text" not in st.session_state: st.session_state.contract_text = ""
+    if "analisis_result" not in st.session_state: st.session_state.analisis_result = ""
 
-    # --- VISTA A: MENÚ PRINCIPAL ---
+    # 2. CONTENEDOR PRINCIPAL
+    main_ana = st.empty()
+
+    # ==============================================================================
+    # VISTA A: MENÚ PRINCIPAL
+    # ==============================================================================
     if st.session_state.nav_analizar == "MENU":
-        st.info("Selecciona qué quieres analizar:")
-        
-        c_menu_ana_1, c_menu_ana_2 = st.columns(2)
-        
-        with c_menu_ana_1:
-            if st.button("📄\nANALIZAR\nCONTRATO", use_container_width=True):
-                st.session_state.nav_analizar = "CONTRATO"
-                st.session_state.analisis_result = ""
-                st.session_state.contract_text = "" # Limpiamos texto previo
-                st.session_state.chat_history = []  # Limpiamos chat previo
-                st.rerun()
+        with main_ana.container():
+            st.subheader("Analizador de Documentos")
+            st.info("Selecciona qué quieres analizar:")
             
-            if st.button("💬\nCHAT / PREGUNTAR\nA DOCUMENTO", use_container_width=True):
-                st.session_state.nav_analizar = "GENERICO"
-                st.session_state.analisis_result = ""
-                st.session_state.contract_text = ""
-                st.session_state.chat_history = []
-                st.rerun()
-
-        with c_menu_ana_2:
-            if st.button("🛡️\nREVISAR\nSEGURO", use_container_width=True):
-                st.session_state.nav_analizar = "SEGURO"
-                st.session_state.analisis_result = ""
-                st.session_state.contract_text = ""
-                st.session_state.chat_history = []
-                st.rerun()
+            c_menu1, c_menu2 = st.columns(2)
             
-            # ACCESO DIRECTO A NÓMINAS (Pestaña 4)
-            if st.button("📊\nESCÁNER\nNÓMINAS", use_container_width=True):
-                st.session_state.nav_impuestos = "ESCANER" # Preparamos la tab 4
-                # JavaScript para saltar de pestaña
-                components.html("""<script>var tabs=window.parent.document.querySelectorAll('button[data-baseweb="tab"]');tabs[4].click();</script>""", height=0)
+            # Función reset para limpiar memoria al cambiar de herramienta
+            def ir_ana(destino):
+                st.session_state.nav_analizar = destino
+                st.session_state.analisis_result = ""
+                st.session_state.contract_text = "" 
+                st.session_state.chat_history = []
 
-    # --- VISTA B: HERRAMIENTAS ---
+            with c_menu1:
+                st.button("📄\nANALIZAR\nCONTRATO", use_container_width=True, on_click=ir_ana, args=("CONTRATO",))
+                st.button("💬\nCHAT CON\nDOCUMENTO", use_container_width=True, on_click=ir_ana, args=("GENERICO",))
+
+            with c_menu2:
+                st.button("🛡️\nREVISAR\nSEGURO", use_container_width=True, on_click=ir_ana, args=("SEGURO",))
+                # Acceso directo a Nóminas (Tab 4)
+                if st.button("📊\nESCÁNER\nNÓMINAS", use_container_width=True):
+                    st.session_state.nav_impuestos = "ESCANER"
+                    # Hack JS para saltar de pestaña
+                    components.html("""<script>var tabs=window.parent.document.querySelectorAll('button[data-baseweb="tab"]');tabs[4].click();</script>""", height=0)
+
+    # ==============================================================================
+    # VISTA B: HERRAMIENTAS DE ANÁLISIS
+    # ==============================================================================
     else:
-        c_ana_izq, c_ana_der = st.columns([1, 1.3])
-        
-        with c_ana_izq:
-            if st.button("⬅️ VOLVER AL MENÚ"):
-                st.session_state.nav_analizar = "MENU"
-                st.session_state.analisis_result = ""
-                st.rerun()
+        with main_ana.container():
+            # Layout: Herramienta (Izq) | Resultado/Chat (Der)
+            c_ana_izq, c_ana_der = st.columns([1, 1.3])
             
-            st.markdown("---")
-            modo = st.session_state.nav_analizar
-
-            # === CONTRATO ===
-            if modo == "CONTRATO":
-                st.info("📄 Sube un contrato (Alquiler, Servicios, Laboral).")
-                f = st.file_uploader("PDF/Imagen", type=["pdf", "jpg", "png"], key="u_cont")
-                if f and st.button("🔍 ANALIZAR RIESGOS", key="btn_cont"):
-                    with st.spinner("Leyendo letra pequeña..."):
-                        if f.type == "application/pdf": txt = extract_text_from_pdf(f)
-                        else: txt = analyze_image_groq(f, "Lee este contrato", api_key)
-                        
-                        st.session_state.contract_text = txt # Guardamos para el chat
-                        
-                        p = f"""
-                        Actúa como Abogado. Analiza: {txt[:6000]}.
-                        Informe: 1.Resumen. 2.Duración/Fechas. 3.Pagos. 4.🚨 CLÁUSULAS ABUSIVAS. 5.Veredicto.
-                        """
-                        st.session_state.analisis_result = groq_engine(p, api_key)
-
-            # === SEGUROS ===
-            elif modo == "SEGURO":
-                st.info("🛡️ Sube tu Póliza (Hogar, Coche, Salud).")
-                f = st.file_uploader("Póliza", type=["pdf", "jpg", "png"], key="u_seg")
-                if f and st.button("🛡️ ANALIZAR COBERTURAS", key="btn_seg"):
-                    with st.spinner("Revisando coberturas..."):
-                        if f.type == "application/pdf": txt = extract_text_from_pdf(f)
-                        else: txt = analyze_image_groq(f, "Lee póliza", api_key)
-                        
-                        st.session_state.contract_text = txt # Guardamos para el chat
-                        
-                        p = f"""
-                        Actúa como Corredor Seguros. Analiza: {txt[:7000]}.
-                        Informe: 1.✅ LO QUE CUBRE. 2.❌ EXCLUSIONES (Lo que NO paga). 3.💶 LÍMITES. 4.💡 FRANQUICIAS. 5.CONCLUSIÓN.
-                        """
-                        st.session_state.analisis_result = groq_engine(p, api_key)
-
-            # === CHAT / GENÉRICO ===
-            elif modo == "GENERICO":
-                st.info("💬 Sube un documento para chatear con él.")
-                f = st.file_uploader("Documento", type=["pdf", "jpg", "png"], key="u_gen")
-                if f and not st.session_state.contract_text:
-                    if st.button("📂 PROCESAR DOCUMENTO"):
-                        with st.spinner("Leyendo..."):
-                            if f.type == "application/pdf": txt = extract_text_from_pdf(f)
-                            else: txt = analyze_image_groq(f, "Lee doc", api_key)
-                            st.session_state.contract_text = txt
-                            st.success("¡Leído! Ya puedes preguntar a la derecha 👉")
-
-        # --- VISOR DE RESULTADOS + HERRAMIENTAS EXTRA ---
-        with c_ana_der:
-            # A) Si hay informe inicial, lo mostramos
-            if st.session_state.analisis_result:
-                st.markdown(f"<div class='contract-box'>{st.session_state.analisis_result}</div>", unsafe_allow_html=True)
+            # --- COLUMNA IZQUIERDA: SUBIDA Y PROCESAMIENTO ---
+            with c_ana_izq:
+                def volver_ana():
+                    st.session_state.nav_analizar = "MENU"
+                    st.session_state.analisis_result = ""
                 
-                # Botón descargar PDF
-                pdf = create_pdf(st.session_state.analisis_result, f"Informe {modo}")
-                st.download_button("⬇️ Bajar Informe PDF", data=pdf, file_name="Informe.pdf", mime="application/pdf")
-                st.write("---")
-
-            # B) HERRAMIENTAS ADICIONALES (Solo si hay texto cargado)
-            if st.session_state.contract_text:
+                st.button("⬅️ VOLVER", use_container_width=True, on_click=volver_ana)
+                st.markdown("---")
                 
-                # 1. GENERADOR DE CARTA DE CANCELACIÓN (Recuperado)
+                modo = st.session_state.nav_analizar
+
+                # TÍTULOS Y DESCRIPCIONES
                 if modo == "CONTRATO":
-                    with st.expander("📅 Generar Carta de Cancelación", expanded=False):
-                        st.caption("Redacta un aviso formal para terminar este contrato.")
-                        email_remitente = st.text_input("Tu Email / ID", key="email_cancel")
-                        fecha_cancel = st.date_input("Fecha baja", key="date_cancel")
-                        
-                        if st.button("✉️ Redactar Carta"):
-                            with st.spinner("Escribiendo..."):
-                                p_cancel = f"""
-                                Actúa como abogado. Basado en: "{st.session_state.contract_text[:3000]}..."
-                                Redacta CARTA FORMAL DESISTIMIENTO. Remitente: {email_remitente}. Fecha: {fecha_cancel}.
-                                Tono firme y legal.
-                                """
+                    st.subheader("📄 Analizar Contrato")
+                    st.caption("Detecta cláusulas abusivas, fechas y riesgos.")
+                elif modo == "SEGURO":
+                    st.subheader("🛡️ Revisar Seguro")
+                    st.caption("Analiza coberturas, exclusiones y letra pequeña.")
+                elif modo == "GENERICO":
+                    st.subheader("💬 Chat Documental")
+                    st.caption("Sube cualquier PDF o Foto y pregunta lo que quieras.")
+
+                # UPLOADER UNIVERSAL (PDF + IMÁGENES)
+                f = st.file_uploader("Sube PDF o Foto (JPG/PNG)", type=["pdf", "jpg", "jpeg", "png"], key="u_ana_main")
+                
+                # BOTÓN DE ACCIÓN (Solo aparece si hay archivo)
+                if f:
+                    # Aviso si el archivo es grande (>10MB)
+                    if f.size > 10 * 1024 * 1024:
+                        st.warning("⚠️ Archivo pesado detectado. Se leerán solo las primeras páginas para evitar bloqueos.")
+                    btn_label = "🔍 ANALIZAR AHORA" if modo != "GENERICO" else "📂 PROCESAR ARCHIVO"
+                    
+                    if st.button(btn_label, use_container_width=True, key="btn_process_ana"):
+                        with st.spinner("⏳ Leyendo documento (esto puede tardar unos segundos)..."):
+                            try:
+                                # 1. EXTRACCIÓN DEL TEXTO (SEGÚN TIPO)
+                                texto_extraido = ""
+                                if f.type == "application/pdf":
+                                    texto_extraido = extract_text_from_pdf(f)
+                                else:
+                                    # Es una imagen -> Usamos Visión IA
+                                    texto_extraido = analyze_image_groq(f, "Transcribe todo el texto de esta imagen con precisión.", api_key)
+                                
+                                # Guardamos en sesión para no perderlo
+                                st.session_state.contract_text = texto_extraido
+
+                                # 2. ANÁLISIS (SI NO ES MODO CHAT)
+                                if modo == "CONTRATO":
+                                    prompt = f"""
+                                    Actúa como Abogado Experto. Analiza este contrato:
+                                    {texto_extraido[:8000]}... (truncado por longitud).
+                                    
+                                    GENERA UN INFORME CON ESTA ESTRUCTURA:
+                                    1. 📋 **RESUMEN EJECUTIVO**: De qué trata.
+                                    2. 📅 **DURACIÓN Y FECHAS**: Inicio, fin, preavisos.
+                                    3. 💶 **ECONOMÍA**: Pagos, fianzas, actualizaciones.
+                                    4. 🚨 **CLÁUSULAS ABUSIVAS O RIESGOS**: Lo más importante.
+                                    5. ⚖️ **VEREDICTO**: ¿Es seguro firmar?
+                                    """
+                                    st.session_state.analisis_result = groq_engine(prompt, api_key)
+                                
+                                elif modo == "SEGURO":
+                                    prompt = f"""
+                                    Actúa como Corredor de Seguros. Analiza esta póliza:
+                                    {texto_extraido[:8000]}...
+                                    
+                                    INFORME DETALLADO:
+                                    1. ✅ **LO QUE CUBRE**: Resumen de garantías principales.
+                                    2. ❌ **EXCLUSIONES (IMPORTANTE)**: Qué NO te van a pagar.
+                                    3. 💶 **LÍMITES Y FRANQUICIAS**: Topes de dinero.
+                                    4. 💡 **CONCLUSIÓN**: ¿Es una buena póliza?
+                                    """
+                                    st.session_state.analisis_result = groq_engine(prompt, api_key)
+                                
+                                elif modo == "GENERICO":
+                                    st.success("✅ Documento leído correctamente. ¡Pregunta a la derecha!")
+
+                            except Exception as e:
+                                st.error(f"Error al procesar: {e}. Intenta con un archivo más pequeño.")
+
+
+            # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
+            with c_ana_der:
+                
+                # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
+                if st.session_state.analisis_result:
+                    st.markdown(f"<div class='contract-box'>{st.session_state.analisis_result}</div>", unsafe_allow_html=True)
+                    
+                    # Botón descarga
+                    pdf_bytes = create_pdf(st.session_state.analisis_result, f"Analisis_{modo}")
+                    st.download_button("⬇️ Descargar Informe PDF", pdf_bytes, "Analisis.pdf", "application/pdf", use_container_width=True)
+                    st.divider()
+
+                # B) ZONA DE CHAT / HERRAMIENTAS EXTRA (Siempre visible si hay texto cargado)
+                if st.session_state.contract_text:
+                    
+                    # Generador de Carta de Cancelación (Solo contratos)
+                    if modo == "CONTRATO":
+                        with st.expander("📅 Generar Carta de Cancelación/Baja"):
+                            email_rem = st.text_input("Tu Email", key="c_mail")
+                            fecha_baja = st.date_input("Fecha Baja", key="c_date")
+                            if st.button("Redactar Carta"):
+                                p_cancel = f"Redacta carta formal de cancelación para este contrato. Remitente: {email_rem}. Fecha: {fecha_baja}. Contexto: {st.session_state.contract_text[:3000]}"
                                 carta = groq_engine(p_cancel, api_key)
                                 st.markdown(f"<div class='contract-box'>{carta}</div>", unsafe_allow_html=True)
-                                pdf_c = create_pdf(carta, "Cancelacion")
-                                st.download_button("⬇️ Bajar Carta", pdf_c, "Baja.pdf")
 
-                # 2. CHAT INTERACTIVO (Recuperado)
-                st.markdown("### 💬 Chat con el Documento")
-                
-                # Historial
-                for m in st.session_state.chat_history:
-                    css = "chat-user" if m["role"]=="user" else "chat-bot"
-                    st.markdown(f"<div class='{css}'>{m['content']}</div>", unsafe_allow_html=True)
-                
-                # Input del chat
-                if q := st.chat_input("Pregunta algo sobre el archivo..."):
-                    st.session_state.chat_history.append({"role":"user","content":q})
-                    st.markdown(f"<div class='chat-user'>{q}</div>", unsafe_allow_html=True)
+                    # CHAT INTERACTIVO
+                    st.subheader("💬 Chat con el documento")
                     
-                    with st.spinner("Pensando..."):
-                        ans = groq_engine(f"Contexto: {st.session_state.contract_text[:10000]}. Pregunta: {q}", api_key)
-                    
-                    st.session_state.chat_history.append({"role":"assistant","content":ans})
-                    st.rerun() # Para refrescar y mostrar la respuesta
+                    # Historial visual
+                    for msg in st.session_state.chat_history:
+                        clase = "chat-user" if msg["role"] == "user" else "chat-bot"
+                        st.markdown(f"<div class='{clase}'>{msg['content']}</div>", unsafe_allow_html=True)
 
+                    # Input del usuario
+                    if pregunta := st.chat_input("Pregunta algo sobre el archivo..."):
+                        # 1. Pintar usuario
+                        st.session_state.chat_history.append({"role": "user", "content": pregunta})
+                        st.markdown(f"<div class='chat-user'>{pregunta}</div>", unsafe_allow_html=True)
+                        
+                        # 2. Generar respuesta IA
+                        with st.spinner("Consultando el documento..."):
+                            contexto = st.session_state.contract_text[:12000] # Limitamos contexto para no saturar
+                            prompt_chat = f"Contexto del documento: {contexto}. Pregunta del usuario: {pregunta}. Responde de forma breve y precisa basándote solo en el texto."
+                            respuesta = groq_engine(prompt_chat, api_key)
+                        
+                        # 3. Pintar respuesta y guardar
+                        st.session_state.chat_history.append({"role": "assistant", "content": respuesta})
+                        st.rerun()
+                
+                # Mensaje de bienvenida si no hay nada
+                elif not st.session_state.analisis_result:
+                    st.info("👈 Sube un archivo en la columna izquierda para comenzar.")
+                    
 # --- TAB 2: GENERADOR DE CONTRATOS (VERSIÓN RESTAURADA Y BLINDADA) ---
 with tabs[2]:
     # 1. CONTENEDOR MÁGICO (Evita que se mezclen menús y formularios)
@@ -2216,6 +2243,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
