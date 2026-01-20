@@ -13,3 +13,7 @@ showErrorDetails = false
 [theme]
 base = "light"
 primaryColor = "#3b82f6"
+
+[server]
+maxUploadSize = 700  # Límite en MB (ej: 500MB)
+runOnSave = true
