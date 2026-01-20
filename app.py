@@ -1713,10 +1713,6 @@ with tabs[4]:
                    st.session_state.nav_impuestos = "ESCANER"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("🏠\nIMPUESTOS\nVenta Vivienda    ", use_container_width=True): 
-                   st.session_state.nav_impuestos = "VENTA"
-                   st.session_state.generated_calc = ""
-                   st.rerun()
                 if st.button("📈\nIPC\nAlquiler", use_container_width=True): 
                    st.session_state.nav_impuestos = "IPC"
                    st.session_state.generated_calc = ""
@@ -1729,8 +1725,8 @@ with tabs[4]:
                    st.session_state.nav_impuestos = "SUELDO"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("📝\nGastos\nCompraventa Vivienda", use_container_width=True): 
-                   st.session_state.nav_impuestos = "GASTOS"
+                if st.button("📝\nImpuestos\nVivienda", use_container_width=True): 
+                   st.session_state.nav_impuestos = "VIVIENDA_TOTAL"
                    st.session_state.generated_calc = ""
                    st.rerun()
                 if st.button("📉\nCuota\nHipoteca", use_container_width=True): 
@@ -1754,72 +1750,143 @@ with tabs[4]:
             modo = st.session_state.nav_impuestos
             anio_actual = datetime.now().year
 
-            # === RENTA (Lógica Completa) ===
+           # === RENTA (VERSIÓN FINAL: PENSIONES, PAREJAS, ASCENDIENTES Y DISCAPACIDAD) ===
             if modo == "RENTA":
                 st.subheader("💰 Deducciones Renta")
-                st.info("💡 **Buscador de Ahorro:** La IA filtrará las deducciones según tu perfil exacto.")
+                st.info("💡 **Buscador de Ahorro:** Detecta deducciones por familia, alquiler, vivienda y personas a cargo.")
+                
                 ccaa = st.selectbox("📍 Tu Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"], key="ren_ccaa")
                 
-                st.markdown("👇 **Marca tu situación:**")
+                # --- 1. SITUACIÓN PERSONAL ---
+                st.markdown("👇 **Tu Situación Personal:**")
+                c_est1, c_est2 = st.columns(2)
+                with c_est1:
+                    estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Pareja de Hecho", "Divorciado/Separado", "Viudo/a"], key="ren_ec")
+                
+                info_civil_extra = ""
+                
+                with c_est2:
+                    # Discapacidad del PROPIO contribuyente
+                    discapacidad_propia = st.checkbox("Tengo Discapacidad (>33%)", key="ren_dis")
+                    
+                    if estado_civil == "Casado/a":
+                        if st.checkbox("¿Declaración Conjunta?", key="ren_conj"):
+                            info_civil_extra += " Opción Declaración Conjunta. "
+                    
+                    elif estado_civil == "Pareja de Hecho":
+                        if st.checkbox("¿Hijos en común?", key="ren_ph_hijos"):
+                            info_civil_extra += " Pareja de Hecho con Hijos (Valorar Monoparental). "
+                    
+                    elif estado_civil == "Divorciado/Separado":
+                        paga_comp = st.checkbox("Pago Pensión Compensatoria (Ex-cónyuge)", key="ren_div_comp")
+                        paga_alim = st.checkbox("Pago Anualidades Alimentos (Hijos)", key="ren_div_alim")
+                        if paga_comp: info_civil_extra += " Paga Pensión Compensatoria (Reduce Base). "
+                        if paga_alim: info_civil_extra += " Paga Alimentos a Hijos (Escala especial). "
+
+                st.markdown("---")
+                
+                # --- 2. FAMILIA Y PERSONAS A CARGO ---
+                st.markdown("👇 **Familia y Personas a Cargo:**")
+                
+                # A) HIJOS (DESCENDIENTES)
                 hijos = st.checkbox("👶 Tengo hijos (< 25 años)", key="ren_hijos")
-                detalles_hijos = ""
+                detalles_familia = ""
+                
                 if hijos:
-                    st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Detalles para filtrar deducciones:</small></div>""", unsafe_allow_html=True)
-                    anios_hijos = st.text_input("Año de nacimiento de cada hijo (ej: 2018, 2024)", key="ren_ah")
+                    st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Hijos / Descendientes:</small></div>""", unsafe_allow_html=True)
+                    anios_hijos = st.text_input("Año nacimiento hijos (ej: 2021, 2024)", key="ren_ah")
                     
                     c_h1, c_h2 = st.columns(2)
                     with c_h1:
-                        guarderia = st.checkbox("Gastos de Guardería (0-3 años)", key="ren_guar")
-                        material = st.checkbox("Gastos Material Escolar / Libros", key="ren_mat")
+                        guarderia = st.checkbox("Gastos Guardería (0-3 años)", key="ren_guar")
+                        material = st.checkbox("Gastos Material Escolar", key="ren_mat")
                     with c_h2:
-                        fam_mono = st.checkbox("Familia Monoparental / Numerosa", key="ren_fam")
-                        discap_hijo = st.checkbox("Algún hijo con Discapacidad", key="ren_dis_h")
+                        fam_num = st.checkbox("Familia Numerosa", key="ren_fam")
+                        discap_hijo = st.checkbox("Hijo con Discapacidad", key="ren_dis_h")
                     
-                    detalles_hijos = f"Hijos nacidos en: {anios_hijos}. "
-                    if guarderia: detalles_hijos += "Paga Guardería. "
-                    if material: detalles_hijos += "Paga Material Escolar/Libros. "
-                    if fam_mono: detalles_hijos += "Es Familia Monoparental/Numerosa. "
-                    if discap_hijo: detalles_hijos += "Hijo con discapacidad. "
+                    # Custodia Monoparental
+                    if estado_civil != "Casado/a":
+                        if st.checkbox("¿Tienes la Custodia Exclusiva?", key="ren_custodia"):
+                            info_civil_extra += " Familia Monoparental (Custodia Exclusiva). "
+
+                    detalles_familia += f"Hijos nacidos en: {anios_hijos}. "
+                    if guarderia: detalles_familia += "Paga Guardería. "
+                    if material: detalles_familia += "Paga Material Escolar. "
+                    if fam_num: detalles_familia += "Es Familia Numerosa. "
+                    if discap_hijo: detalles_familia += "Tiene hijos con Discapacidad (Aumenta mínimo). "
+
+                # B) ASCENDIENTES (PADRES/ABUELOS) - NUEVO
+                ascendientes = st.checkbox("👵 Ascendientes a cargo (>65 años o discapacidad)", key="ren_asc")
+                if ascendientes:
+                    st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #f59e0b; margin-bottom: 10px;"><small>📝 Padres/Abuelos que conviven contigo:</small></div>""", unsafe_allow_html=True)
+                    c_asc1, c_asc2 = st.columns(2)
+                    with c_asc1:
+                        num_asc = st.number_input("Nº Ascendientes", 1, 4, 1, key="ren_num_asc")
+                    with c_asc2:
+                        asc_discap = st.checkbox("¿Tienen discapacidad > 33%?", key="ren_asc_dis")
+                    
+                    detalles_familia += f"Convive con {num_asc} ascendientes (>65 años). "
+                    if asc_discap: detalles_familia += "Ascendientes con Discapacidad (Deducción muy alta). "
 
                 st.markdown("---")
+                
+                # --- 3. GASTOS DEDUCIBLES ---
+                st.markdown("👇 **Gastos Deducibles:**")
                 c1, c2 = st.columns(2)
                 with c1:
                     alquiler = st.checkbox("Vivo de alquiler (Inquilino)", key="ren_alq")
+                    if alquiler:
+                        edad_inquilino = st.number_input("Tu edad", 18, 99, 30, key="ren_edad_inq")
+                        detalles_familia += f" Inquilino de {edad_inquilino} años. "
                     hipoteca = st.checkbox("Hipoteca (Anterior 2013)", key="ren_hip")
-                    discapacidad = st.checkbox("Mi Discapacidad (>33%)", key="ren_dis")
+                    
                 with c2:
-                    donaciones = st.checkbox("Hago Donaciones", key="ren_don")
-                    idiomas = st.checkbox("Idiomas extraescolares", key="ren_idio")
-                    rural = st.checkbox("Zona Rural / Despoblada", key="ren_rur")
+                    donaciones = st.checkbox("Hago Donaciones (ONG/Partidos)", key="ren_don")
+                    idiomas = st.checkbox("Gastos Idiomas / Extraescolares", key="ren_idio")
+                    rural = st.checkbox("Vivo en Zona Rural / Despoblada", key="ren_rur")
                 
                 otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)", key="ren_otr")
 
                 if st.button("🔍 BUSCAR DEDUCCIONES", key="btn_ren"):
-                    situaciones = []
-                    if hijos: situaciones.append(f"HIJOS: {detalles_hijos}")
-                    else: situaciones.append("No tiene hijos.")
-                    if alquiler: situaciones.append("Vive de Alquiler")
-                    if hipoteca: situaciones.append("Paga Hipoteca")
-                    if discapacidad: situaciones.append("Tiene Discapacidad propia")
-                    if donaciones: situaciones.append("Hace Donaciones")
-                    if idiomas: situaciones.append("Gastos Educación Idiomas")
-                    if rural: situaciones.append("Residencia en zona Rural")
-                    if otros: situaciones.append(f"Otros gastos: {otros}")
-                    
-                    perfil_txt = " | ".join(situaciones)
-                    
-                    prompt_renta = f"""
-                    Actúa como Asesor Fiscal experto en IRPF España (Campaña 2024/2025).
-                    PERFIL EXACTO: Residente en {ccaa}. SITUACIÓN: {perfil_txt}.
-                    INSTRUCCIONES DE FILTRADO:
-                    1. Analiza los AÑOS DE NACIMIENTO. Si nació antes de 2023, NO menciones deducción por nacimiento.
-                    2. Si no hay 'Alquiler', NO hables de alquiler.
-                    3. Si no hay 'Guardería' o el niño es mayor de 3 años, NO hables de guardería.
-                    TAREA: Lista ÚNICAMENTE las deducciones aplicables REALMENTE.
-                    FORMATO:✅ TUS DEDUCCIONES CONFIRMADAS (Iconos, Nombre, Cuantía, Casilla del modelo 100).
-                    ⚠️ REVISA ESTO POR SI ACASO (Solo 1 o 2 deducciones muy famosas de {ccaa} que no haya marcado, brevemente).
-                    """
-                    st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
+                    with st.spinner(f"Analizando normativa de {ccaa} y estatal..."):
+                        # Construcción del perfil para la IA
+                        situaciones = []
+                        situaciones.append(f"ESTADO CIVIL: {estado_civil}. {info_civil_extra}")
+                        
+                        if detalles_familia: situaciones.append(f"SITUACIÓN FAMILIAR: {detalles_familia}")
+                        else: situaciones.append("Sin cargas familiares declaradas.")
+                        
+                        if alquiler: situaciones.append("Vive de Alquiler")
+                        if hipoteca: situaciones.append("Paga Hipoteca (Deducción estatal antigua)")
+                        if discapacidad_propia: situaciones.append("Contribuyente con Discapacidad")
+                        if donaciones: situaciones.append("Hace Donaciones")
+                        if idiomas: situaciones.append("Gastos Educación/Idiomas")
+                        if rural: situaciones.append("Residencia en zona Rural (Despoblación)")
+                        if otros: situaciones.append(f"Otros: {otros}")
+                        
+                        perfil_txt = " | ".join(situaciones)
+                        
+                        prompt_renta = f"""
+                        Actúa como Asesor Fiscal experto en IRPF España (Campaña actual).
+                        Analiza las deducciones Autonómicas de: {ccaa} y Estatales clave.
+                        PERFIL: {perfil_txt}.
+                        
+                        TAREA IMPORTANTE:
+                        1. Revisa 'Personas a cargo':
+                           - Si tiene 'Ascendientes a cargo' (Padres/Abuelos), menciona el Mínimo por Ascendientes y deducciones por cuidado de mayores/discapacidad.
+                           - Si tiene hijos con discapacidad, destaca esa deducción específica.
+                        2. Si paga 'Pensión Compensatoria', avisa que reduce la base imponible.
+                        3. Si paga 'Anualidades por Alimentos', explica la escala especial.
+                        4. Lista las Deducciones Autonómicas de {ccaa} aplicables.
+                        
+                        FORMATO DE SALIDA:
+                        ### ✅ TUS DEDUCCIONES Y REDUCCIONES
+                        - **[Nombre]**: [Explicación]. Casilla aprox: [Número].
+                        
+                        ### ⚠️ REQUISITOS CLAVE
+                        - [Consejo sobre convivencia mínima, rentas máximas de los ascendientes, etc].
+                        """
+                        st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
 
             # === ESCÁNER NÓMINA ===
             elif modo == "ESCANER":
@@ -1965,32 +2032,82 @@ with tabs[4]:
                           st.session_state.generated_calc = ""
                           st.rerun()
 
-            # === VENTA ===
-            elif modo == "VENTA":
-                st.subheader("🏠 Impuestos Venta")
-                st.caption("Plusvalía Municipal + IRPF")
-                f_compra = st.number_input("Año Compra", 1950, anio_actual, 2015, key="ven_fc")
-                p_compra = st.number_input("Precio Compra (€)", min_value=0.0, key="ven_pc")
-                f_venta = st.number_input("Año Venta", value=anio_actual, disabled=True, key="ven_fv")
-                p_venta = st.number_input("Precio Venta (€)", min_value=0.0, key="ven_pv")
-                municipio = st.text_input("Municipio", key="ven_mun")
-                v_suelo = st.number_input("Valor Catastral SUELO (€)", min_value=0.0, key="ven_vs")
+            # === VIVIENDA TOTAL (FUSIÓN COMPRA Y VENTA) ===
+            elif modo == "VIVIENDA_TOTAL":
+                st.subheader("🏡 Gestión Inmobiliaria")
+                st.info("Calculadora unificada para compradores y vendedores.")
                 
-                if st.button("🧮 CALCULAR IMPUESTOS", key="btn_ven"):
-                    if v_suelo > 0:
-                        anios = anio_actual - f_compra
-                        ganancia = p_venta - p_compra
-                        p = f"Calcula impuestos venta vivienda {municipio}. Años: {anios}. Valor Suelo: {v_suelo}. Ganancia: {ganancia}. 1. Plusvalía. 2. IRPF. Totales."
-                        st.session_state.generated_calc = groq_engine(p, api_key)
+                # Selector Principal
+                accion = st.radio("¿Qué operación vas a realizar?", ["Voy a COMPRAR (Gastos)", "Voy a VENDER (Impuestos)"], horizontal=True, key="viv_accion")
+                st.markdown("---")
 
-            # === GASTOS ===
-            elif modo == "GASTOS":
-                st.subheader("📝 Gastos Compraventa")
-                precio = st.number_input("Precio (€)", 150000.0, key="gas_pre")
-                ccaa = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Otras"], key="gas_ccaa")
-                tipo = st.radio("Tipo", ["Segunda Mano", "Obra Nueva"], key="gas_tipo")
-                if st.button("🧮 CALCULAR", key="btn_gas"):
-                    st.session_state.generated_calc = groq_engine(f"Calcula gastos compraventa {ccaa}. Precio: {precio}. Tipo: {tipo}.", api_key)
+                # --- CASO A: COMPRADOR (Antiguo GASTOS) ---
+                if "COMPRAR" in accion:
+                    st.markdown("### 📝 Gastos de Compra")
+                    st.caption("Calcula Notaría, Registro e Impuestos (ITP o IVA).")
+                    
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        precio = st.number_input("Precio de Compra (€)", value=150000.0, step=1000.0, key="viv_com_pre")
+                        tipo = st.radio("Tipo de Vivienda", ["Segunda Mano", "Obra Nueva"], key="viv_com_tipo")
+                    with c2:
+                        ccaa = st.selectbox("Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"], key="viv_com_ccaa")
+                        st.info("Obra Nueva paga IVA (10%). Segunda Mano paga ITP (6%-10% según CCAA).")
+
+                    if st.button("🧮 CALCULAR GASTOS TOTALES", key="btn_viv_com"):
+                        with st.spinner("Calculando impuestos regionales y aranceles notariales..."):
+                            prompt_compra = f"""
+                            Actúa como experto inmobiliario y fiscal en España.
+                            Calcula los GASTOS DE COMPRAVENTA para:
+                            - Precio: {precio}€
+                            - Región: {ccaa}
+                            - Tipo: {tipo}
+                            
+                            DESGLOSE OBLIGATORIO:
+                            1. Impuestos: Si es Segunda Mano calcula el ITP de {ccaa}. Si es Obra Nueva calcula IVA (10%) + AJD de {ccaa}.
+                            2. Notaría (Estimación aranceles BOE).
+                            3. Registro de la Propiedad (Estimación).
+                            4. Gestoría (Aproximado 300-500€).
+                            
+                            TOTAL A PREPARAR: Suma todo.
+                            """
+                            st.session_state.generated_calc = groq_engine(prompt_compra, api_key)
+
+                # --- CASO B: VENDEDOR (Antiguo VENTA) ---
+                else:
+                    st.markdown("### 💰 Impuestos de Venta")
+                    st.caption("Calcula la Plusvalía Municipal y el IRPF (Ganancia Patrimonial).")
+                    
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        f_compra = st.number_input("Año de Adquisición", 1950, anio_actual, 2015, key="viv_ven_fc")
+                        p_compra = st.number_input("Precio por el que compraste (€)", min_value=0.0, step=1000.0, key="viv_ven_pc")
+                        municipio = st.text_input("Municipio de la vivienda", key="viv_ven_mun")
+                    with c2:
+                        f_venta = st.number_input("Año de Venta", value=anio_actual, disabled=True, key="viv_ven_fv")
+                        p_venta = st.number_input("Precio de Venta (€)", min_value=0.0, step=1000.0, key="viv_ven_pv")
+                        v_suelo = st.number_input("Valor Catastral del SUELO (€)", min_value=0.0, step=500.0, help="Mira tu recibo del IBI", key="viv_ven_vs")
+
+                    if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
+                        if v_suelo > 0:
+                            with st.spinner("Calculando Plusvalía y 'Hachazo' de Hacienda..."):
+                                anios = anio_actual - f_compra
+                                ganancia = p_venta - p_compra
+                                prompt_venta = f"""
+                                Actúa como asesor fiscal en España.
+                                Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
+                                - Años tenencia: {anios}.
+                                - Ganancia Bruta: {ganancia}€ (Venta {p_venta} - Compra {p_compra}).
+                                - Valor Catastral Suelo: {v_suelo}€.
+                                
+                                INFORME:
+                                1. PLUSVALÍA MUNICIPAL: Estima el coste (Método Objetivo vs Real). ¿Hay ganancia?
+                                2. IRPF (ESTATAL): Calcula la cuota a pagar por la Ganancia Patrimonial (Tramos del ahorro 19%-28%).
+                                3. TOTAL A PAGAR APROXIMADO.
+                                """
+                                st.session_state.generated_calc = groq_engine(prompt_venta, api_key)
+                        else:
+                            st.warning("⚠️ Necesitas el Valor Catastral del Suelo (míralo en el IBI) para calcular la Plusvalía.")
 
             # === IPC ===
             elif modo == "IPC":
@@ -2104,6 +2221,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
