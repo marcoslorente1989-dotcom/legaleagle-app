@@ -2,7 +2,6 @@ streamlit
 pandas
 groq
 python-dotenv
-pdfplumber
 fpdf
 gspread
 oauth2client
@@ -10,7 +9,8 @@ requests
 python-docx
 reportlab
 PyPDF2       
-Pillow       
+Pillow    
+
 
 
 
