@@ -2033,7 +2033,7 @@ with tabs[4]:
                           st.rerun()
 
             # === VIVIENDA TOTAL (LAYOUT CRUZADO: Input Izq -> Resultado Der) ===
-                if modo == "VIVIENDA_TOTAL":
+                elif modo == "VIVIENDA_TOTAL":
                     st.subheader("🏡 Gestión Inmobiliaria")
                     st.caption("Calcula Notaría, Registro e Impuestos (ITP o IVA).")
                     
@@ -2257,6 +2257,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
