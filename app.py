@@ -1818,7 +1818,7 @@ with tabs[4]:
                     with st.container(border=True):
                         p_venta = st.number_input("Venta (€)", value=180000.0, step=1000.0, key="viv_ven_pv")
                         p_compra = st.number_input("Compra (€)", value=100000.0, step=1000.0, key="viv_ven_pc")
-                        anio_c = st.number_input("Año Adquisición", 1990, 2025, 2010, key="viv_ven_ac")
+                        f_compra = st.number_input("Año Adquisición", 1990, 2025, 2010, key="viv_ven_ac")
                         v_suelo = st.number_input("Valor Suelo IBI (€)", 0.0, step=500.0, key="viv_ven_vs")
                         municipio = st.text_input("Municipio", key="viv_ven_mun")
 
@@ -1830,7 +1830,7 @@ with tabs[4]:
                                     prompt_venta = f"""
                                     Actúa como asesor fiscal en España.
                                     Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
-                                    - Años tenencia: {anio_actual}.
+                                    - Años tenencia: {anios}.
                                     - Ganancia Bruta: {ganancia}€ (Venta {p_venta} - Compra {p_compra}).
                                     - Valor Catastral Suelo: {v_suelo}€.
                                     
@@ -2179,6 +2179,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
