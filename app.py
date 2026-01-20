@@ -1786,7 +1786,7 @@ with tabs[4]:
                             es_fam_num = st.checkbox("Fam. Numerosa", key="viv_com_fn")
                             es_discap = st.checkbox("Discapacidad", key="viv_com_dis")
 
-                         if st.button("🧮 CALCULAR GASTOS TOTALES", key="btn_viv_com"):
+                        if st.button("🧮 CALCULAR GASTOS TOTALES", key="btn_viv_com"):
                             with st.spinner("Calculando impuestos regionales y aranceles notariales..."):
                                 prompt_compra = f"""
                                 Actúa como experto inmobiliario y fiscal en España.
@@ -2179,6 +2179,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
