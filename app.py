@@ -1148,7 +1148,7 @@ with tabs[1]:
                     
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun() # Para refrescar y mostrar la respuesta
-# --- TAB 2: CREADOR DE CONTRATOS (ESTRATEGIA DASHBOARD) ---
+
 # --- TAB 2: GENERADOR DE CONTRATOS (VERSIÓN MAESTRA FINAL) ---
 with tabs[2]:
     # 1. INICIALIZACIÓN DE SEGURIDAD (Variables por defecto para evitar errores)
@@ -1214,7 +1214,7 @@ with tabs[2]:
         c_form_izq, c_form_der = st.columns([1, 1.3])
         
         with c_form_izq:
-            if st.button("⬅️ MENÚ PRINCIPAL"):
+            if st.button("⬅️ VOLVER AL MENÚ", use_container_width=True):
                 st.session_state.nav_crear = "MENU"
                 st.session_state.generated_contract = ""
                 st.rerun()
@@ -2024,12 +2024,13 @@ with st.container():
             
     # 4. ADMIN
     with c_admin:
-        with st.popover("🔐", help="Acceso Administrador"):
+        with st.popover("🔐"):
             pass_admin = st.text_input("Clave", type="password")
             if pass_admin == "admin123": 
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
