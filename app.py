@@ -2032,34 +2032,34 @@ with tabs[4]:
                           st.session_state.generated_calc = ""
                           st.rerun()
 
-            # === VIVIENDA TOTAL (LAYOUT CRUZADO + TODOS TUS CAMPOS) ===
+            # === VIVIENDA TOTAL (LAYOUT COMPLETO) ===
             elif modo == "VIVIENDA_TOTAL":
                 st.subheader("🏡 Gestión Inmobiliaria")
                 st.caption("Calculadora Cruzada: Compra (Izq) y Venta (Der). Los resultados aparecen en el lado opuesto.")
                 
-                # 1. Variables de memoria para el cruce
+                # 1. Variables de memoria
                 if "viv_res_compra" not in st.session_state: st.session_state.viv_res_compra = ""
                 if "viv_res_venta" not in st.session_state: st.session_state.viv_res_venta = ""
 
-                # 2. Dos columnas
-                col_izq, col_der = st.columns(2, gap="medium")
+                # 2. Dos columnas (CAMBIO AQUÍ: gap="small" para aprovechar mejor el ancho)
+                col_izq, col_der = st.columns(2, gap="small")
 
                 # =========================================================
                 # COLUMNA IZQUIERDA: INPUTS COMPRA + VISOR DE VENTA
                 # =========================================================
                 with col_izq:
-                    # A. INPUTS DE COMPRA (Tus campos completos)
+                    # A. INPUTS DE COMPRA
                     st.info("🛒 **DATOS COMPRA** (Resultado saldrá 👉)")
                     with st.container(border=True):
-                        # Fila 1: Económicos
+                        # Fila 1
                         c_p1, c_p2 = st.columns(2)
                         with c_p1: precio_c = st.number_input("Precio (€)", value=150000.0, step=1000.0, key="viv_com_pre")
                         with c_p2: tipo_c = st.selectbox("Tipo", ["Segunda Mano", "Obra Nueva"], key="viv_com_tipo")
                         
-                        # Fila 2: CCAA
+                        # Fila 2
                         ccaa_c = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "Castilla-La Mancha", "Castilla y León", "Canarias", "Otras"], key="viv_com_ccaa")
                         
-                        # Fila 3: Perfil (RECUPERADO)
+                        # Fila 3: Perfil
                         st.markdown("👇 **Perfil Compradores:**")
                         c_perf1, c_perf2 = st.columns(2)
                         with c_perf1:
@@ -2067,16 +2067,12 @@ with tabs[4]:
                             es_habitual = st.checkbox("Vivienda Habitual", value=True, key="viv_com_hab")
                         with c_perf2:
                             num_compradores = st.number_input("Nº Compradores", 1, 5, 1, key="viv_com_num")
-                            # Checkbox combinados
                             es_fam_num = st.checkbox("Fam. Numerosa", key="viv_com_fn")
                             es_discap = st.checkbox("Discapacidad", key="viv_com_dis")
 
                         if st.button("CALCULAR GASTOS ➡️", key="btn_viv_com", use_container_width=True):
                             with st.spinner("Calculando..."):
-                                # 1. Limpiamos el resultado opuesto para no confundir
                                 st.session_state.viv_res_venta = "" 
-                                
-                                # 2. Prompt completo con tus datos
                                 perfil_fiscal = f"{num_compradores} compradores. Edad: {edad_joven}. Habitual: {es_habitual}. Fam.Num: {es_fam_num}. Discap: {es_discap}."
                                 prompt = f"""
                                 Calcula GASTOS COMPRAVENTA en {ccaa_c}. Precio {precio_c}€. Tipo {tipo_c}.
@@ -2086,9 +2082,9 @@ with tabs[4]:
                                 TOTAL FINAL.
                                 """
                                 st.session_state.viv_res_compra = groq_engine(prompt, api_key)
-                                st.rerun() # Forzar que aparezca en la otra columna
+                                st.rerun() 
 
-                    # B. VISOR (Aquí sale el resultado de la VENTA si se hizo en la derecha)
+                    # B. VISOR VENTA (Viene de la derecha)
                     if st.session_state.viv_res_venta:
                         st.write("")
                         st.success("⬅️ **RESULTADO DE LA VENTA**")
@@ -2110,18 +2106,16 @@ with tabs[4]:
                         if st.button("⬅️ CALCULAR IMPUESTOS", key="btn_viv_ven", use_container_width=True):
                             if v_suelo > 0:
                                 with st.spinner("Calculando..."):
-                                    # 1. Limpiamos el resultado opuesto
                                     st.session_state.viv_res_compra = ""
-                                    
                                     ganancia = p_venta - p_compra
                                     anios = datetime.now().year - anio_c
                                     prompt = f"Calcula Impuestos Venta {municipio}. Ganancia {ganancia}. Años {anios}. Valor Suelo {v_suelo}. Plusvalía + IRPF."
                                     st.session_state.viv_res_venta = groq_engine(prompt, api_key)
-                                    st.rerun() # Forzar recarga
+                                    st.rerun() 
                             else:
                                 st.error("Falta Valor Suelo (IBI)")
 
-                    # B. VISOR (Aquí sale el resultado de la COMPRA si se hizo en la izquierda)
+                    # B. VISOR COMPRA (Viene de la izquierda)
                     if st.session_state.viv_res_compra:
                         st.write("")
                         st.info("➡️ **RESULTADO DE LA COMPRA**")
@@ -2238,6 +2232,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
