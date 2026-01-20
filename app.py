@@ -1152,7 +1152,7 @@ with tabs[1]:
                                 # Guardamos en sesión para no perderlo
                                 st.session_state.contract_text = texto_extraido
 
-                                # 2. ANÁLISIS (SI NO ES MODO CHAT)
+                                # 2. ANÁLISIS MEJORADO (Calcula fechas)
                                 if modo == "CONTRATO":
                                     prompt = f"""
                                     Actúa como Abogado Experto. Analiza este contrato:
@@ -1160,10 +1160,19 @@ with tabs[1]:
                                     
                                     GENERA UN INFORME CON ESTA ESTRUCTURA:
                                     1. 📋 **RESUMEN EJECUTIVO**: De qué trata.
-                                    2. 📅 **DURACIÓN Y FECHAS**: Inicio, fin, preavisos.
-                                    3. 💶 **ECONOMÍA**: Pagos, fianzas, actualizaciones.
-                                    4. 🚨 **CLÁUSULAS ABUSIVAS O RIESGOS**: Lo más importante.
+                                    2. 📅 **DURACIÓN Y FECHAS**: 
+                                       - Fecha Inicio detectada.
+                                       - Duración total.
+                                       - Preaviso requerido (días/meses).
+                                    3. 💶 **ECONOMÍA**: Pagos, fianzas, actualizaciones IPC.
+                                    4. 🚨 **CLÁUSULAS PELIGROSAS**: Lo más importante.
                                     5. ⚖️ **VEREDICTO**: ¿Es seguro firmar?
+                                    
+                                    🔴 CÁLCULO DE FECHA CLAVE (IMPORTANTE):
+                                    Basándote en la fecha de inicio, la duración y el preaviso...
+                                    Calcula la **FECHA LÍMITE EXACTA** para avisar de la no renovación.
+                                    (Ejemplo: "Si acaba el 31/12 y preaviso es 1 mes, la fecha límite es 30/11").
+                                    Pónmelo en negrita así: **FECHA LÍMITE PREAVISO: DD/MM/AAAA**.
                                     """
                                     st.session_state.analisis_result = groq_engine(prompt, api_key)
                                 
@@ -1587,26 +1596,45 @@ with tabs[2]:
                         link_wa = get_whatsapp_link(st.session_state.generated_contract)
                         st.link_button("📲 WhatsApp", link_wa, use_container_width=True)
 
+                    # 4. CALENDARIO INTELIGENTE (Cálculo Exacto)
                     with c_btn4:
-                        # Calculamos fecha lógica según el tipo de contrato
+                        # Inicializamos variables por seguridad
                         fecha_evento = datetime.now()
-                        titulo_evento = f"Revisar: {tipo_texto}"
-                        desc_evento = "Recordatorio generado por LegalApp para revisar vencimiento o condiciones."
-                        
-                        # Si es Alquiler y tenemos fecha fin calculada (intentamos recuperarla de la sesión o variables locales si es posible)
-                        # Nota: Si las variables locales se pierden al recargar, usamos una fecha genérica (+1 año)
+                        titulo_evento = "Recordatorio Legal"
+                        desc_evento = "Revisar vencimiento del contrato generado."
+
+                        # LÓGICA DE CÁLCULO EXACTO
                         try:
                             if modo == "ALQUILER":
-                                # Asumimos +1 año por defecto si no podemos leer la variable local 'duracion'
-                                fecha_evento = datetime.now().replace(year=datetime.now().year + 1)
+                                # Usamos las variables del formulario de la izquierda: f_inicio (date) y duracion (int)
+                                # Convertimos a datetime de Pandas para sumar años fácilmente
+                                fecha_inicio_dt = pd.to_datetime(f_inicio)
+                                fecha_evento = fecha_inicio_dt + pd.DateOffset(years=duracion)
                                 titulo_evento = "Fin Contrato Alquiler"
-                            elif modo == "PRESTAMO":
-                                fecha_evento = datetime.now().replace(month=datetime.now().month + 6) # +6 meses aprox
-                                titulo_evento = "Vencimiento Préstamo"
-                        except: pass
+                                desc_evento = f"Se cumplen los {duracion} años del contrato. Revisar renovación o devolución de llaves."
 
+                            elif modo == "PRESTAMO":
+                                # Usamos la variable 'plazop' (meses) del formulario
+                                fecha_evento = datetime.now() + pd.DateOffset(months=plazop)
+                                titulo_evento = "Vencimiento Préstamo"
+                                desc_evento = f"Se cumple el plazo de {plazop} meses para la devolución del dinero."
+                            
+                            elif modo == "TRABAJO":
+                                if modalidad != "Indefinido":
+                                    # Si es temporal, intentamos parsear la duración si el usuario puso una fecha
+                                    titulo_evento = "Fin Contrato Temporal"
+                                    # Por defecto +6 meses si no detectamos fecha clara, ya que es texto libre
+                                    fecha_evento = datetime.now() + pd.DateOffset(months=6)
+
+                        except Exception as e:
+                            pass # Si falla el cálculo, se queda la fecha de hoy por seguridad
+
+                        # Generamos el archivo .ics
                         ics_data = create_ics(titulo_evento, fecha_evento, desc_evento)
-                        st.download_button("📅 Cal.", ics_data, "recordatorio.ics", "text/calendar", key="btn_cal_2", use_container_width=True, help="Añadir recordatorio a tu calendario")
+                        
+                        # Mostramos la fecha calculada en el botón para que el usuario sepa qué está bajando
+                        label_cal = f"📅 Fin: {fecha_evento.strftime('%d/%m/%y')}"
+                        st.download_button(label_cal, ics_data, "vencimiento.ics", "text/calendar", key="btn_cal_2", use_container_width=True, help="Agendar fecha exacta de vencimiento")
 
 
 
@@ -2390,6 +2418,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
