@@ -38,7 +38,6 @@ except Exception as e:
 # 1. IMPORTS Y CONFIGURACIÓN
 # ==============================================================================
 import streamlit.components.v1 as components
-import pdfplumber
 from groq import Groq
 import pandas as pd
 from fpdf import FPDF
@@ -2276,6 +2275,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
