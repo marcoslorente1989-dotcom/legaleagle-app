@@ -58,6 +58,8 @@ from datetime import datetime
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import Paragraph
 from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
+import PyPDF2
+from PIL import Image
 
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
@@ -615,14 +617,14 @@ def limpiar_cache_reclamacion():
 
 def extract_text_from_pdf(file, max_pages=15):
     """
-    VERSIÓN OPTIMIZADA: Usa PyPDF2 (más rápido) y limita páginas para evitar 'Connection Lost'.
+    Lee PDF usando PyPDF2 (mucho más ligero que pdfplumber).
+    Lee solo las primeras 'max_pages' para evitar que el servidor corte la conexión.
     """
     try:
-        import PyPDF2
         pdf_reader = PyPDF2.PdfReader(file)
         text = ""
-        # Límite de seguridad para no bloquear la memoria
         num_pages = len(pdf_reader.pages)
+        # Limitamos la lectura para no saturar la memoria
         limit = min(num_pages, max_pages)
         
         for page_num in range(limit):
@@ -630,25 +632,23 @@ def extract_text_from_pdf(file, max_pages=15):
             text += page.extract_text() or ""
             
         if num_pages > max_pages:
-            text += f"\n... [Texto cortado. Se leyeron las primeras {limit} páginas para evitar errores de conexión] ..."
+            text += f"\n... [Texto truncado. Se han leído las primeras {limit} páginas para evitar errores de conexión] ..."
             
         return text
     except Exception as e:
-        return f"Error leyendo PDF: {e}. Prueba a subir un archivo más pequeño."
+        return f"Error leyendo PDF: {e}. Intenta con un archivo más pequeño."
 
 def analyze_image_groq(uploaded_file, prompt, api_key):
     """
-    VERSIÓN OPTIMIZADA: Redimensiona imágenes gigantes (fotos de móvil) antes de enviarlas.
+    Comprime la imagen antes de enviarla a la IA para evitar errores de red.
     """
     import base64
-    from PIL import Image
-    import io
-
+    
     try:
-        # 1. Abrir y Redimensionar si es gigante (>1500px)
+        # 1. Redimensionar imagen si es gigante (>1500px)
         image = Image.open(uploaded_file)
         if image.width > 1500 or image.height > 1500:
-            image.thumbnail((1500, 1500)) # Esto reduce el peso drásticamente sin perder legibilidad
+            image.thumbnail((1500, 1500)) 
         
         # 2. Convertir a Base64 ligero
         buffered = io.BytesIO()
@@ -2276,6 +2276,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
