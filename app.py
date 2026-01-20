@@ -1786,18 +1786,24 @@ with tabs[4]:
                             es_fam_num = st.checkbox("Fam. Numerosa", key="viv_com_fn")
                             es_discap = st.checkbox("Discapacidad", key="viv_com_dis")
 
-                        if st.button("CALCULAR GASTOS ➡️", key="btn_viv_com", use_container_width=True):
-                            with st.spinner("Calculando..."):
-                                st.session_state.viv_res_venta = "" # Limpiar visor opuesto
-                                perfil_fiscal = f"{num_compradores} compradores. Edad: {edad_joven}. Habitual: {es_habitual}. Fam.Num: {es_fam_num}. Discap: {es_discap}."
-                                prompt = f"""
-                                Calcula GASTOS COMPRAVENTA en {ccaa_c}. Precio {precio_c}€. Tipo {tipo_c}.
-                                PERFIL: {perfil_fiscal}.
-                                TAREA: Busca bonificaciones ITP (Joven, Familia, etc) si es Segunda Mano. Si es Nueva, IVA+AJD.
-                                DESGLOSE: Notaría, Registro, Gestoría, Impuestos.
-                                TOTAL FINAL.
+                         if st.button("🧮 CALCULAR GASTOS TOTALES", key="btn_viv_com"):
+                            with st.spinner("Calculando impuestos regionales y aranceles notariales..."):
+                                prompt_compra = f"""
+                                Actúa como experto inmobiliario y fiscal en España.
+                                Calcula los GASTOS DE COMPRAVENTA para:
+                                - Precio: {precio}€
+                                - Región: {ccaa}
+                                - Tipo: {tipo}
+                                
+                                DESGLOSE OBLIGATORIO:
+                                1. Impuestos: Si es Segunda Mano calcula el ITP de {ccaa}. Si es Obra Nueva calcula IVA (10%) + AJD de {ccaa}.
+                                2. Notaría (Estimación aranceles BOE).
+                                3. Registro de la Propiedad (Estimación).
+                                4. Gestoría (Aproximado 300-500€).
+                                
+                                TOTAL A PREPARAR: Suma todo.
                                 """
-                                st.session_state.viv_res_compra = groq_engine(prompt, api_key)
+                                st.session_state.generated_calc = groq_engine(prompt_compra, api_key)
                                 st.rerun() 
 
                     # Visor de Venta (viene de la derecha)
@@ -1816,17 +1822,26 @@ with tabs[4]:
                         v_suelo = st.number_input("Valor Suelo IBI (€)", 0.0, step=500.0, key="viv_ven_vs")
                         municipio = st.text_input("Municipio", key="viv_ven_mun")
 
-                        if st.button("⬅️ CALCULAR IMPUESTOS", key="btn_viv_ven", use_container_width=True):
+                        if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
                             if v_suelo > 0:
-                                with st.spinner("Calculando..."):
-                                    st.session_state.viv_res_compra = "" # Limpiar visor opuesto
+                                with st.spinner("Calculando Plusvalía y 'Hachazo' de Hacienda..."):
+                                    anios = anio_actual - f_compra
                                     ganancia = p_venta - p_compra
-                                    anios = datetime.now().year - anio_c
-                                    prompt = f"Calcula Impuestos Venta {municipio}. Ganancia {ganancia}. Años {anios}. Valor Suelo {v_suelo}. Plusvalía + IRPF."
-                                    st.session_state.viv_res_venta = groq_engine(prompt, api_key)
-                                    st.rerun() 
+                                    prompt_venta = f"""
+                                    Actúa como asesor fiscal en España.
+                                    Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
+                                    - Años tenencia: {anios}.
+                                    - Ganancia Bruta: {ganancia}€ (Venta {p_venta} - Compra {p_compra}).
+                                    - Valor Catastral Suelo: {v_suelo}€.
+                                    
+                                    INFORME:
+                                    1. PLUSVALÍA MUNICIPAL: Estima el coste (Método Objetivo vs Real). ¿Hay ganancia?
+                                    2. IRPF (ESTATAL): Calcula la cuota a pagar por la Ganancia Patrimonial (Tramos del ahorro 19%-28%).
+                                    3. TOTAL A PAGAR APROXIMADO.
+                                    """
+                                    st.session_state.generated_calc = groq_engine(prompt_venta, api_key)
                             else:
-                                st.error("Falta Valor Suelo (IBI)")
+                                st.warning("⚠️ Necesitas el Valor Catastral del Suelo (míralo en el IBI) para calcular la Plusvalía.")
 
                     # Visor de Compra (viene de la izquierda)
                     if st.session_state.viv_res_compra:
@@ -2164,6 +2179,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
