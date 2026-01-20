@@ -615,14 +615,13 @@ def limpiar_cache_reclamacion():
 
 def extract_text_from_pdf(file, max_pages=15):
     """
-    Lee PDF de forma segura. 
-    max_pages=15: Lee solo las primeras 15 páginas para evitar que la app se cuelgue.
+    VERSIÓN OPTIMIZADA: Usa PyPDF2 (más rápido) y limita páginas para evitar 'Connection Lost'.
     """
     try:
         import PyPDF2
         pdf_reader = PyPDF2.PdfReader(file)
         text = ""
-        # Leemos solo hasta el límite para evitar Timeouts
+        # Límite de seguridad para no bloquear la memoria
         num_pages = len(pdf_reader.pages)
         limit = min(num_pages, max_pages)
         
@@ -631,31 +630,29 @@ def extract_text_from_pdf(file, max_pages=15):
             text += page.extract_text() or ""
             
         if num_pages > max_pages:
-            text += f"\n... [Texto truncado. Se han leído las primeras {limit} de {num_pages} páginas para evitar errores] ..."
+            text += f"\n... [Texto cortado. Se leyeron las primeras {limit} páginas para evitar errores de conexión] ..."
             
         return text
     except Exception as e:
-        return f"Error leyendo PDF: {e}"
+        return f"Error leyendo PDF: {e}. Prueba a subir un archivo más pequeño."
 
 def analyze_image_groq(uploaded_file, prompt, api_key):
     """
-    Analiza imágenes comprimiéndolas antes si son muy grandes.
+    VERSIÓN OPTIMIZADA: Redimensiona imágenes gigantes (fotos de móvil) antes de enviarlas.
     """
     import base64
     from PIL import Image
     import io
 
     try:
-        # 1. Redimensionar imagen si es gigante (para evitar Connection Lost)
+        # 1. Abrir y Redimensionar si es gigante (>1500px)
         image = Image.open(uploaded_file)
-        
-        # Si es muy grande (> 1500px), la reducimos a la mitad
         if image.width > 1500 or image.height > 1500:
-            image.thumbnail((1500, 1500))
+            image.thumbnail((1500, 1500)) # Esto reduce el peso drásticamente sin perder legibilidad
         
-        # 2. Convertir a Base64
+        # 2. Convertir a Base64 ligero
         buffered = io.BytesIO()
-        image.save(buffered, format="JPEG", quality=85) # Calidad 85% para aligerar
+        image.save(buffered, format="JPEG", quality=85) 
         base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
         # 3. Enviar a la IA
@@ -672,11 +669,11 @@ def analyze_image_groq(uploaded_file, prompt, api_key):
                 }
             ],
             temperature=0.1,
-            max_tokens=2048 # Limitamos respuesta para ir rápido
+            max_tokens=1024
         )
         return completion.choices[0].message.content
     except Exception as e:
-        return f"Error analizando imagen: {e}"    
+        return f"Error Vision AI: {e}"    
     
 
 @st.cache_data(ttl=3600) # Se actualiza cada hora
@@ -717,35 +714,6 @@ def obtener_euribor_actual():
         print(f"Error Euribor: {e}")
         return 2.248 # Valor seguro
         
-def extract_text_from_pdf(file):
-    text = ""
-    with pdfplumber.open(file) as pdf:
-        for page in pdf.pages:
-            extract = page.extract_text()
-            if extract: text += extract + "\n"
-    return text
-
-def analyze_image_groq(image_file, prompt_instruction, key):
-    image_bytes = image_file.read()
-    encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-    client = Groq(api_key=key)
-    try:
-        chat_completion = client.chat.completions.create(
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt_instruction},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}},
-                    ],
-                }
-            ],
-            model="llama-3.2-11b-vision-preview",
-            temperature=0.1,
-        )
-        return chat_completion.choices[0].message.content
-    except Exception as e: return f"Error Vision AI: {str(e)}"
-
 # --- FUNCIÓN GENERAR PDF PROFESIONAL (CON NEGRITAS Y ESTILOS) ---
 def create_pdf(text, title="Documento Legal"):
     buffer = io.BytesIO()
@@ -2308,6 +2276,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
