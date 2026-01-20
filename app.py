@@ -1274,34 +1274,69 @@ with tabs[2]:
                     
                     data_p = f"Prestamista: {pres_nom} ({pres_dni}). Prestatario: {pret_nom} ({pret_dni}). Importe: {importep}€. Plazo: {plazop} meses. {detalles}."
 
-                # 3. TRABAJO (RECUPERADO: BONUS Y MODALIDAD)
+               # 4. TRABAJO (COMPLETO: HORARIOS, CIF, REPRESENTANTE)
                 elif modo == "TRABAJO":
                     st.subheader("💼 Contrato Laboral")
                     tipo_texto = "Contrato de Trabajo"
                     
-                    st.caption("👤 Partes y Puesto")
-                    empresa = st.text_input("Empresa (Nombre y CIF)", key="tra_emp")
-                    trabajador = st.text_input("Trabajador (Nombre y DNI)", key="tra_tra")
+                    st.caption("🏢 Empresa y Representante")
+                    c_emp1, c_emp2 = st.columns(2)
+                    with c_emp1:
+                        empresa_nom = st.text_input("Nombre Empresa", key="tra_emp_nom")
+                    with c_emp2:
+                        empresa_cif = st.text_input("CIF Empresa", key="tra_emp_cif")
+                    
+                    empresa_rep = st.text_input("Representante Legal (Quien firma)", placeholder="Ej: Administrador único", key="tra_rep")
+
+                    st.caption("👤 Trabajador")
+                    c_trab1, c_trab2 = st.columns(2)
+                    with c_trab1:
+                        trab_nom = st.text_input("Nombre Trabajador", key="tra_trab_nom")
+                    with c_trab2:
+                        trab_dni = st.text_input("DNI/NIE Trabajador", key="tra_trab_dni")
+
+                    st.caption("⏰ Jornada y Horario")
+                    c_hor1, c_hor2 = st.columns(2)
+                    with c_hor1:
+                        horas_sem = st.number_input("Horas Semanales", min_value=1.0, max_value=40.0, value=40.0, step=0.5, key="tra_horas")
+                    with c_hor2:
+                        es_flexible = st.checkbox("¿Horario Flexible?", key="tra_flex")
+                    
+                    if es_flexible:
+                        horario_txt = st.text_input("Detalle Flexibilidad", placeholder="Ej: Entrada 8-9h, Salida 17-18h", key="tra_hor_txt")
+                        texto_horario = f"Horario Flexible: {horario_txt}"
+                    else:
+                        horario_txt = st.text_input("Horario Fijo", placeholder="Ej: L-V de 9:00 a 18:00", key="tra_hor_txt")
+                        texto_horario = f"Horario Fijo: {horario_txt}"
+
+                    st.caption("📋 Condiciones Económicas")
                     puesto = st.text_input("Puesto / Categoría", key="tra_pue")
                     
-                    st.caption("📋 Condiciones")
-                    # Recuperada la modalidad
-                    modalidad = st.selectbox("Modalidad", ["Indefinido", "Temporal (Duración Determinada)", "Sustitución"], key="tra_mod")
+                    c_cond1, c_cond2 = st.columns(2)
+                    with c_cond1:
+                        modalidad = st.selectbox("Modalidad", ["Indefinido", "Temporal", "Prácticas"], key="tra_mod")
+                    with c_cond2:
+                        salario = st.number_input("Salario Bruto Anual (€)", 15000.0, step=500.0, key="tra_sal")
+                    
                     duracion_txt = "Indefinida"
                     if modalidad != "Indefinido":
                         duracion_txt = st.text_input("Duración / Fecha Fin", placeholder="Ej: 6 meses", key="tra_dur")
-                        
-                    salario = st.number_input("Salario Bruto Anual (€)", 15000.0, step=500.0, key="tra_sal")
-                    
-                    # Recuperado el Bonus
-                    tiene_variable = st.checkbox("¿Incluye Variable / Bonus?", key="tra_var_check")
-                    variable_txt = "Sin retribución variable."
-                    if tiene_variable:
-                        cantidad_var = st.text_input("Detalles del Variable", placeholder="Ej: 10% sobre objetivos o 3.000€", key="tra_var_txt")
-                        variable_txt = f"Con retribución variable: {cantidad_var}."
-                    
-                    data_p = f"Modalidad: {modalidad}. Empresa: {empresa}. Trabajador: {trabajador}. Puesto: {puesto}. Duración: {duracion_txt}. Salario: {salario}€ Brutos/Año. Variable: {variable_txt}."
 
+                    tiene_variable = st.checkbox("¿Incluye Bonus/Variable?", key="tra_var_check")
+                    variable_txt = "Sin variable"
+                    if tiene_variable:
+                        variable_txt = st.text_input("Detalle del Bonus", key="tra_var_txt")
+
+                    # PROMPT ACTUALIZADO CON TODOS LOS DATOS
+                    data_p = f"""
+                    EMPRESA: {empresa_nom} (CIF: {empresa_cif}).
+                    REPRESENTANTE LEGAL: {empresa_rep}.
+                    TRABAJADOR: {trab_nom} (DNI: {trab_dni}).
+                    PUESTO: {puesto}. MODALIDAD: {modalidad}. DURACIÓN: {duracion_txt}.
+                    JORNADA: {horas_sem} horas/semana. {texto_horario}.
+                    SALARIO: {salario}€ Brutos/Año. VARIABLE: {variable_txt}.
+                    """
+                    
                 # 4. VEHÍCULO
                 elif modo == "VEHICULO":
                     st.subheader("🚗 Venta Vehículo")
@@ -2036,6 +2071,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
