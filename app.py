@@ -1830,7 +1830,7 @@ with tabs[4]:
                                     prompt_venta = f"""
                                     Actúa como asesor fiscal en España.
                                     Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
-                                    - Años tenencia: {anios}.
+                                    - Años tenencia: {anio_actual}.
                                     - Ganancia Bruta: {ganancia}€ (Venta {p_venta} - Compra {p_compra}).
                                     - Valor Catastral Suelo: {v_suelo}€.
                                     
@@ -2179,6 +2179,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
