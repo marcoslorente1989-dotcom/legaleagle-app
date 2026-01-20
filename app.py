@@ -2032,88 +2032,119 @@ with tabs[4]:
                           st.session_state.generated_calc = ""
                           st.rerun()
 
-            # === VIVIENDA TOTAL (CORREGIDO: LIMPIEZA VISUAL AL CAMBIAR) ===
-            elif modo == "VIVIENDA_TOTAL":
-                st.subheader("🏡 Gestión Inmobiliaria")
-                st.info("Calculadora unificada para compradores y vendedores.")
-                
-                # 1. EL SELECTOR (Se queda fijo fuera del contenedor de limpieza)
-                accion = st.radio("¿Qué operación vas a realizar?", ["Voy a COMPRAR (Gastos)", "Voy a VENDER (Impuestos)"], horizontal=True, key="viv_accion")
-                st.markdown("---")
-
-                # 2. CONTENEDOR DE LIMPIEZA (Aquí ocurre la magia)
-                # Al cambiar el radio button, este contenedor se vacía y se vuelve a llenar limpio.
-                contenedor_viv = st.empty()
-
-                with contenedor_viv.container():
+            # === VIVIENDA TOTAL (LAYOUT CRUZADO: Input Izq -> Resultado Der) ===
+                if modo == "VIVIENDA_TOTAL":
+                    st.subheader("🏡 Gestión Inmobiliaria")
+                    st.caption("Calcula Notaría, Registro e Impuestos (ITP o IVA).")
                     
-                    # --- CASO A: COMPRADOR ---
-                    if "COMPRAR" in accion:
-                        st.markdown("### 📝 Gastos de Compra")
-                        st.caption("Calcula Notaría, Registro e Impuestos (ITP o IVA).")
-                        
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            precio = st.number_input("Precio de Compra (€)", value=150000.0, step=1000.0, key="viv_com_pre")
-                            tipo = st.radio("Tipo de Vivienda", ["Segunda Mano", "Obra Nueva"], key="viv_com_tipo")
-                        with c2:
-                            ccaa = st.selectbox("Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"], key="viv_com_ccaa")
-                            st.info("Obra Nueva paga IVA (10%). Segunda Mano paga ITP (6%-10% según CCAA).")
+                    # 1. Inicializamos variables específicas si no existen
+                    if "viv_res_compra" not in st.session_state: st.session_state.viv_res_compra = ""
+                    if "viv_res_venta" not in st.session_state: st.session_state.viv_res_venta = ""
 
-                        if st.button("🧮 CALCULAR GASTOS TOTALES", key="btn_viv_com"):
-                            with st.spinner("Calculando impuestos regionales y aranceles notariales..."):
-                                prompt_compra = f"""
-                                Actúa como experto inmobiliario y fiscal en España.
-                                Calcula los GASTOS DE COMPRAVENTA para:
-                                - Precio: {precio}€
-                                - Región: {ccaa}
-                                - Tipo: {tipo}
-                                
-                                DESGLOSE OBLIGATORIO:
-                                1. Impuestos: Si es Segunda Mano calcula el ITP de {ccaa}. Si es Obra Nueva calcula IVA (10%) + AJD de {ccaa}.
-                                2. Notaría (Estimación aranceles BOE).
-                                3. Registro de la Propiedad (Estimación).
-                                4. Gestoría (Aproximado 300-500€).
-                                
-                                TOTAL A PREPARAR: Suma todo.
-                                """
-                                st.session_state.generated_calc = groq_engine(prompt_compra, api_key)
+                    # 2. Dividimos en dos columnas grandes
+                    col_izq, col_der = st.columns(2, gap="medium")
 
-                    # --- CASO B: VENDEDOR ---
-                    else:
-                        st.markdown("### 💰 Impuestos de Venta")
-                        st.caption("Calcula la Plusvalía Municipal y el IRPF (Ganancia Patrimonial).")
-                        
-                        c1, c2 = st.columns(2)
-                        with c1:
+                    # =========================================================
+                    # COLUMNA IZQUIERDA (INPUTS COMPRA + VISOR VENTA)
+                    # =========================================================
+                    # =========================================================
+                    # COLUMNA IZQUIERDA (INPUTS COMPRA + VISOR VENTA)
+                    # =========================================================
+                    with col_izq:
+                        # A. INPUTS DE COMPRA
+                        st.info("🛒 **DATOS DE COMPRA** (El resultado saldrá 👉)")
+                        with st.container(border=True):
+                            # Fila 1: Económicos
+                            c_p1, c_p2 = st.columns(2)
+                            with c_p1: precio_c = st.number_input("Precio (€)", value=150000.0, step=1000.0, key="viv_com_pre")
+                            with c_p2: tipo_c = st.selectbox("Tipo", ["Segunda Mano", "Obra Nueva"], key="viv_com_tipo")
+                            
+                            # Fila 2: Ubicación y Perfil
+                            ccaa_c = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "Castilla-La Mancha", "Castilla y León", "Canarias", "Otras"], key="viv_com_ccaa")
+                            
+                            st.markdown("👇 **Perfil Compradores (Deducciones)**")
+                            c_perf1, c_perf2 = st.columns(2)
+                            with c_perf1:
+                                edad_joven = st.number_input("Edad (del más joven)", 18, 99, 30, key="viv_com_edad")
+                                es_habitual = st.checkbox("Vivienda Habitual", value=True, key="viv_com_hab")
+                            with c_perf2:
+                                num_compradores = st.number_input("Nº Compradores", 1, 5, 1, key="viv_com_num")
+                                # Checkbox combinados para ahorrar espacio
+                                es_fam_num = st.checkbox("Familia Numerosa", key="viv_com_fn")
+                                es_discap = st.checkbox("Discapacidad >33%", key="viv_com_dis")
+
+                            if st.button("CALCULAR GASTOS COMPRA ➡️", key="btn_viv_com", use_container_width=True):
+                                with st.spinner("Buscando bonificaciones autonómicas..."):
+                                    # Limpiamos el otro resultado
+                                    st.session_state.viv_res_venta = "" 
+                                    
+                                    # Prompt Enriquecido
+                                    perfil_fiscal = f"{num_compradores} compradores. Edad (joven): {edad_joven} años."
+                                    if es_habitual: perfil_fiscal += " Es Vivienda Habitual."
+                                    if es_fam_num: perfil_fiscal += " Familia Numerosa."
+                                    if es_discap: perfil_fiscal += " Con Discapacidad."
+                                    
+                                    prompt = f"""
+                                    Actúa como Gestor Inmobiliario en {ccaa_c}. Calcula GASTOS COMPRAVENTA exactos:
+                                    - Precio: {precio_c}€. Tipo: {tipo_c}.
+                                    - PERFIL: {perfil_fiscal}.
+                                    
+                                    TAREA CRÍTICA:
+                                    1. Busca si en {ccaa_c} existe ITP reducido (Segunda Mano) para este perfil (Joven, Familia Numerosa o Discapacidad).
+                                       *Si es Obra Nueva, aplica IVA (10%) + AJD (busca si el AJD tiene reducción).*
+                                    2. Calcula Notaría y Registro (estimado BOE).
+                                    3. Gestoría (aprox 350€).
+                                    
+                                    SALIDA: Tabla de gastos y TOTAL AHORRADO NECESARIO.
+                                    """
+                                    st.session_state.viv_res_compra = groq_engine(prompt, api_key)
+                                    st.session_state.generated_calc = "" 
+
+                        # B. VISOR DE RESULTADOS DE VENTA (Vienen de la derecha)
+                        if st.session_state.viv_res_venta:
+                            st.write("")
+                            st.success("⬅️ **RESULTADO DE LA VENTA (Viene de la derecha)**")
+                            st.markdown(f"<div class='contract-box' style='font-size:14px;'>{st.session_state.viv_res_venta}</div>", unsafe_allow_html=True)
+                    # =========================================================
+                    # COLUMNA DERECHA (INPUTS VENTA + VISOR COMPRA)
+                    # =========================================================
+                    with col_der:
+                        # A. INPUTS DE VENTA (Lo que escribes aquí, sale enfrente)
+                        st.warning("💰 **IMPUESTOS DE VENTA** (El resultado saldrá 👈)")
+                        with st.container(border=True):
                             f_compra = st.number_input("Año de Adquisición", 1950, anio_actual, 2015, key="viv_ven_fc")
                             p_compra = st.number_input("Precio por el que compraste (€)", min_value=0.0, step=1000.0, key="viv_ven_pc")
                             municipio = st.text_input("Municipio de la vivienda", key="viv_ven_mun")
-                        with c2:
                             f_venta = st.number_input("Año de Venta", value=anio_actual, disabled=True, key="viv_ven_fv")
                             p_venta = st.number_input("Precio de Venta (€)", min_value=0.0, step=1000.0, key="viv_ven_pv")
                             v_suelo = st.number_input("Valor Catastral del SUELO (€)", min_value=0.0, step=500.0, help="Mira tu recibo del IBI", key="viv_ven_vs")
-
-                        if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
-                            if v_suelo > 0:
-                                with st.spinner("Calculando Plusvalía y 'Hachazo' de Hacienda..."):
-                                    anios = anio_actual - f_compra
-                                    ganancia = p_venta - p_compra
-                                    prompt_venta = f"""
-                                    Actúa como asesor fiscal en España.
-                                    Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
-                                    - Años tenencia: {anios}.
-                                    - Ganancia Bruta: {ganancia}€ (Venta {p_venta} - Compra {p_compra}).
-                                    - Valor Catastral Suelo: {v_suelo}€.
+                            
+                            if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
+                               if v_suelo > 0:
+                                  with st.spinner("Calculando Plusvalía y 'Hachazo' de Hacienda..."):
+                                     anios = anio_actual - f_compra
+                                     ganancia = p_venta - p_compra
+                                     prompt_venta = f"""
+                                     Actúa como asesor fiscal en España.
+                                     Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
+                                     - Años tenencia: {anios}.
+                                     - Ganancia Bruta: {ganancia}€ (Venta {p_venta} - Compra {p_compra}).
+                                     - Valor Catastral Suelo: {v_suelo}€.
                                     
-                                    INFORME:
-                                    1. PLUSVALÍA MUNICIPAL: Estima el coste (Método Objetivo vs Real). ¿Hay ganancia?
-                                    2. IRPF (ESTATAL): Calcula la cuota a pagar por la Ganancia Patrimonial (Tramos del ahorro 19%-28%).
-                                    3. TOTAL A PAGAR APROXIMADO.
-                                    """
-                                    st.session_state.generated_calc = groq_engine(prompt_venta, api_key)
-                            else:
-                                st.warning("⚠️ Necesitas el Valor Catastral del Suelo (míralo en el IBI) para calcular la Plusvalía.")
+                                     INFORME:
+                                     1. PLUSVALÍA MUNICIPAL: Estima el coste (Método Objetivo vs Real). ¿Hay ganancia?
+                                     2. IRPF (ESTATAL): Calcula la cuota a pagar por la Ganancia Patrimonial (Tramos del ahorro 19%-28%).
+                                     3. TOTAL A PAGAR APROXIMADO.
+                                     """
+                                     st.session_state.generated_calc = groq_engine(prompt_venta, api_key)
+                               else:
+                                   st.warning("⚠️ Necesitas el Valor Catastral del Suelo (míralo en el IBI) para calcular la Plusvalía.")
+
+                        # B. VISOR DE RESULTADOS DE COMPRA (Vienen de la izquierda)
+                        if st.session_state.viv_res_compra:
+                            st.write("")
+                            st.info("➡️ **RESULTADO DE LA COMPRA (Viene de la izquierda)**")
+                            st.markdown(f"<div class='contract-box' style='font-size:14px;'>{st.session_state.viv_res_compra}</div>", unsafe_allow_html=True)
             # === IPC ===
             elif modo == "IPC":
                 st.subheader("📈 Actualizar IPC")
@@ -2226,6 +2257,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
