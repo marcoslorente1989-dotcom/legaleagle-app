@@ -1149,70 +1149,71 @@ with tabs[1]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun() # Para refrescar y mostrar la respuesta
 
-# --- TAB 2: GENERADOR DE CONTRATOS (VERSIÓN MAESTRA FINAL) ---
+# --- TAB 2: GENERADOR DE CONTRATOS (CORREGIDO Y ALINEADO) ---
 with tabs[2]:
-    # 1. INICIALIZACIÓN DE SEGURIDAD (Variables por defecto para evitar errores)
-    tipo_texto = "Documento Legal"
-    data_p = "Datos generales"
-    
-    if "nav_crear" not in st.session_state:
-        st.session_state.nav_crear = "MENU"
-
-    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
-    if st.session_state.nav_crear == "MENU":
-        st.subheader("Generador de Contratos")
-        st.caption("Selecciona el tipo de documento. La IA redactará un contrato legal válido en España.")
+    def render_tab_2():
+        # 1. Inicialización de Seguridad
+        if "nav_crear" not in st.session_state:
+            st.session_state.nav_crear = "MENU"
         
-        # Grid 3x3
-        c1, c2, c3 = st.columns(3)
+        # Variables por defecto para evitar errores de "variable not defined"
+        tipo_texto = "Documento Legal"
+        data_p = "Datos generales"
+
+        # =======================================================
+        # ESCENA A: EL MENÚ PRINCIPAL (Solo si estamos en MENU)
+        # =======================================================
+        if st.session_state.nav_crear == "MENU":
+            st.subheader("Generador de Contratos")
+            st.caption("Selecciona el tipo de documento. La IA redactará un contrato legal válido en España.")
+            
+            # Grid 3x3
+            c1, c2, c3 = st.columns(3)
+            
+            with c1:
+                if st.button("🏠\nALQUILER\nVIVIENDA", use_container_width=True):
+                    st.session_state.nav_crear = "ALQUILER"
+                    st.rerun()
+                if st.button("💼\nCONTRATO\nTRABAJO", use_container_width=True):
+                    st.session_state.nav_crear = "TRABAJO"
+                    st.rerun()
+                if st.button("🏡\nCOMPRAVENTA\nVIVIENDA", use_container_width=True):
+                    st.session_state.nav_crear = "C_VIVIENDA"
+                    st.rerun()
+
+            with c2:
+                if st.button("💰\nPRÉSTAMO\nPARTICULARES", use_container_width=True):
+                    st.session_state.nav_crear = "PRESTAMO"
+                    st.rerun()
+                if st.button("🤝\nSERVICIOS\nFREELANCE", use_container_width=True):
+                    st.session_state.nav_crear = "SERVICIOS"
+                    st.rerun()
+                if st.button("📝\nCONTRATO\nDE ARRAS", use_container_width=True):
+                    st.session_state.nav_crear = "ARRAS"
+                    st.rerun()
+
+            with c3:
+                if st.button("🚗\nCOMPRAVENTA\nVEHÍCULO", use_container_width=True):
+                    st.session_state.nav_crear = "VEHICULO"
+                    st.rerun()
+                if st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True):
+                    st.session_state.nav_crear = "NDA"
+                    st.rerun()
+                if st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True):
+                    st.session_state.nav_crear = "CANCELACION"
+                    st.rerun()
+
+            # ¡IMPORTANTE! El return hace que si estamos en el menú, NO lea nada más de abajo.
+            return 
+
+        # =======================================================
+        # ESCENA B: EL FORMULARIO (Se ejecuta solo si NO es MENU)
+        # =======================================================
         
-        with c1:
-            if st.button("🏠\nALQUILER\nVIVIENDA", use_container_width=True):
-                st.session_state.nav_crear = "ALQUILER"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("💼\nCONTRATO\nTRABAJO", use_container_width=True):
-                st.session_state.nav_crear = "TRABAJO"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("🏡\nCOMPRAVENTA\nVIVIENDA", use_container_width=True):
-                st.session_state.nav_crear = "C_VIVIENDA"
-                st.session_state.generated_contract = ""
-                st.rerun()
-
-        with c2:
-            if st.button("💰\nPRÉSTAMO\nPARTICULARES", use_container_width=True):
-                st.session_state.nav_crear = "PRESTAMO"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("🤝\nSERVICIOS\nFREELANCE", use_container_width=True):
-                st.session_state.nav_crear = "SERVICIOS"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("📝\nCONTRATO\nDE ARRAS", use_container_width=True):
-                st.session_state.nav_crear = "ARRAS"
-                st.session_state.generated_contract = ""
-                st.rerun()
-
-        with c3:
-            if st.button("🚗\nCOMPRAVENTA\nVEHÍCULO", use_container_width=True):
-                st.session_state.nav_crear = "VEHICULO"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True):
-                st.session_state.nav_crear = "NDA"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True):
-                st.session_state.nav_crear = "CANCELACION"
-                st.session_state.generated_contract = ""
-                st.rerun()
-
-    # --- VISTA B: FORMULARIOS ESPECÍFICOS ---
-    else:
-        # Layout: Botón volver a la izquierda, Formulario a la derecha (más ancho)
+        # Layout: Botón volver a la izquierda, Formulario a la derecha
         c_form_izq, c_form_der = st.columns([1, 1.3])
         
+        # --- COLUMNA IZQUIERDA: MENÚ Y DATOS ---
         with c_form_izq:
             if st.button("⬅️ VOLVER AL MENÚ", use_container_width=True):
                 st.session_state.nav_crear = "MENU"
@@ -1222,7 +1223,7 @@ with tabs[2]:
             st.markdown("---")
             modo = st.session_state.nav_crear
             
-            # === 1. ALQUILER (Mejorado con Fechas Auto) ===
+            # 1. ALQUILER
             if modo == "ALQUILER":
                 st.subheader("🏠 Alquiler Vivienda")
                 tipo_texto = "Contrato de Alquiler de Vivienda Habitual (LAU)"
@@ -1242,16 +1243,14 @@ with tabs[2]:
                 with c_f1: f_inicio = st.date_input("Fecha Inicio", value=datetime.now(), key="alq_ini")
                 with c_f2: duracion = st.number_input("Años", 1, 20, 5, key="alq_dur")
                 
-                # Cálculo automático fecha fin
                 try: f_fin = f_inicio.replace(year=f_inicio.year + duracion)
                 except: f_fin = f_inicio.replace(year=f_inicio.year + duracion, month=3, day=1)
                 st.info(f"Finaliza el: **{f_fin.strftime('%d/%m/%Y')}**")
 
                 clausulas = st.text_area("Cláusulas Extra", placeholder="Ej: No mascotas.", key="alq_clau")
-                
                 data_p = f"Propietario: {prop}. Inquilino: {inq}. Inmueble: {dir_piso}. Ref: {ref_cat}. Renta: {renta}. Inicio: {f_inicio}. Duración: {duracion} años (Hasta {f_fin}). Extras: {clausulas}."
 
-            # === 2. PRÉSTAMO (Con Calculadora + DNI) ===
+            # 2. PRÉSTAMO
             elif modo == "PRESTAMO":
                 st.subheader("💰 Préstamo Dinero")
                 tipo_texto = "Contrato de Préstamo entre Particulares"
@@ -1274,7 +1273,6 @@ with tabs[2]:
                 detalles = "Sin intereses (0%)"
                 if interes:
                     tipo_int = st.number_input("Interés Anual (%)", 1.0, step=0.5, key="pre_tipo")
-                    # Calculadora simple cuota
                     i = (tipo_int / 100) / 12
                     c_men = importep * (i * (1 + i)**plazop) / ((1 + i)**plazop - 1)
                     detalles = f"Con interés del {tipo_int}% anual. Cuota aprox: {c_men:.2f}€/mes."
@@ -1282,7 +1280,7 @@ with tabs[2]:
                 
                 data_p = f"Prestamista: {pres_nom} ({pres_dni}). Prestatario: {pret_nom} ({pret_dni}). Importe: {importep}€. Plazo: {plazop} meses. {detalles}."
 
-            # === 3. VEHÍCULO (Corregido y Funcionando) ===
+            # 3. VEHÍCULO
             elif modo == "VEHICULO":
                 st.subheader("🚗 Venta Vehículo")
                 tipo_texto = "Contrato de Compraventa de Vehículo Usado"
@@ -1304,7 +1302,7 @@ with tabs[2]:
                 precio = st.number_input("Precio (€)", 0.0, step=100.0, key="veh_pre")
                 data_p = f"Vendedor: {vendedor}. Comprador: {comprador}. Coche: {marca}, Matrícula {matr}, VIN {bastidor}, {kms} Kms. Precio: {precio}€. Libre de cargas."
 
-            # === 4. TRABAJO ===
+            # 4. TRABAJO
             elif modo == "TRABAJO":
                 st.subheader("💼 Contrato Laboral")
                 tipo_texto = "Contrato de Trabajo"
@@ -1314,7 +1312,7 @@ with tabs[2]:
                 salario = st.number_input("Bruto Anual (€)", 15000.0, key="tra_sal")
                 data_p = f"Empresa: {empresa}. Trabajador: {trabajador}. Puesto: {puesto}. Salario: {salario}."
 
-            # === 5. SERVICIOS ===
+            # 5. SERVICIOS
             elif modo == "SERVICIOS":
                 st.subheader("🤝 Servicios Freelance")
                 tipo_texto = "Contrato Prestación Servicios"
@@ -1324,7 +1322,7 @@ with tabs[2]:
                 hon = st.text_input("Honorarios", key="ser_hon")
                 data_p = f"Cliente: {cli}. Profesional: {pro}. Servicios: {desc}. Pago: {hon}."
 
-            # === 6. ARRAS (Venta Piso) ===
+            # 6. ARRAS
             elif modo == "ARRAS":
                 st.subheader("📝 Contrato de Arras")
                 tipo_texto = "Contrato de Arras Penitenciales"
@@ -1337,7 +1335,7 @@ with tabs[2]:
                 limite = st.date_input("Fecha límite escritura", key="arr_lim")
                 data_p = f"Vendedor: {ven}. Comprador: {comp}. Piso: {dir_arr}. Precio: {precio_tot}. Señal: {senal}. Límite: {limite}."
             
-            # === 7. COMPRAVENTA VIVIENDA (Escritura simple) ===
+            # 7. C_VIVIENDA
             elif modo == "C_VIVIENDA":
                 st.subheader("🏡 Compraventa Privada")
                 tipo_texto = "Contrato Compraventa Vivienda (Privado)"
@@ -1347,7 +1345,7 @@ with tabs[2]:
                 pre = st.number_input("Precio (€)", key="cv_pre")
                 data_p = f"Vendedor: {ven}. Comprador: {comp}. Inmueble: {inm}. Precio: {pre}."
 
-            # === 8. NDA ===
+            # 8. NDA
             elif modo == "NDA":
                 st.subheader("🤫 Confidencialidad")
                 tipo_texto = "Acuerdo de Confidencialidad (NDA)"
@@ -1356,7 +1354,7 @@ with tabs[2]:
                 motivo = st.text_area("Información a proteger", key="nda_mot")
                 data_p = f"Revelador: {rev}. Receptor: {rec}. Info protegida: {motivo}."
 
-            # === 9. CANCELACIÓN ===
+            # 9. CANCELACIÓN
             elif modo == "CANCELACION":
                 st.subheader("❌ Terminación Contrato")
                 tipo_texto = "Acuerdo de Terminación"
@@ -1366,13 +1364,13 @@ with tabs[2]:
                 data_p = f"Termina contrato: {origen}. Partes: {partes}. Motivo: {motivo}."
 
 
-        # --- ZONA DE GENERACIÓN (Columna Derecha) ---
+        # --- COLUMNA DERECHA: GENERACIÓN Y DESCARGAS ---
         with c_form_der:
             # 1. CIUDAD COMÚN PARA TODOS
             st.info("👇 **Generar Documento**")
             ciudad = st.text_input("📍 Ciudad de firma", value="Madrid", key="common_city_tab2")
             
-            # 2. BOTÓN REDACTAR (Con manejo de errores integrado)
+            # 2. BOTÓN REDACTAR
             if st.button("✨ REDACTAR CONTRATO", use_container_width=True, key="btn_redactar_main"):
                 with st.spinner("La IA está redactando tu contrato..."):
                     try:
@@ -1392,6 +1390,7 @@ with tabs[2]:
                         5. Lugar y Fecha: En {ciudad}, a {fecha_hoy}.
                         
                         Usa lenguaje jurídico preciso. Formato Markdown.
+                        Usa negritas (**) para títulos y partes clave.
                         """
                         st.session_state.generated_contract = groq_engine(prompt_final, api_key, 0.3)
                     except Exception as e:
@@ -1400,20 +1399,17 @@ with tabs[2]:
             # 3. VISOR DE RESULTADOS Y DESCARGAS
             if st.session_state.generated_contract:
                 st.markdown("---")
-                # Visor con caja gris
                 st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
                 
                 st.write("")
                 st.markdown("### 📥 Exportar Documento")
                 
-                # Email ocupa todo el ancho
                 mail_user = st.text_input("Email para copia (Opcional)", key="mail_down_tab2")
                 st.write("")
                 
-                # 3 Columnas para botones (PDF, Word, WhatsApp)
                 c_btn1, c_btn2, c_btn3 = st.columns(3)
                 
-                # BOTÓN PDF
+                # PDF
                 with c_btn1:
                     if st.button("📄 PDF", key="btn_pdf_gen_2", use_container_width=True):
                         if mail_user: save_lead(mail_user, "CONTRATO", modo)
@@ -1422,15 +1418,19 @@ with tabs[2]:
                     if "pdf_buffer" in st.session_state:
                         st.download_button("⬇️ Bajar", st.session_state.pdf_buffer, f"{modo}.pdf", "application/pdf", key="dl_pdf_2", use_container_width=True)
 
-                # BOTÓN WORD
+                # WORD
                 with c_btn2:
                     docx_file = create_docx(st.session_state.generated_contract, tipo_texto)
                     st.download_button("📝 Word", docx_file, f"{modo}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_word_2", use_container_width=True)
 
-                # BOTÓN WHATSAPP
+                # WHATSAPP
                 with c_btn3:
                     link_wa = get_whatsapp_link(st.session_state.generated_contract)
                     st.link_button("📲 WhatsApp", link_wa, use_container_width=True)
+
+    # --- ¡EJECUCIÓN DE LA FUNCIÓN! ---
+    # Esto es lo que faltaba en tu código anterior
+    render_tab_2()
                     
 # --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[3]:
@@ -2030,6 +2030,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
