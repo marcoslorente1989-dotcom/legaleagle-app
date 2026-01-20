@@ -1337,22 +1337,22 @@ with tabs[2]:
                     SALARIO: {salario}€ Brutos/Año. VARIABLE: {variable_txt}.
                     """
                     
-                # 4. VEHÍCULO
                 elif modo == "VEHICULO":
-                    st.subheader("🚗 Venta Vehículo")
-                    tipo_texto = "Contrato de Compraventa de Vehículo Usado"
-                    c1, c2 = st.columns(2)
-                    with c1: vendedor = st.text_input("Vendedor (Nombre y DNI)", key="veh_ven")
-                    with c2: comprador = st.text_input("Comprador (Nombre y DNI)", key="veh_com")
-                    c3, c4 = st.columns(2)
-                    with c3: marca = st.text_input("Marca/Modelo", key="veh_mar")
-                    with c4: matr = st.text_input("Matrícula", key="veh_mat")
-                    c5, c6 = st.columns(2)
-                    with c5: bastidor = st.text_input("Bastidor (VIN)", key="veh_vin")
-                    with c6: kms = st.number_input("Kilómetros", 0, step=1000, key="veh_kms")
-                    precio = st.number_input("Precio (€)", 0.0, step=100.0, key="veh_pre")
-                    data_p = f"Vendedor: {vendedor}. Comprador: {comprador}. Coche: {marca}, Matrícula {matr}, VIN {bastidor}, {kms} Kms. Precio: {precio}€. Libre de cargas."
-
+                     st.subheader("🚗 Compraventa Vehículo")
+                     st.caption("👤 Intervinientes")
+                     vendedor = st.text_input("Vendedor (Nombre y DNI)")
+                     comprador = st.text_input("Comprador (Nombre y DNI)")
+                     st.caption("🚗 Datos del Vehículo")
+                     col_coche1, col_coche2 = st.columns(2)
+                     with col_coche1:
+                          marca = st.text_input("Marca y Modelo", placeholder="Ej: Ford Focus 1.5")
+                          matricula = st.text_input("Matrícula")
+                     with col_coche2:
+                          bastidor = st.text_input("Nº Bastidor (VIN)", help="Fundamental para la validez legal")
+                          kms = st.number_input("Kilómetros", min_value=0, step=1000)
+                     precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
+                     data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
+ 
                 # 5. SERVICIOS
                 elif modo == "SERVICIOS":
                     st.subheader("🤝 Servicios Freelance")
@@ -1363,30 +1363,33 @@ with tabs[2]:
                     hon = st.text_input("Honorarios y Pagos", key="ser_hon")
                     data_p = f"Cliente: {cli}. Profesional: {pro}. Servicios: {desc}. Pago: {hon}."
 
-                # 6. ARRAS
+                # === ARRAS ===
                 elif modo == "ARRAS":
-                    st.subheader("📝 Contrato de Arras")
-                    tipo_texto = "Contrato de Arras Penitenciales"
-                    c1, c2 = st.columns(2)
-                    with c1: ven = st.text_input("Vendedor", key="arr_ven")
-                    with c2: comp = st.text_input("Comprador", key="arr_com")
-                    dir_arr = st.text_input("Inmueble", key="arr_dir")
-                    c3, c4 = st.columns(2)
-                    with c3: precio_tot = st.number_input("Precio Venta (€)", key="arr_pre")
-                    with c4: senal = st.number_input("Señal/Arras (€)", key="arr_sen")
-                    limite = st.date_input("Fecha límite escritura", key="arr_lim")
-                    data_p = f"Vendedor: {ven}. Comprador: {comp}. Piso: {dir_arr}. Precio: {precio_tot}. Señal: {senal}. Límite: {limite}."
-                
+                     st.subheader("📝 Contrato de Arras")
+                     st.caption("📝 Datos para Arras")
+                     vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
+                     comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
+                     st.caption("🏠 Inmueble y Condiciones")
+                     inmueble = st.text_input('Dirección Inmueble')
+                     ref_catastral = st.text_input('Referencia Catastral')
+                     col_arras1, col_arras2 = st.columns(2)
+                     with col_arras1: precio = st.number_input('Precio Total Venta (€)', step=1000.0)
+                     with col_arras2: senal = st.number_input('Señal/Arras (€)', step=500.0)
+                     plazo = st.date_input('Fecha Límite Escritura')
+                     data_p = f"Contrato de Arras. Vendedor: {vendedor}. Comprador: {comprador}. Inmueble: {inmueble}. Ref. Catastral: {ref_catastral}. Precio Total: {precio}. Señal entregada: {senal}. Fecha límite: {plazo}. Tipo: Arras Penitenciales (Art 1454 CC)."
+
                 # 7. C_VIVIENDA
                 elif modo == "C_VIVIENDA":
-                    st.subheader("🏡 Compraventa Privada")
-                    tipo_texto = "Contrato Compraventa Vivienda (Privado)"
-                    ven = st.text_input("Vendedor", key="cv_ven")
-                    comp = st.text_input("Comprador", key="cv_com")
-                    inm = st.text_input("Inmueble", key="cv_inm")
-                    pre = st.number_input("Precio (€)", key="cv_pre")
-                    data_p = f"Vendedor: {ven}. Comprador: {comp}. Inmueble: {inm}. Precio: {pre}."
-
+                    st.subheader("🏡 Compraventa Vivienda")
+                    st.caption("👤 Intervinientes")
+                    vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
+                    comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
+                    st.caption("🏠 Inmueble")
+                    inmueble = st.text_input('Dirección Completa')
+                    ref_catastral = st.text_input('Referencia Catastral', help="Código de 20 caracteres")
+                    precio = st.number_input('Precio Venta (€)', step=1000.0)
+                    data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas."
+            
                 # 8. NDA
                 elif modo == "NDA":
                     st.subheader("🤫 Confidencialidad")
@@ -1396,14 +1399,16 @@ with tabs[2]:
                     motivo = st.text_area("Información a proteger", key="nda_mot")
                     data_p = f"Revelador: {rev}. Receptor: {rec}. Info protegida: {motivo}."
 
-                # 9. CANCELACIÓN
+                # === CANCELACIÓN ===
                 elif modo == "CANCELACION":
-                    st.subheader("❌ Terminación Contrato")
-                    tipo_texto = "Acuerdo de Terminación"
-                    origen = st.text_input("Contrato que se anula", key="can_ori")
-                    partes = st.text_input("Partes", key="can_par")
-                    motivo = st.text_input("Motivo", key="can_mot")
-                    data_p = f"Termina contrato: {origen}. Partes: {partes}. Motivo: {motivo}."
+                     st.subheader("❌ Acuerdo de Terminación")
+                     tipo_texto = "Acuerdo de Terminación de Contrato"
+                     contrato_origen = st.text_input("¿Qué contrato se cancela?")
+                     partes = st.text_input("Partes implicadas")
+                     fecha_efecto = st.date_input("Fecha Efectiva")
+                     motivo = st.text_input("Motivo (Opcional)")
+                     data_p = f"Terminación Contrato. Origen: {contrato_origen}. Partes: {partes}. Fecha fin: {fecha_efecto}. Motivo: {motivo}."
+
 
 
             # --- COLUMNA DERECHA: GENERACIÓN (COMÚN) ---
@@ -1700,15 +1705,15 @@ with tabs[4]:
             
             # Grid de botones (Izquierda)
          with c_nav1: 
-                if st.button("💰\nRENTA\nDeducciones", use_container_width=True): 
+                if st.button("💰\nDeducciones\nRenta", use_container_width=True): 
                    st.session_state.nav_impuestos = "RENTA"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("🔍\nNÓMINA\nEscáner", use_container_width=True): 
+                if st.button("🔍\nEscáner\nNómina", use_container_width=True): 
                    st.session_state.nav_impuestos = "ESCANER"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("🏠\nVENTA VIVIENDAS\nImpuestos", use_container_width=True): 
+                if st.button("🏠\nIMPUESTOS\nVenta Vivienda    ", use_container_width=True): 
                    st.session_state.nav_impuestos = "VENTA"
                    st.session_state.generated_calc = ""
                    st.rerun()
@@ -1720,22 +1725,19 @@ with tabs[4]:
                    
             # Grid de botones (Derecha)
          with c_nav2: 
-                if st.button("💶\nSUELDO NETO\nSimulador", use_container_width=True): 
+                if st.button("💶\nSimulador\nSueldo Neto", use_container_width=True): 
                    st.session_state.nav_impuestos = "SUELDO"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("📝\nGASTOS\nCompraventa", use_container_width=True): 
+                if st.button("📝\nGastos\nCompraventa Vivienda", use_container_width=True): 
                    st.session_state.nav_impuestos = "GASTOS"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("📉\nHIPOTECA\nCuota", use_container_width=True): 
+                if st.button("📉\nCuota\nHipoteca", use_container_width=True): 
                    st.session_state.nav_impuestos = "HIPOTECA"
                    st.session_state.generated_calc = ""
                    st.rerun()
-                if st.button("❓\nOTRO\nTrámite", use_container_width=True): 
-                   st.session_state.nav_impuestos = "OTRO"
-                   st.session_state.generated_calc = ""
-                   st.rerun()
+                
 
     # --- VISTA B: HERRAMIENTAS (COLUMNAS NUEVAS = LIMPIEZA TOTAL) ---
     else:
@@ -1842,7 +1844,7 @@ with tabs[4]:
                             """
                             st.session_state.generated_calc = groq_engine(p_nomina, api_key)
 
-            # === SUELDO NETO (Lógica Matemática + IA) ===
+           # === SUELDO NETO (Actualizado: Parejas de Hecho con Hijos) ===
             elif modo == "SUELDO":
                 st.subheader("💶 Simulador Sueldo Neto")
                 st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
@@ -1855,10 +1857,27 @@ with tabs[4]:
                 st.markdown("---")
                 c_fam1, c_fam2 = st.columns(2)
                 with c_fam1: 
-                    estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a"], key="su_est")
+                    estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Pareja de hecho", "Divorciado/Separado"], key="su_est")
+                    
+                    # Inicializamos variables para evitar errores
                     conyuge_cargo = False
+                    pension_alim = 0.0
+                    pension_comp = 0.0
+                    hijos_comun_pareja = False # Nueva variable
+                    
+                    # Lógica según Estado Civil
                     if estado == "Casado/a": 
                         conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?", key="su_con")
+                    
+                    elif estado == "Pareja de hecho":
+                        hijos_comun_pareja = st.checkbox("¿Tenéis hijos en común?", help="Importante para prorratear la deducción por descendientes.", key="su_pareja_hijos")
+
+                    elif estado == "Divorciado/Separado":
+                        paga_pension = st.checkbox("¿Pagas pensión por sentencia?", key="su_pen_check")
+                        if paga_pension:
+                            pension_alim = st.number_input("Pensión Alimentos Hijos (€/año)", 0.0, step=500.0, key="su_pen_alim")
+                            pension_comp = st.number_input("Pensión Compensatoria Cónyuge (€/año)", 0.0, step=500.0, key="su_pen_comp")
+
                 with c_fam2: 
                     discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"], key="su_dis")
                 
@@ -1868,20 +1887,31 @@ with tabs[4]:
                     hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0, key="su_hij3")
                 
                 if st.button("💶 CALCULAR NETO EXACTO", key="btn_su_calc"):
-                    with st.spinner("Consultando normativa regional y calculando..."):
+                    with st.spinner("Calculando IRPF 2025 según situación familiar..."):
+                        
+                        # Prompt actualizado con la lógica de Pareja de Hecho
                         prompt_irpf = f"""
-                        Actúa como experto fiscal en España 2025.
-                        Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) para este perfil:
+                        Actúa como experto fiscal en España 2025 (Agencia Tributaria).
+                        Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) exacto para este perfil:
+                        
+                        DATOS ECONÓMICOS:
                         - Salario Bruto: {bruto}€
+                        - Pensiones por sentencia: Alimentos Hijos ({pension_alim}€), Compensatoria ({pension_comp}€).
+                        
+                        DATOS PERSONALES:
                         - Región: {comunidad}
                         - Edad: {edad}
-                        - Hijos: {hijos}
-                        - Discapacidad: {discapacidad}
-                        - Cónyuge a cargo: {conyuge_cargo}
+                        - Estado Civil: {estado}.
+                        - Situación Pareja de Hecho con hijos en común: {hijos_comun_pareja}.
+                        - Cónyuge a cargo (si casado): {conyuge_cargo}
+                        - Hijos totales: {hijos}
                         - Hijos < 3 años: {hijos_menores_3}
-                        IMPORTANTE: Responde ÚNICAMENTE con el número del porcentaje con dos decimales.
-                        Ejemplo de respuesta válida: 14.20
-                        NO escribas texto, ni símbolos de porcentaje, solo el número.
+                        - Discapacidad: {discapacidad}
+                        
+                        INSTRUCCIONES CLAVE PARA EL CÁLCULO:
+                        1. Si es "Pareja de hecho" con hijos, recuerda que tributan individualmente pero se prorratea el mínimo por descendientes al 50%.
+                        2. Si paga pensión alimenticia (judicial), reduce la base de retención.
+                        3. Responde ÚNICAMENTE con el número del porcentaje con dos decimales (ej: 14.20).
                         """
                         try:
                             respuesta_ia = groq_engine(prompt_irpf, api_key, temp=0.0)
@@ -1921,7 +1951,10 @@ with tabs[4]:
                                     <div style="color: #f87171 !important; font-size: 16px; font-weight: bold;">{f_tipo} %</div>
                                 </div>
                             </div>
-                            <div style="margin-top: 10px; font-size: 10px; color: #64748b !important;">*Cálculo basado en normativa autonómica de {comunidad}.</div>
+                            <div style="margin-top: 10px; font-size: 10px; color: #64748b !important;">
+                                *Cálculo aproximado para {anio_actual}.
+                                { "⚠️ Aplicada reducción por pensión alimenticia/compensatoria" if pension_alim > 0 or pension_comp > 0 else "" }
+                            </div>
                         </div>
                         """
                         st.session_state.generated_calc = html_nomina
@@ -2071,6 +2104,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
