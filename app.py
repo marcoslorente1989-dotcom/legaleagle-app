@@ -1766,47 +1766,82 @@ with tabs[4]:
                 # DOS COLUMNAS DE ANCHO COMPLETO
                 col_izq, col_der = st.columns(2, gap="small")
 
-                # --- COLUMNA IZQUIERDA: INPUTS COMPRA + VISOR VENTA ---
+               # --- COLUMNA IZQUIERDA: INPUTS COMPRA + VISOR VENTA ---
                 with col_izq:
                     st.info("🛒 **DATOS COMPRA** (Resultado saldrá 👉)")
                     with st.container(border=True):
+                        # 1. DATOS ECONÓMICOS
                         c_p1, c_p2 = st.columns(2)
                         with c_p1: precio_c = st.number_input("Precio (€)", value=150000.0, step=1000.0, key="viv_com_pre")
                         with c_p2: tipo_c = st.selectbox("Tipo", ["Segunda Mano", "Obra Nueva"], key="viv_com_tipo")
                         
                         ccaa_c = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "Castilla-La Mancha", "Castilla y León", "Canarias", "Otras"], key="viv_com_ccaa")
                         
+                        st.markdown("---")
+                        
+                        # 2. PERFIL COMPRADORES (DINÁMICO)
                         st.markdown("👇 **Perfil Compradores:**")
-                        c_perf1, c_perf2 = st.columns(2)
-                        with c_perf1:
-                            edad_joven = st.number_input("Edad (Joven)", 18, 99, 30, key="viv_com_edad")
-                            es_habitual = st.checkbox("Vivienda Habitual", value=True, key="viv_com_hab")
-                        with c_perf2:
+                        
+                        # Fila 1: Nº Compradores y Checkboxes generales
+                        c_num, c_check = st.columns([1, 1.5])
+                        with c_num:
                             num_compradores = st.number_input("Nº Compradores", 1, 5, 1, key="viv_com_num")
-                            es_fam_num = st.checkbox("Fam. Numerosa", key="viv_com_fn")
-                            es_discap = st.checkbox("Discapacidad", key="viv_com_dis")
+                        with c_check:
+                            es_habitual = st.checkbox("Vivienda Habitual", value=True, key="viv_com_hab")
+                            es_fam_num = st.checkbox("Familia Numerosa", key="viv_com_fn")
+                            es_discap = st.checkbox("Algún comprador Discapacitado", key="viv_com_dis")
 
-                        if st.button("🧮 CALCULAR GASTOS TOTALES", key="btn_viv_com"):
-                            with st.spinner("Calculando impuestos regionales y aranceles notariales..."):
-                                prompt_compra = f"""
-                                Actúa como experto inmobiliario y fiscal en España.
-                                Calcula los GASTOS DE COMPRAVENTA para:
-                                - Precio: {precio}€
-                                - Región: {ccaa}
-                                - Tipo: {tipo}
+                        # Fila 2: EDADES DINÁMICAS (Se crean tantas cajas como compradores)
+                        st.caption("🎂 Edades (Vital para reducción ITP Joven):")
+                        cols_edades = st.columns(num_compradores)
+                        lista_edades = []
+                        
+                        for i in range(num_compradores):
+                            with cols_edades[i]:
+                                edad = st.number_input(f"Edad C{i+1}", 18, 99, 30, key=f"viv_edad_{i}")
+                                lista_edades.append(edad)
+
+                        # 3. BOTÓN Y PROMPT DETALLADO
+                        if st.button("CALCULAR GASTOS ➡️", key="btn_viv_com", use_container_width=True):
+                            with st.spinner("Analizando bonificaciones por edad y perfil..."):
+                                st.session_state.viv_res_venta = "" # Limpiar visor opuesto
                                 
-                                DESGLOSE OBLIGATORIO:
-                                1. Impuestos: Si es Segunda Mano calcula el ITP de {ccaa}. Si es Obra Nueva calcula IVA (10%) + AJD de {ccaa}.
-                                2. Notaría (Estimación aranceles BOE).
-                                3. Registro de la Propiedad (Estimación).
-                                4. Gestoría (Aproximado 300-500€).
+                                # Convertimos la lista de edades a texto para la IA
+                                txt_edades = ", ".join([f"Comprador {i+1}: {e} años" for i, e in enumerate(lista_edades)])
                                 
-                                TOTAL A PREPARAR: Suma todo.
+                                prompt = f"""
+                                Actúa como Gestor Inmobiliario Experto en {ccaa_c}.
+                                Calcula los GASTOS DE COMPRAVENTA para esta operación:
+                                
+                                DATOS OPERACIÓN:
+                                - Precio: {precio_c}€. 
+                                - Tipo: {tipo_c}.
+                                
+                                PERFIL COMPRADORES:
+                                - Son {num_compradores} compradores.
+                                - Edades exactas: [{txt_edades}].
+                                - ¿Es Vivienda Habitual?: {es_habitual}.
+                                - ¿Familia Numerosa?: {es_fam_num}.
+                                - ¿Discapacidad?: {es_discap}.
+                                
+                                TAREA CRÍTICA (IMPUESTOS):
+                                1. Si es SEGUNDA MANO (ITP): Revisa la normativa de {ccaa_c}.
+                                   - Si hay reducción por JOVEN (<35 o <32 años), comprueba las edades.
+                                   - ¡OJO! Si solo algunos compradores cumplen la edad, aplica la reducción SOLO a su parte proporcional (prorrateo).
+                                   - Revisa reducciones por Familia Numerosa o Discapacidad si están marcadas.
+                                2. Si es OBRA NUEVA: Aplica IVA (10%) + AJD (busca si el AJD tiene reducción por perfil).
+                                
+                                DESGLOSE REQUERIDO:
+                                - Notaría y Registro (Estimación).
+                                - Gestoría (Aprox 350€).
+                                - IMPUESTOS (Detalla el cálculo: Tipo aplicado y base).
+                                
+                                RESULTADO FINAL: TOTAL AHORRADO NECESARIO.
                                 """
-                                st.session_state.generated_calc = groq_engine(prompt_compra, api_key)
-                                st.rerun() 
+                                st.session_state.viv_res_compra = groq_engine(prompt, api_key)
+                                st.rerun()
 
-                    # Visor de Venta (viene de la derecha)
+                    # B. VISOR DE VENTA (Viene de la derecha)
                     if st.session_state.viv_res_venta:
                         st.write("")
                         st.success("⬅️ **RESULTADO DE LA VENTA**")
@@ -1825,6 +1860,7 @@ with tabs[4]:
                         if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
                             if v_suelo > 0:
                                 with st.spinner("Calculando Plusvalía y 'Hachazo' de Hacienda..."):
+                                    st.session_state.viv_res_compra = ""
                                     anios = anio_actual - f_compra
                                     ganancia = p_venta - p_compra
                                     prompt_venta = f"""
@@ -1840,6 +1876,7 @@ with tabs[4]:
                                     3. TOTAL A PAGAR APROXIMADO.
                                     """
                                     st.session_state.generated_calc = groq_engine(prompt_venta, api_key)
+                                    st.rerun()
                             else:
                                 st.warning("⚠️ Necesitas el Valor Catastral del Suelo (míralo en el IBI) para calcular la Plusvalía.")
 
@@ -2179,6 +2216,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
