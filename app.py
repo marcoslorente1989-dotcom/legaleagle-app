@@ -612,6 +612,71 @@ def nukear_memoria_reclamacion():
 def limpiar_cache_reclamacion():
     """Borra el resultado de la reclamación al cambiar de modo"""
     st.session_state.generated_claim = ""  
+
+def extract_text_from_pdf(file, max_pages=15):
+    """
+    Lee PDF de forma segura. 
+    max_pages=15: Lee solo las primeras 15 páginas para evitar que la app se cuelgue.
+    """
+    try:
+        import PyPDF2
+        pdf_reader = PyPDF2.PdfReader(file)
+        text = ""
+        # Leemos solo hasta el límite para evitar Timeouts
+        num_pages = len(pdf_reader.pages)
+        limit = min(num_pages, max_pages)
+        
+        for page_num in range(limit):
+            page = pdf_reader.pages[page_num]
+            text += page.extract_text() or ""
+            
+        if num_pages > max_pages:
+            text += f"\n... [Texto truncado. Se han leído las primeras {limit} de {num_pages} páginas para evitar errores] ..."
+            
+        return text
+    except Exception as e:
+        return f"Error leyendo PDF: {e}"
+
+def analyze_image_groq(uploaded_file, prompt, api_key):
+    """
+    Analiza imágenes comprimiéndolas antes si son muy grandes.
+    """
+    import base64
+    from PIL import Image
+    import io
+
+    try:
+        # 1. Redimensionar imagen si es gigante (para evitar Connection Lost)
+        image = Image.open(uploaded_file)
+        
+        # Si es muy grande (> 1500px), la reducimos a la mitad
+        if image.width > 1500 or image.height > 1500:
+            image.thumbnail((1500, 1500))
+        
+        # 2. Convertir a Base64
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG", quality=85) # Calidad 85% para aligerar
+        base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+        # 3. Enviar a la IA
+        client = Groq(api_key=api_key)
+        completion = client.chat.completions.create(
+            model="llama-3.2-11b-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                    ]
+                }
+            ],
+            temperature=0.1,
+            max_tokens=2048 # Limitamos respuesta para ir rápido
+        )
+        return completion.choices[0].message.content
+    except Exception as e:
+        return f"Error analizando imagen: {e}"    
     
 
 @st.cache_data(ttl=3600) # Se actualiza cada hora
@@ -2243,6 +2308,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
