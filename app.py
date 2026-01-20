@@ -1149,33 +1149,33 @@ with tabs[1]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun() # Para refrescar y mostrar la respuesta
 
-# --- TAB 2: GENERADOR DE CONTRATOS (SOLUCIÓN "CAJA ÚNICA") ---
+# --- TAB 2: GENERADOR DE CONTRATOS (VERSIÓN RESTAURADA Y BLINDADA) ---
 with tabs[2]:
-    # 1. INICIALIZAR VARIABLES DE ESTADO
+    # 1. CONTENEDOR MÁGICO (Evita que se mezclen menús y formularios)
+    # Todo lo que pintemos, lo haremos dentro de este 'placeholder'. 
+    # Al cambiar de vista, el placeholder se vacía automáticamente.
+    main_placeholder = st.empty()
+
+    # 2. GESTIÓN DEL ESTADO
     if "nav_crear" not in st.session_state:
         st.session_state.nav_crear = "MENU"
         
-    # Variables de seguridad para evitar errores si no se definen
+    # Variables de seguridad
     tipo_texto = "Documento Legal" 
     data_p = "Datos generales"
 
-    # 2. CREAMOS LA "CAJA VACÍA" (Aquí ocurrirá toda la magia)
-    # Todo lo que pintemos, lo haremos DENTRO de esta caja.
-    main_placeholder = st.empty()
-
-    # 3. LÓGICA DE NAVEGACIÓN
-    # ---------------------------------------------------------
-    
-    # === CASO A: VISTA DE MENÚ ===
+    # ==============================================================================
+    # ESCENA A: EL MENÚ DE BOTONES
+    # ==============================================================================
     if st.session_state.nav_crear == "MENU":
-        # Usamos .container() para escribir DENTRO de la caja vacía
+        # Usamos .container() para pintar DENTRO del placeholder
         with main_placeholder.container():
             st.subheader("Generador de Contratos")
             st.info("👆 Selecciona el documento que necesitas crear:")
             
             c1, c2, c3 = st.columns(3)
             
-            # Función lambda para cambiar estado rápidamente
+            # Función para cambiar de pantalla y limpiar rastros
             def ir_a(destino):
                 st.session_state.nav_crear = destino
                 st.session_state.generated_contract = ""
@@ -1195,69 +1195,114 @@ with tabs[2]:
                 st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True, on_click=ir_a, args=("NDA",))
                 st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True, on_click=ir_a, args=("CANCELACION",))
 
-    # === CASO B: VISTA DE FORMULARIO (Cualquiera que no sea MENU) ===
+    # ==============================================================================
+    # ESCENA B: EL FORMULARIO (Se activa si NO estamos en MENU)
+    # ==============================================================================
     else:
-        # Volvemos a usar la misma caja. Al entrar aquí, Streamlit BORRA lo anterior.
+        # Al entrar aquí, el 'main_placeholder' SE VACÍA. Adiós botones antiguos.
         with main_placeholder.container():
             
-            # Layout del formulario
+            # Layout: Botón volver (izq) y Formulario (der)
             c_izq, c_der = st.columns([1, 1.3])
             
-            # --- COLUMNA IZQUIERDA: DATOS ---
+            # --- COLUMNA IZQUIERDA: DATOS DEL CONTRATO ---
             with c_izq:
-                def volver_menu():
+                # Botón volver
+                def volver():
                     st.session_state.nav_crear = "MENU"
                     st.session_state.generated_contract = ""
-
-                st.button("⬅️ VOLVER AL MENÚ", use_container_width=True, on_click=volver_menu)
+                
+                st.button("⬅️ VOLVER AL MENÚ", use_container_width=True, on_click=volver)
                 st.markdown("---")
                 
                 modo = st.session_state.nav_crear
                 
-                # 1. ALQUILER
+                # 1. ALQUILER (Con cálculo de fechas automático)
                 if modo == "ALQUILER":
                     st.subheader("🏠 Alquiler Vivienda")
                     tipo_texto = "Contrato de Alquiler de Vivienda Habitual (LAU)"
+                    
                     prop = st.text_input('Propietario (Nombre y DNI)', key="alq_prop")
                     inq = st.text_input('Inquilino (Nombre y DNI)', key="alq_inq")
                     dir_piso = st.text_input('Dirección completa', key="alq_dir")
+                    
                     c1, c2 = st.columns(2)
                     with c1: ref_cat = st.text_input('Ref. Catastral', key="alq_ref")
                     with c2: renta = st.number_input('Renta (€/mes)', value=800.0, step=50.0, key="alq_renta")
+                    
                     c3, c4 = st.columns(2)
                     with c3: f_inicio = st.date_input("Fecha Inicio", value=datetime.now(), key="alq_ini")
                     with c4: duracion = st.number_input("Años", 1, 20, 5, key="alq_dur")
+                    
+                    # Lógica fechas
                     try: f_fin = f_inicio.replace(year=f_inicio.year + duracion)
                     except: f_fin = f_inicio.replace(year=f_inicio.year + duracion, month=3, day=1)
-                    st.caption(f"📅 Fin contrato: {f_fin.strftime('%d/%m/%Y')}")
+                    st.caption(f"📅 Finaliza el: **{f_fin.strftime('%d/%m/%Y')}**")
+                    
                     clausulas = st.text_area("Cláusulas Extra", placeholder="Ej: No mascotas.", key="alq_clau")
-                    data_p = f"Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref: {ref_cat}. Renta: {renta}. Inicio: {f_inicio}. Duración: {duracion} años. Extras: {clausulas}."
+                    data_p = f"Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref: {ref_cat}. Renta: {renta}. Inicio: {f_inicio}. Duración: {duracion} años (Fin: {f_fin}). Extras: {clausulas}."
 
-                # 2. PRÉSTAMO
+                # 2. PRÉSTAMO (Con calculadora de intereses recuperada)
                 elif modo == "PRESTAMO":
                     st.subheader("💰 Préstamo Dinero")
                     tipo_texto = "Contrato de Préstamo entre Particulares"
+                    
                     c1, c2 = st.columns(2)
                     with c1: 
-                        pres_nom = st.text_input("Prestamista (Deja dinero)", key="pre_nom1")
-                        pres_dni = st.text_input("DNI Prestamista", key="pre_dni1")
+                        pres_nom = st.text_input("Prestamista (Deja dinero)", key="pre_pres")
+                        pres_dni = st.text_input("DNI Prestamista", key="pre_dnip")
                     with c2: 
-                        pret_nom = st.text_input("Prestatario (Recibe dinero)", key="pre_nom2")
-                        pret_dni = st.text_input("DNI Prestatario", key="pre_dni2")
+                        pret_nom = st.text_input("Prestatario (Recibe dinero)", key="pre_pret")
+                        pret_dni = st.text_input("DNI Prestatario", key="pre_dnir")
+                    
                     c3, c4 = st.columns(2)
                     with c3: importep = st.number_input("Importe (€)", 100.0, step=100.0, key="pre_imp")
                     with c4: plazop = st.number_input("Plazo (Meses)", 1, 120, 12, key="pre_pla")
-                    if st.checkbox("¿Con Intereses?", key="pre_int"):
-                        tipo_int = st.number_input("Interés Anual (%)", 1.0, step=0.5, key="pre_tipo")
+                    
+                    # Lógica intereses recuperada
+                    interes = st.checkbox("¿Con Intereses?", key="pre_int")
+                    detalles = "Sin intereses (Tipo 0%)"
+                    
+                    if interes:
+                        tipo_int = st.number_input("Interés Anual (%)", 1.0, step=0.5, key="pre_tint")
+                        # Calculadora Sistema Francés
                         i = (tipo_int / 100) / 12
                         c_men = importep * (i * (1 + i)**plazop) / ((1 + i)**plazop - 1)
-                        st.success(f"Cuota aprox: {c_men:.2f}€/mes")
-                        detalles = f"Interés {tipo_int}% anual."
-                    else:
-                        detalles = "Sin intereses (0%)."
+                        total_dev = c_men * plazop
+                        st.success(f"🧮 Cuota: **{c_men:.2f}€/mes**. Total a devolver: {total_dev:.2f}€")
+                        detalles = f"Con interés del {tipo_int}% anual. Cuota mensual: {c_men:.2f}€."
+                    
                     data_p = f"Prestamista: {pres_nom} ({pres_dni}). Prestatario: {pret_nom} ({pret_dni}). Importe: {importep}€. Plazo: {plazop} meses. {detalles}."
 
-                # 3. VEHÍCULO
+                # 3. TRABAJO (RECUPERADO: BONUS Y MODALIDAD)
+                elif modo == "TRABAJO":
+                    st.subheader("💼 Contrato Laboral")
+                    tipo_texto = "Contrato de Trabajo"
+                    
+                    st.caption("👤 Partes y Puesto")
+                    empresa = st.text_input("Empresa (Nombre y CIF)", key="tra_emp")
+                    trabajador = st.text_input("Trabajador (Nombre y DNI)", key="tra_tra")
+                    puesto = st.text_input("Puesto / Categoría", key="tra_pue")
+                    
+                    st.caption("📋 Condiciones")
+                    # Recuperada la modalidad
+                    modalidad = st.selectbox("Modalidad", ["Indefinido", "Temporal (Duración Determinada)", "Sustitución"], key="tra_mod")
+                    duracion_txt = "Indefinida"
+                    if modalidad != "Indefinido":
+                        duracion_txt = st.text_input("Duración / Fecha Fin", placeholder="Ej: 6 meses", key="tra_dur")
+                        
+                    salario = st.number_input("Salario Bruto Anual (€)", 15000.0, step=500.0, key="tra_sal")
+                    
+                    # Recuperado el Bonus
+                    tiene_variable = st.checkbox("¿Incluye Variable / Bonus?", key="tra_var_check")
+                    variable_txt = "Sin retribución variable."
+                    if tiene_variable:
+                        cantidad_var = st.text_input("Detalles del Variable", placeholder="Ej: 10% sobre objetivos o 3.000€", key="tra_var_txt")
+                        variable_txt = f"Con retribución variable: {cantidad_var}."
+                    
+                    data_p = f"Modalidad: {modalidad}. Empresa: {empresa}. Trabajador: {trabajador}. Puesto: {puesto}. Duración: {duracion_txt}. Salario: {salario}€ Brutos/Año. Variable: {variable_txt}."
+
+                # 4. VEHÍCULO
                 elif modo == "VEHICULO":
                     st.subheader("🚗 Venta Vehículo")
                     tipo_texto = "Contrato de Compraventa de Vehículo Usado"
@@ -1273,16 +1318,6 @@ with tabs[2]:
                     precio = st.number_input("Precio (€)", 0.0, step=100.0, key="veh_pre")
                     data_p = f"Vendedor: {vendedor}. Comprador: {comprador}. Coche: {marca}, Matrícula {matr}, VIN {bastidor}, {kms} Kms. Precio: {precio}€. Libre de cargas."
 
-                # 4. TRABAJO
-                elif modo == "TRABAJO":
-                    st.subheader("💼 Contrato Laboral")
-                    tipo_texto = "Contrato de Trabajo"
-                    empresa = st.text_input("Empresa", key="tra_emp")
-                    trabajador = st.text_input("Trabajador", key="tra_tra")
-                    puesto = st.text_input("Puesto", key="tra_pue")
-                    salario = st.number_input("Bruto Anual (€)", 15000.0, key="tra_sal")
-                    data_p = f"Empresa: {empresa}. Trabajador: {trabajador}. Puesto: {puesto}. Salario: {salario}."
-
                 # 5. SERVICIOS
                 elif modo == "SERVICIOS":
                     st.subheader("🤝 Servicios Freelance")
@@ -1290,7 +1325,7 @@ with tabs[2]:
                     cli = st.text_input("Cliente", key="ser_cli")
                     pro = st.text_input("Profesional", key="ser_pro")
                     desc = st.text_area("Descripción Servicios", key="ser_des")
-                    hon = st.text_input("Honorarios", key="ser_hon")
+                    hon = st.text_input("Honorarios y Pagos", key="ser_hon")
                     data_p = f"Cliente: {cli}. Profesional: {pro}. Servicios: {desc}. Pago: {hon}."
 
                 # 6. ARRAS
@@ -1336,11 +1371,13 @@ with tabs[2]:
                     data_p = f"Termina contrato: {origen}. Partes: {partes}. Motivo: {motivo}."
 
 
-            # --- COLUMNA DERECHA: GENERACIÓN (DENTRO DE LA CAJA) ---
+            # --- COLUMNA DERECHA: GENERACIÓN (COMÚN) ---
             with c_der:
                 st.info("👇 **Generar Documento**")
+                # Ciudad común para todos los contratos
                 ciudad = st.text_input("📍 Ciudad de firma", value="Madrid", key="common_city_tab2")
                 
+                # BOTÓN REDACTAR (Con manejo de errores integrado)
                 if st.button("✨ REDACTAR CONTRATO", use_container_width=True, key="btn_redactar_main"):
                     with st.spinner("La IA está redactando tu contrato..."):
                         try:
@@ -1353,7 +1390,7 @@ with tabs[2]:
                             - DETALLES DEL ACUERDO: {data_p}
                             
                             ESTRUCTURA OBLIGATORIA:
-                            1. Encabezado (Lugar, Fecha, Reunidos).
+                            1. Encabezado (Lugar, Fecha, Reunidos con DNI).
                             2. Exponen (Antecedentes).
                             3. ESTIPULACIONES (Cláusulas numeradas).
                             4. Cierre y Firmas.
@@ -1366,17 +1403,23 @@ with tabs[2]:
                         except Exception as e:
                             st.error(f"Error al conectar con la IA: {e}")
 
+                # VISOR DE RESULTADOS Y DESCARGAS
                 if st.session_state.generated_contract:
                     st.markdown("---")
+                    # Visor con caja gris
                     st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
+                    
                     st.write("")
                     st.markdown("### 📥 Exportar Documento")
                     
+                    # Email ocupa todo el ancho
                     mail_user = st.text_input("Email para copia (Opcional)", key="mail_down_tab2")
                     st.write("")
                     
+                    # 3 Columnas para botones (PDF, Word, WhatsApp)
                     c_btn1, c_btn2, c_btn3 = st.columns(3)
                     
+                    # BOTÓN PDF
                     with c_btn1:
                         if st.button("📄 PDF", key="btn_pdf_gen_2", use_container_width=True):
                             if mail_user: save_lead(mail_user, "CONTRATO", modo)
@@ -1385,10 +1428,12 @@ with tabs[2]:
                         if "pdf_buffer" in st.session_state:
                             st.download_button("⬇️ Bajar", st.session_state.pdf_buffer, f"{modo}.pdf", "application/pdf", key="dl_pdf_2", use_container_width=True)
 
+                    # BOTÓN WORD
                     with c_btn2:
                         docx_file = create_docx(st.session_state.generated_contract, tipo_texto)
                         st.download_button("📝 Word", docx_file, f"{modo}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_word_2", use_container_width=True)
 
+                    # BOTÓN WHATSAPP
                     with c_btn3:
                         link_wa = get_whatsapp_link(st.session_state.generated_contract)
                         st.link_button("📲 WhatsApp", link_wa, use_container_width=True)
@@ -1991,6 +2036,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
