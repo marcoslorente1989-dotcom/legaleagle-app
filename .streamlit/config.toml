@@ -15,5 +15,7 @@ base = "light"
 primaryColor = "#3b82f6"
 
 [server]
-maxUploadSize = 700  # Límite en MB (ej: 500MB)
+maxUploadSize = 500  # Límite en MB (ej: 500MB)
 runOnSave = true
+enableCORS = false
+enableXsrfProtection = false
