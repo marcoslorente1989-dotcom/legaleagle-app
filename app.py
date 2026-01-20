@@ -1149,18 +1149,23 @@ with tabs[1]:
                     st.session_state.chat_history.append({"role":"assistant","content":ans})
                     st.rerun() # Para refrescar y mostrar la respuesta
 
-# --- TAB 2: GENERADOR DE CONTRATOS (LÓGICA PLANA Y SEGURA) ---
+# --- TAB 2: GENERADOR DE CONTRATOS (CON CALLBACKS PARA CAMBIO INSTANTÁNEO) ---
 with tabs[2]:
-    # 1. Variables por defecto (evita errores de variables no definidas)
+    # 1. FUNCIÓN CALLBACK (LA CLAVE DEL ÉXITO)
+    # Esta función se ejecuta ANTES de recargar la página
+    def cambiar_a(nuevo_modo):
+        st.session_state.nav_crear = nuevo_modo
+        st.session_state.generated_contract = "" # Limpiamos contrato anterior al cambiar
+
+    # 2. INICIALIZACIÓN
     tipo_texto = "Documento Legal"
     data_p = "Datos generales"
     
-    # 2. Inicializar estado de navegación
     if "nav_crear" not in st.session_state:
         st.session_state.nav_crear = "MENU"
 
     # ==============================================================================
-    # ESCENA A: EL MENÚ (Solo entra aquí si el estado es "MENU")
+    # ESCENA A: EL MENÚ (Solo se pinta si estamos en MENU)
     # ==============================================================================
     if st.session_state.nav_crear == "MENU":
         st.subheader("Generador de Contratos")
@@ -1170,61 +1175,33 @@ with tabs[2]:
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            if st.button("🏠\nALQUILER\nVIVIENDA", use_container_width=True):
-                st.session_state.nav_crear = "ALQUILER"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("💼\nCONTRATO\nTRABAJO", use_container_width=True):
-                st.session_state.nav_crear = "TRABAJO"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("🏡\nCOMPRAVENTA\nVIVIENDA", use_container_width=True):
-                st.session_state.nav_crear = "C_VIVIENDA"
-                st.session_state.generated_contract = ""
-                st.rerun()
+            # FÍJATE: Usamos on_click=cambiar_a y args=("MODO",)
+            # NO usamos st.rerun() aquí, el botón lo hace automático
+            st.button("🏠\nALQUILER\nVIVIENDA", use_container_width=True, on_click=cambiar_a, args=("ALQUILER",))
+            st.button("💼\nCONTRATO\nTRABAJO", use_container_width=True, on_click=cambiar_a, args=("TRABAJO",))
+            st.button("🏡\nCOMPRAVENTA\nVIVIENDA", use_container_width=True, on_click=cambiar_a, args=("C_VIVIENDA",))
 
         with c2:
-            if st.button("💰\nPRÉSTAMO\nPARTICULARES", use_container_width=True):
-                st.session_state.nav_crear = "PRESTAMO"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("🤝\nSERVICIOS\nFREELANCE", use_container_width=True):
-                st.session_state.nav_crear = "SERVICIOS"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("📝\nCONTRATO\nDE ARRAS", use_container_width=True):
-                st.session_state.nav_crear = "ARRAS"
-                st.session_state.generated_contract = ""
-                st.rerun()
+            st.button("💰\nPRÉSTAMO\nPARTICULARES", use_container_width=True, on_click=cambiar_a, args=("PRESTAMO",))
+            st.button("🤝\nSERVICIOS\nFREELANCE", use_container_width=True, on_click=cambiar_a, args=("SERVICIOS",))
+            st.button("📝\nCONTRATO\nDE ARRAS", use_container_width=True, on_click=cambiar_a, args=("ARRAS",))
 
         with c3:
-            if st.button("🚗\nCOMPRAVENTA\nVEHÍCULO", use_container_width=True):
-                st.session_state.nav_crear = "VEHICULO"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True):
-                st.session_state.nav_crear = "NDA"
-                st.session_state.generated_contract = ""
-                st.rerun()
-            if st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True):
-                st.session_state.nav_crear = "CANCELACION"
-                st.session_state.generated_contract = ""
-                st.rerun()
+            st.button("🚗\nCOMPRAVENTA\nVEHÍCULO", use_container_width=True, on_click=cambiar_a, args=("VEHICULO",))
+            st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True, on_click=cambiar_a, args=("NDA",))
+            st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True, on_click=cambiar_a, args=("CANCELACION",))
 
     # ==============================================================================
-    # ESCENA B: EL FORMULARIO (Solo entra aquí si NO es "MENU")
+    # ESCENA B: EL FORMULARIO (Si no es MENU, entra aquí)
     # ==============================================================================
     else:
         # Layout: Botón volver a la izquierda, Formulario a la derecha
         c_form_izq, c_form_der = st.columns([1, 1.3])
         
-        # --- COLUMNA IZQUIERDA: DATOS Y VOLVER ---
+        # --- COLUMNA IZQUIERDA: DATOS ---
         with c_form_izq:
-            # BOTÓN CRÍTICO PARA VOLVER (Reinicia el estado a MENU)
-            if st.button("⬅️ VOLVER AL MENÚ", use_container_width=True):
-                st.session_state.nav_crear = "MENU"
-                st.session_state.generated_contract = ""
-                st.rerun()
+            # BOTÓN VOLVER (También con callback)
+            st.button("⬅️ VOLVER AL MENÚ", use_container_width=True, on_click=cambiar_a, args=("MENU",))
             
             st.markdown("---")
             modo = st.session_state.nav_crear
@@ -2027,6 +2004,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
