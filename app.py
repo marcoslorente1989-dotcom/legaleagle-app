@@ -55,6 +55,9 @@ import io
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from datetime import datetime
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import Paragraph
+from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
 
 st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
@@ -678,75 +681,93 @@ def analyze_image_groq(image_file, prompt_instruction, key):
         return chat_completion.choices[0].message.content
     except Exception as e: return f"Error Vision AI: {str(e)}"
 
-# --- FUNCIÓN GENERAR PDF (DISEÑO LIMPIO Y FORMAL) ---
+# --- FUNCIÓN GENERAR PDF PROFESIONAL (CON NEGRITAS Y ESTILOS) ---
 def create_pdf(text, title="Documento Legal"):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
     
-    # Configuración de fuente
-    c.setFont("Helvetica", 10)
+    # Márgenes
+    margin_x = 50
+    margin_y = 50
+    max_width = width - (2 * margin_x)
+    cursor_y = height - margin_y # Empezamos arriba
     
-    # Título del Documento (Centrado y en Negrita)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width / 2, height - 50, title)
+    # Preparar estilos
+    styles = getSampleStyleSheet()
     
-    # Línea separadora fina debajo del título (opcional, queda elegante)
-    c.setLineWidth(0.5)
-    c.line(50, height - 60, width - 50, height - 60)
+    # Estilo Normal (Cuerpo)
+    style_body = ParagraphStyle(
+        'JustifiedBody',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14, # Espaciado entre líneas
+        alignment=TA_JUSTIFY, # Justificado como contrato real
+        spaceAfter=6
+    )
     
-    # Cuerpo del texto
-    text_object = c.beginText(50, height - 80)
-    text_object.setFont("Helvetica", 10)
-    text_object.setLeading(14) # Espaciado entre líneas cómodo
-    
-    # Procesar texto para saltos de línea automáticos
-    max_width = width - 100
-    for paragraph in text.split('\n'):
-        # Si es un encabezado en Markdown (##), lo ponemos en negrita
-        if paragraph.strip().startswith("##") or paragraph.strip().startswith("**"):
-            c.setFont("Helvetica-Bold", 11)
-            clean_para = paragraph.replace("#", "").replace("*", "").strip()
-            # Dividir líneas largas
-            words = clean_para.split()
-            line = ""
-            for word in words:
-                if c.stringWidth(line + word, "Helvetica-Bold", 11) < max_width:
-                    line += word + " "
-                else:
-                    text_object.textLine(line)
-                    line = word + " "
-            text_object.textLine(line)
-            c.setFont("Helvetica", 10) # Volver a normal
-            
-        else:
-            # Texto normal
-            words = paragraph.split()
-            line = ""
-            for word in words:
-                if c.stringWidth(line + word, "Helvetica", 10) < max_width:
-                    line += word + " "
-                else:
-                    text_object.textLine(line)
-                    line = word + " "
-            text_object.textLine(line)
-        
-        # Salto de párrafo extra
-        text_object.textLine("") 
-        
-        # Control de fin de página
-        if text_object.getY() < 50:
-            c.drawText(text_object)
-            c.showPage() # Nueva página
-            # Reiniciar objeto de texto en nueva página
-            text_object = c.beginText(50, height - 50)
-            text_object.setFont("Helvetica", 10)
-            text_object.setLeading(14)
+    # Estilo Título (Cabeceras ##)
+    style_heading = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=12,
+        leading=16,
+        spaceAfter=10,
+        spaceBefore=10
+    )
 
-    c.drawText(text_object)
+    # 1. DIBUJAR EL TÍTULO DEL DOCUMENTO (Cabecera Principal)
+    c.setFont("Helvetica-Bold", 14)
+    c.drawCentredString(width / 2, cursor_y, title)
+    c.setLineWidth(0.5)
+    c.line(margin_x, cursor_y - 10, width - margin_x, cursor_y - 10)
+    cursor_y -= 40 # Bajamos el cursor
+
+    # 2. PROCESAR EL TEXTO LÍNEA A LÍNEA
+    # Reemplazamos los saltos de línea dobles para separar párrafos
+    paragraphs = text.split('\n')
+    
+    for para_text in paragraphs:
+        para_text = para_text.strip()
+        if not para_text:
+            cursor_y -= 10 # Espacio extra si hay línea vacía
+            continue
+            
+        # --- LÓGICA DE DETECCIÓN DE FORMATO ---
+        
+        # A) Si es un título Markdown (## o ###)
+        if para_text.startswith('#'):
+            # Quitamos las almohadillas
+            clean_text = para_text.replace('#', '').strip()
+            p = Paragraph(clean_text, style_heading)
+        
+        # B) Si es texto normal
+        else:
+            # MAGIA: Convertimos **texto** en <b>texto</b> para ReportLab
+            # Usamos Regex para reemplazar todas las ocurrencias
+            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', para_text)
+            p = Paragraph(formatted_text, style_body)
+
+        # Calculamos cuánto ocupa este párrafo
+        w, h = p.wrap(max_width, height)
+        
+        # Si no cabe en la página, creamos una nueva
+        if cursor_y - h < margin_y:
+            c.showPage()
+            cursor_y = height - margin_y
+            # Si cambiamos de página, volvemos a calcular wrap por si acaso
+            w, h = p.wrap(max_width, height)
+        
+        # Dibujamos el párrafo
+        p.drawOn(c, margin_x, cursor_y - h)
+        cursor_y -= h # Bajamos el cursor lo que ocupe el párrafo
+
     c.save()
     buffer.seek(0)
     return buffer
+    
 # --- FUNCIÓN PARA GENERAR WORD (.docx) ---
 def create_docx(text, title="Documento"):
     doc = Document()
@@ -2009,6 +2030,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
