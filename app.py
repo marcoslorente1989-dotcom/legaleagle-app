@@ -612,7 +612,39 @@ def nukear_memoria_reclamacion():
 
 def limpiar_cache_reclamacion():
     """Borra el resultado de la reclamación al cambiar de modo"""
-    st.session_state.generated_claim = ""  
+    st.session_state.generated_claim = "" 
+
+# --- AÑADIR EN LA SECCIÓN 3: FUNCIÓN GENERAR CALENDARIO ---
+def create_ics(title, date_obj, description):
+    """Genera el contenido de un archivo .ics estándar sin librerías extra."""
+    try:
+        # Formato de fecha requerido por iCalendar (YYYYMMDD)
+        dt_start = date_obj.strftime("%Y%m%d")
+        # Fecha fin = Fecha inicio + 1 día (evento de día completo)
+        from datetime import timedelta
+        dt_end = (date_obj + timedelta(days=1)).strftime("%Y%m%d")
+        
+        now = datetime.now().strftime("%Y%m%dT%H%M%SZ")
+        
+        # Estructura del archivo .ics
+        ics_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//LegalApp AI//España
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:legalapp-{now}
+DTSTAMP:{now}
+DTSTART;VALUE=DATE:{dt_start}
+DTEND;VALUE=DATE:{dt_end}
+SUMMARY:⚖️ {title}
+DESCRIPTION:{description}
+STATUS:CONFIRMED
+END:VEVENT
+END:VCALENDAR"""
+        return ics_content
+    except Exception as e:
+        return ""
 
 def extract_text_from_pdf(file, max_pages=15):
     """
@@ -1156,15 +1188,33 @@ with tabs[1]:
 
 
             # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
+            # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
             with c_ana_der:
                 
                 # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
                 if st.session_state.analisis_result:
+                    st.success("✅ Análisis Finalizado")
                     st.markdown(f"<div class='contract-box'>{st.session_state.analisis_result}</div>", unsafe_allow_html=True)
                     
-                    # Botón descarga
-                    pdf_bytes = create_pdf(st.session_state.analisis_result, f"Analisis_{modo}")
-                    st.download_button("⬇️ Descargar Informe PDF", pdf_bytes, "Analisis.pdf", "application/pdf", use_container_width=True)
+                    st.write("")
+                    st.caption("📥 **Acciones y Recordatorios**")
+                    
+                    # Layout: Selector Fecha | PDF | Calendario
+                    c_res_1, c_res_2, c_res_3 = st.columns([1.2, 0.8, 0.8], vertical_alignment="bottom")
+                    
+                    with c_res_1:
+                        # Por defecto ponemos 1 año, pero el usuario puede cambiarlo
+                        fecha_aviso = st.date_input("📅 Fecha Vencimiento:", datetime.now().replace(year=datetime.now().year + 1), key="date_ana_remind")
+                    
+                    with c_res_2:
+                        pdf_bytes = create_pdf(st.session_state.analisis_result, f"Analisis_{modo}")
+                        st.download_button("⬇️ PDF", pdf_bytes, "Analisis.pdf", "application/pdf", use_container_width=True)
+
+                    with c_res_3:
+                        # Generamos el evento de calendario con la fecha seleccionada
+                        ics_ana = create_ics(f"Vencimiento: {modo}", fecha_aviso, "Revisar condiciones, cancelar o renovar documento analizado en LegalApp.")
+                        st.download_button("📅 Agendar", ics_ana, "vencimiento.ics", "text/calendar", use_container_width=True, help="Guardar recordatorio en tu agenda")
+
                     st.divider()
 
                 # B) ZONA DE CHAT / HERRAMIENTAS EXTRA (Siempre visible si hay texto cargado)
@@ -1536,6 +1586,30 @@ with tabs[2]:
                     with c_btn3:
                         link_wa = get_whatsapp_link(st.session_state.generated_contract)
                         st.link_button("📲 WhatsApp", link_wa, use_container_width=True)
+
+                    with c_btn4:
+                        # Calculamos fecha lógica según el tipo de contrato
+                        fecha_evento = datetime.now()
+                        titulo_evento = f"Revisar: {tipo_texto}"
+                        desc_evento = "Recordatorio generado por LegalApp para revisar vencimiento o condiciones."
+                        
+                        # Si es Alquiler y tenemos fecha fin calculada (intentamos recuperarla de la sesión o variables locales si es posible)
+                        # Nota: Si las variables locales se pierden al recargar, usamos una fecha genérica (+1 año)
+                        try:
+                            if modo == "ALQUILER":
+                                # Asumimos +1 año por defecto si no podemos leer la variable local 'duracion'
+                                fecha_evento = datetime.now().replace(year=datetime.now().year + 1)
+                                titulo_evento = "Fin Contrato Alquiler"
+                            elif modo == "PRESTAMO":
+                                fecha_evento = datetime.now().replace(month=datetime.now().month + 6) # +6 meses aprox
+                                titulo_evento = "Vencimiento Préstamo"
+                        except: pass
+
+                        ics_data = create_ics(titulo_evento, fecha_evento, desc_evento)
+                        st.download_button("📅 Cal.", ics_data, "recordatorio.ics", "text/calendar", key="btn_cal_2", use_container_width=True, help="Añadir recordatorio a tu calendario")
+
+
+
                     
 # --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
 with tabs[3]:
@@ -1731,20 +1805,61 @@ with tabs[3]:
                        st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
                        st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
 
-        # --- VISOR DE RESULTADOS (COMÚN) ---
+       # --- VISOR DE RESULTADOS (TAB 3) ---
         with c_doc:
             if st.session_state.generated_claim:
+                # 1. Mostrar texto
                 st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
                 st.write("")
+                
+                # 2. Bloque de Acciones (Email + PDF)
                 with st.container(border=False):
-                    ce2, cb2 = st.columns([2,1])
-                    with ce2: m2 = st.text_input("Email (Opcional)", key="mr_tab3")
+                    ce2, cb2 = st.columns([2, 1])
+                    
+                    with ce2: 
+                        m2 = st.text_input("Email (Opcional)", key="mr_tab3")
+                    
                     with cb2:
-                        st.write(""); st.write("")
-                        if st.button("PDF LEGAL", key="br_tab3"):
-                            save_lead(m2, "RECLAMACION", st.session_state.nav_reclamar)
-                            pdf = create_pdf(st.session_state.generated_claim, "Documento Legal")
-                            st.download_button("⬇️ Bajar PDF", data=pdf, file_name="Legal.pdf", mime="application/pdf")
+                        st.write(""); st.write("") # Espacio para alinear con el input
+                        
+                        # Generamos el PDF en memoria
+                        pdf_data = create_pdf(st.session_state.generated_claim, "Documento Legal")
+                        
+                        # Callback para guardar el lead al descargar
+                        def guardar_y_bajar():
+                            if m2: save_lead(m2, "RECLAMACION", st.session_state.nav_reclamar)
+
+                        st.download_button(
+                            label="📄 Bajar PDF",
+                            data=pdf_data,
+                            file_name="Legal.pdf",
+                            mime="application/pdf",
+                            key="dl_btn_tab3",
+                            on_click=guardar_y_bajar,
+                            use_container_width=True
+                        )
+
+                # 3. Bloque Calendario (Seguimiento) - Separado para que se vea bien
+                st.write("")
+                st.caption("📅 **No te olvides de los plazos**")
+                
+                # Calculamos fecha: 15 días desde hoy
+                fecha_seguimiento = datetime.now() + pd.Timedelta(days=15)
+                
+                ics_reclama = create_ics(
+                    f"Seguimiento: {st.session_state.nav_reclamar}", 
+                    fecha_seguimiento, 
+                    "Verificar si han contestado al Burofax/Recurso enviado con LegalApp."
+                )
+                
+                st.download_button(
+                    label=f"📅 Agendar Seguimiento ({fecha_seguimiento.strftime('%d/%m')})", 
+                    data=ics_reclama, 
+                    file_name="seguimiento.ics", 
+                    mime="text/calendar", 
+                    use_container_width=True,
+                    help="Añade un recordatorio en tu agenda para comprobar si te han respondido."
+                )    
                             
 # --- TAB 4: IMPUESTOS (ARQUITECTURA CORREGIDA Y DEFINITIVA) ---
 with tabs[4]:
@@ -2275,6 +2390,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
