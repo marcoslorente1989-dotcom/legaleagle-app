@@ -9,5 +9,7 @@ oauth2client
 requests
 python-docx
 reportlab
+PyPDF2       <-- AÑADIR ESTA
+Pillow       <-- AÑADIR ESTA (Para las imágenes)
 
 
