@@ -2065,10 +2065,10 @@ with tabs[4]:
                 with col_der:
                     st.warning("💰 **DATOS VENTA** (Resultado saldrá 👈)")
                     with st.container(border=True):
-                        p_venta = st.number_input("Venta (€)", value=180000, step=1000.0, key="viv_ven_pv")
-                        p_compra = st.number_input("Compra (€)", value=100000, step=1000.0, key="viv_ven_pc")
+                        p_venta = st.number_input("Venta (€)", value=180000, step=1000, key="viv_ven_pv")
+                        p_compra = st.number_input("Compra (€)", value=100000, step=1000, key="viv_ven_pc")
                         f_compra = st.number_input("Año Adquisición", 1920, 2025, 2010, key="viv_ven_ac")
-                        v_suelo = st.number_input("Valor Suelo IBI (€)", 0, step=500.0, help="Casilla 'Valor Catastral Suelo' del recibo IBI.", key="viv_ven_vs")
+                        v_suelo = st.number_input("Valor Suelo IBI (€)", 0, step=500, help="Casilla 'Valor Catastral Suelo' del recibo IBI.", key="viv_ven_vs")
                         municipio = st.text_input("Municipio", key="viv_ven_mun")
                         
                         # Selector de Tipo Impositivo
@@ -2527,6 +2527,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
