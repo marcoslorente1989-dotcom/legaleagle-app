@@ -877,13 +877,28 @@ def detectar_tipo_contrato(texto_pdf, api_key):
 
 def extraer_datos_universales(texto_pdf, categoria, api_key):
     config_campos = {
-        "Energía": "comercializadora, cups, precio_kwh, potencia, permanencia",
+        "Energía": "comercializadora, cups, precio_energia_kwh, potencia_facturada, permanencia",
         "Alquiler": "arrendador, arrendatario, renta_mensual, fianza, duracion",
         "Laboral": "empresa, empleado, salario_bruto_anual, jornada, tipo_contrato",
         "Seguro": "aseguradora, prima_anual, cobertura_principal, numero_poliza"
     }
-    campos = config_campos.get(categoria, "partes_firmantes, fecha_inicio, precio_o_valor, clausulas_clave")
-    prompt_dinamico = f"Actúa como extractor JSON. Contrato tipo: {categoria}. Extrae estos campos en formato JSON: {campos}. Si no hay un dato pon null. Devuelve SOLO el JSON puro, sin texto extra.\n\nTEXTO: {texto_pdf}"
+    campos = config_campos.get(categoria, "partes_firmantes, fecha_inicio, importe_o_valor, clausulas_clave")
+    
+    # PROMPT OPTIMIZADO: Búsqueda por patrones universales (€, kWh, Mes...)
+    prompt_dinamico = f"""
+    Actúa como un extractor de datos técnicos y económicos. 
+    Contrato tipo: {categoria}. 
+
+    INSTRUCCIONES DE BÚSQUEDA UNIVERSAL:
+    1. Escanea el texto buscando los campos: {campos}.
+    2. Busca específicamente cifras junto a símbolos: '€', '€/kWh', '€/mes', '€/año' o '%'.
+    3. Si es un contrato de energía, busca en los anexos finales (término de potencia y energía).
+    4. Si un dato no aparece, pon "No indicado" en lugar de null.
+    5. Devuelve EXCLUSIVAMENTE el JSON puro.
+
+    TEXTO DEL CONTRATO:
+    {texto_pdf}
+    """
     return groq_engine(prompt_dinamico, api_key)
 
 def save_lead(email, action, details):
@@ -1285,10 +1300,9 @@ with tabs[1]:
                                 carta = groq_engine(p_cancel, api_key)
                                 st.markdown(f"<div class='contract-box'>{carta}</div>", unsafe_allow_html=True)
 
-                   # CHAT INTERACTIVO MEJORADO
+                   # CHAT INTERACTIVO UNIVERSAL
                     st.subheader("💬 Chat con el documento")
                     
-                    # Historial visual
                     for msg in st.session_state.chat_history:
                         clase = "chat-user" if msg["role"] == "user" else "chat-bot"
                         st.markdown(f"<div class='{clase}'>{msg['content']}</div>", unsafe_allow_html=True)
@@ -1296,31 +1310,37 @@ with tabs[1]:
                     if pregunta := st.chat_input("Pregunta algo sobre el archivo..."):
                         st.session_state.chat_history.append({"role": "user", "content": pregunta})
                         
-                        with st.spinner("Buscando en todas las páginas del documento..."):
-                            # ENVIAMOS MÁS CONTEXTO (Aumentamos de 12k a 30k caracteres si la API lo permite)
-                            # Y añadimos una instrucción de búsqueda para que no se pierda.
-                            contexto_completo = st.session_state.contract_text[:35000] 
+                        with st.spinner("Escaneando cláusulas y condiciones..."):
+                            # Aumentamos el contexto para cubrir documentos largos
+                            contexto_chat = st.session_state.contract_text[:45000] 
                             
                             prompt_chat = f"""
-                            Eres un asistente legal experto. Tienes delante el texto íntegro de un documento dividido por etiquetas [PÁGINA X].
-                            
-                            TU TAREA:
-                            1. Lee TODO el contexto proporcionado abajo.
-                            2. Localiza la información específica solicitada.
-                            3. Si la información está en las páginas finales, búscala allí.
-                            
+                            Eres un experto en análisis de contratos y documentos legales. 
+                            Tu objetivo es extraer información precisa del texto proporcionado.
+
+                            REGLAS DE BÚSQUEDA UNIVERSAL:
+                            1. Si la pregunta es sobre DINERO, PRECIOS o COSTES: 
+                               - Escanea el texto buscando el símbolo '€', la palabra 'Precio', 'Tarifa', 'Canon', 'Importe', 'IVA' o 'Comisión'.
+                               - Revisa especialmente los ANEXOS o las CLÁUSULAS ECONÓMICAS que suelen estar al principio o al final.
+                            2. Si la pregunta es sobre TIEMPOS o PLAZOS:
+                               - Busca 'Duración', 'Vigencia', 'Prórroga', 'Preaviso' o 'Meses'.
+                            3. Siempre indica en qué PÁGINA (si aparece la etiqueta [PÁGINA X]) has encontrado el dato.
+
                             TEXTO DEL DOCUMENTO:
-                            {contexto_completo}
+                            {contexto_chat}
                             
                             PREGUNTA DEL USUARIO: 
                             {pregunta}
                             
-                            RESPUESTA (Si citas un dato, indica en qué página lo has leído):
+                            RESPUESTA (Limpia, directa y sin código HTML):
                             """
                             respuesta = groq_engine(prompt_chat, api_key)
+                            
+                            # Limpieza para evitar el error de "pantalla en blanco"
+                            respuesta_limpia = respuesta.replace("<div", "").replace("</div>", "").strip()
                         
-                        st.session_state.chat_history.append({"role": "assistant", "content": respuesta})
-                        st.rerun()
+                        st.session_state.chat_history.append({"role": "assistant", "content": respuesta_limpia})
+                        st.rerun()    
                 
                 # Mensaje de bienvenida si no hay nada
                 elif not st.session_state.analisis_result:
@@ -2644,6 +2664,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
