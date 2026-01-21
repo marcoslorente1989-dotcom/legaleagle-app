@@ -876,6 +876,21 @@ def groq_engine(prompt, key, temp=0.2):
         ], temperature=temp).choices[0].message.content
     except Exception as e: return f"Error AI: {str(e)}"
 
+def detectar_tipo_contrato(texto_pdf, api_key):
+    prompt_tipo = f"Analiza el inicio de este contrato y clasifícalo en una categoría única (Ej: Energía, Alquiler, Laboral, Seguro, Servicios). Responde SOLO con la categoría.\n\nTEXTO: {texto_pdf[:2000]}"
+    return groq_engine(prompt_tipo, api_key)
+
+def extraer_datos_universales(texto_pdf, categoria, api_key):
+    config_campos = {
+        "Energía": "comercializadora, cups, precio_kwh, potencia, permanencia",
+        "Alquiler": "arrendador, arrendatario, renta_mensual, fianza, duracion",
+        "Laboral": "empresa, empleado, salario_bruto_anual, jornada, tipo_contrato",
+        "Seguro": "aseguradora, prima_anual, cobertura_principal, numero_poliza"
+    }
+    campos = config_campos.get(categoria, "partes_firmantes, fecha_inicio, precio_o_valor, clausulas_clave")
+    prompt_dinamico = f"Actúa como extractor JSON. Contrato tipo: {categoria}. Extrae estos campos en formato JSON: {campos}. Si no hay un dato pon null. Devuelve SOLO el JSON puro, sin texto extra.\n\nTEXTO: {texto_pdf}"
+    return groq_engine(prompt_dinamico, api_key)
+
 def save_lead(email, action, details):
     """Guarda el lead en Google Sheets"""
     try:
@@ -1171,7 +1186,7 @@ with tabs[1]:
                                 if modo == "CONTRATO":
                                     prompt = f"""
                                     Actúa como Abogado Experto. Analiza este contrato:
-                                    {texto_extraido[:8000]}... (truncado por longitud).
+                                    {texto_extraido[:15000]}... (truncado por longitud).
                                     
                                     GENERA UN INFORME CON ESTA ESTRUCTURA:
                                     1. 📋 **RESUMEN EJECUTIVO**: De qué trata.
@@ -2598,6 +2613,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
