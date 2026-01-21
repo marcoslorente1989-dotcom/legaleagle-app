@@ -1229,12 +1229,7 @@ with tabs[1]:
 
 
         
-            # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
-            with c_ana_der:
-                
-                # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
-                if st.session_state.analisis_result:
-
+        
                    # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
             with c_ana_der:
                 
@@ -2649,6 +2644,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
