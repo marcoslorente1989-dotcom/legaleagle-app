@@ -2161,22 +2161,22 @@ with tabs[4]:
                                     - MEJOR: {f_mejor}
                                     - IRPF: {f_irpf}
 
-                                    PLANTILLA HTML (Rellena donde dice VALOR_X):
+                                    ESTRUCTURA:
                                     <div style="margin-bottom: 5px; border-bottom: 1px dashed #555; padding-bottom: 5px;">
                                         <span style="color: #cbd5e1;">Método Objetivo:</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">VALOR_OBJETIVO €</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">{f_obj}</span>
                                     </div>
                                     <div style="margin-bottom: 15px;">
                                         <span style="color: #cbd5e1;">Método Real (Est.):</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">VALOR_REAL €</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">{f_real}</span>
                                     </div>
-                                    <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4);">
-                                        <div style="color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Opción más barata</div>
-                                        <div style="color: #60a5fa; font-size: 26px; font-weight: 900;">VALOR_MEJOR €</div>
+                                    <div style="background: rgba(59, 130, 246, 0.2); padding: 20px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4);">
+                                        <div style="color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Opción más barata</div>
+                                        <div style="color: #60a5fa; font-size: 32px; font-weight: 900;">{f_mejor}</div>
                                     </div>
-                                    <div style="border-top: 1px dashed #555; margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-between;">
+                                    <div style="border-top: 1px dashed #555; margin-top: 20px; padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
                                         <span style="color: #cbd5e1;">Estimación IRPF Estatal:</span>
-                                        <span style="color: #f87171; font-weight: bold; font-size: 16px;">VALOR_IRPF €</span>
+                                        <span style="color: #f87171; font-weight: bold; font-size: 18px;">{f_irpf}</span>
                                     </div>
                                     """
                                     
@@ -2577,6 +2577,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
