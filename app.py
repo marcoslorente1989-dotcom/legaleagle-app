@@ -2043,19 +2043,25 @@ with tabs[4]:
                                 st.session_state.viv_res_compra = groq_engine(prompt, api_key)
                                 st.rerun()
 
-                    # B. VISOR DE VENTA (Viene de la derecha)
+                    # Visor de Venta (viene de la derecha) - DISEÑO FINAL TRANSPARENTE
                     if st.session_state.viv_res_venta:
                         st.write("")
                         st.info("⬅️ **RESULTADO DE LA VENTA**")
                         
-                        # AQUÍ ESTÁ LA CLAVE: Ponemos el contenedor nosotros
+                        # Contenedor con FONDO TRANSPARENTE (Glassmorphism)
                         html_container = f"""
                         <div style="
-                            background-color: rgba(255, 255, 255, 0.05); 
-                            padding: 20px; 
+                            background-color: rgba(0, 0, 0, 0.4); 
+                            backdrop-filter: blur(5px);
+                            color: white;
+                            padding: 25px; 
                             border-radius: 15px; 
-                            border: 1px solid rgba(255, 255, 255, 0.1);
+                            border: 1px solid rgba(255, 255, 255, 0.15);
+                            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
                         ">
+                            <div style="font-size: 16px; color: #e2e8f0; margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                📉 Análisis Fiscal (Plusvalía)
+                            </div>
                             {st.session_state.viv_res_venta}
                         </div>
                         """
@@ -2088,8 +2094,7 @@ with tabs[4]:
                                     
                                     # PROMPT QUE GENERA HTML DIRECTAMENTE
                                     prompt_venta = f"""
-                                    Actúa como Experto Fiscal. Calcula y devuelve SOLO el código HTML de las filas de datos.
-                                    NO pongas el contenedor principal (div con background), eso lo pongo yo.
+                                    Actúa como un Motor de Cálculo. NO HABLES. SOLO CALCULA Y DEVUELVE HTML.
                                     
                                     DATOS:
                                     - Años tenencia: {anios}.
@@ -2097,7 +2102,7 @@ with tabs[4]:
                                     - Valor Suelo: {v_suelo}€.
                                     - Tipo: {tipo_impositivo}%.
                                     
-                                    CÁLCULOS INTERNOS (NO LOS EXPLIQUES, SOLO HAZLOS):
+                                    CÁLCULOS (Mentalmente):
                                     1. COEFICIENTE ESTATAL (Objetivo):
                                        - <1 año:0.15 | 1:0.15 | 2:0.14 | 3:0.16 | 4:0.18 | 5:0.19 | 6:0.20 
                                        - 7:0.19 | 8:0.15 | 9:0.12 | 10:0.10 | 11:0.09 | 12:0.09 | 13:0.09
@@ -2113,35 +2118,41 @@ with tabs[4]:
                                     3. IRPF ESTATAL (Estimado):
                                        -> 19% hasta 6.000€ de ganancia, 21% de 6k a 50k, 23% de 50k a 200k.
                                     
-                                    PLANTILLA DE SALIDA (RELLENA LOS CORCHETES):
-                                    <div style="font-size: 16px; color:#ccc; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 5px;">📉 Plusvalía Municipal (Comparativa)</div>
-                                    
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                        <span style="color: #aaa;">Método Objetivo (Coeficientes):</span>
-                                        <span style="color: #fff; font-weight: bold;">[RESULTADO_OBJETIVO] €</span>
+                                    UTPUT EXACTO (Solo rellena los corchetes, no toques las etiquetas):
+                                    <div style="margin-bottom: 5px; border-bottom: 1px dashed #555; padding-bottom: 5px;">
+                                        <span style="color: #cbd5e1;">Método Objetivo:</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">[RESULTADO_OBJETIVO] €</span>
                                     </div>
-                                    
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                                        <span style="color: #aaa;">Método Real (Ganancia):</span>
-                                        <span style="color: #fff; font-weight: bold;">[RESULTADO_REAL] €</span>
+                                    <div style="margin-bottom: 15px;">
+                                        <span style="color: #cbd5e1;">Método Real:</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">[RESULTADO_REAL] €</span>
                                     </div>
-
-                                    <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                                        <div style="color: #93c5fd; font-size: 12px; margin-bottom: 4px;">✅ A PAGAR (MÁS BARATO)</div>
-                                        <div style="color: #38bdf8; font-size: 24px; font-weight: 900;">[MEJOR_OPCION] €</div>
+                                    <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4);">
+                                        <div style="color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Opción más barata</div>
+                                        <div style="color: #60a5fa; font-size: 26px; font-weight: 900;">[MEJOR_OPCION] €</div>
                                     </div>
-
-                                    <div style="border-top: 1px dashed #555; padding-top: 10px; text-align: right;">
-                                        <span style="color: #f87171; font-weight: bold; font-size: 18px;">[IRPF_ESTIMADO] €</span><br>
-                                        <span style="color: #aaa; font-size: 11px;">Hachazo Hacienda (IRPF Ahorro)</span>
+                                    <div style="border-top: 1px dashed #555; padding-top: 5px; text-align: right;">
+                                        <span style="color: #f87171; font-weight: bold; font-size: 16px;">[IRPF_ESTIMADO] €</span><br>
+                                        <span style="color: #94a3b8; font-size: 10px;">Estimación IRPF Estatal</span>
                                     </div>
                                     """
                                     
-                                    # Guardamos en la variable de visualización
-                                    st.session_state.viv_res_venta = groq_engine(prompt_venta, api_key)
+                                    #raw_response = groq_engine(prompt_venta, api_key)
+                                    
+                                    # --- LIMPIEZA DE CÓDIGO BASURA (CRÍTICO) ---
+                                    # 1. Quitamos bloques de markdown si la IA los pone
+                                    clean_html = raw_response.replace("```html", "").replace("```", "")
+                                    
+                                    # 2. Buscamos dónde empieza el primer div real
+                                    if "<div" in clean_html:
+                                        start_idx = clean_html.find("<div")
+                                        clean_html = clean_html[start_idx:] # Cortamos todo lo de antes
+                                    
+                                    # 3. Guardamos solo el HTML limpio
+                                    st.session_state.viv_res_venta = clean_html
                                     st.rerun()
                             else:
-                                st.warning("⚠️ Necesitas el Valor Catastral del Suelo para calcular.")
+                                st.warning("⚠️ Faltan datos del Valor Suelo.")
                     
                     # (Aquí debajo va el visor inverso de compra si lo tuvieras, ese no cambia)
 
@@ -2527,6 +2538,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
