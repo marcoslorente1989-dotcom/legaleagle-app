@@ -1466,7 +1466,8 @@ with tabs[2]:
                           marca = st.text_input("Marca y Modelo", placeholder="Ej: Ford Focus 1.5")
                           matricula = st.text_input("Matrícula")
                      with col_coche2:
-                          bastidor = st.text_input("Nº Bastidor (VIN)", help="Fundamental para la validez legal")
+                          bastidor = st.text_input("Nº Bastidor (VIN)")
+                          st.caption("ℹ️ Fundamental para la validez legal")
                           kms = st.number_input("Kilómetros", min_value=0, step=1000)
                      precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
                      data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
@@ -1504,7 +1505,8 @@ with tabs[2]:
                     comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
                     st.caption("🏠 Inmueble")
                     inmueble = st.text_input('Dirección Completa')
-                    ref_catastral = st.text_input('Referencia Catastral', help="Código de 20 caracteres")
+                    ref_catastral = st.text_input('Referencia Catastral')
+                    st.caption("ℹ️ Código de 20 caracteres")
                     precio = st.number_input('Precio Venta (€)', step=1000.0)
                     data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas."
             
@@ -2390,7 +2392,8 @@ with tabs[4]:
                             if estado == "Casado/a": 
                                 conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?", key="su_con")
                             elif estado == "Pareja de hecho":
-                                hijos_comun_pareja = st.checkbox("¿Tenéis hijos en común?", help="Importante para prorratear la deducción por descendientes.", key="su_pareja_hijos")
+                                hijos_comun_pareja = st.checkbox("¿Tenéis hijos en común?", key="su_pareja_hijos")
+                                st.caption("ℹ️ Importante para prorratear la deducción por descendientes.")
                             elif estado == "Divorciado/Separado":
                                 paga_pension = st.checkbox("¿Pagas pensión por sentencia?", key="su_pen_check")
                                 if paga_pension:
@@ -2577,6 +2580,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
