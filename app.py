@@ -2231,12 +2231,41 @@ with tabs[4]:
                         st.subheader("💶 Simulador Sueldo Neto")
                         st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
                         
+                        # 1. Datos Económicos y Laborales
                         bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0, key="su_bru")
-                        edad = st.number_input("Edad", 18, 70, 30, key="su_edad")
-                        comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"], key="su_ccaa")
+                        
+                        c_dat1, c_dat2 = st.columns(2)
+                        with c_dat1:
+                            edad = st.number_input("Edad", 18, 70, 30, key="su_edad")
+                        with c_dat2:
+                            comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"], key="su_ccaa")
+                        
                         movilidad = st.checkbox("¿Movilidad Geográfica?", key="su_mov")
+
+                        # --- NUEVOS CAMPOS SOLICITADOS ---
+                        c_lab1, c_lab2 = st.columns(2)
+                        with c_lab1:
+                            tipo_contrato = st.selectbox("Tipo de Contrato", ["General / Indefinido", "Temporal (inferior a 1 año)"], key="su_tipo_con")
+                        with c_lab2:
+                            categorias_prof = [
+                                "Grupo 1: Ingenieros, licenciados y alta dirección",
+                                "Grupo 2: Ingenieros técnicos, peritos y ayudantes titulados",
+                                "Grupo 3: Jefes administrativos y de taller",
+                                "Grupo 4: Ayudantes no titulados",
+                                "Grupo 5: Oficiales administrativos",
+                                "Grupo 6: Personal subalterno",
+                                "Grupo 7: Auxiliares administrativos",
+                                "Grupo 8: Oficiales de primera y segunda",
+                                "Grupo 9: Oficiales de tercera y especialistas",
+                                "Grupo 10: Peones",
+                                "Grupo 11: Trabajadores menores de 18 años"
+                            ]
+                            cat_pro = st.selectbox("Categoría Profesional", categorias_prof, key="su_cat_pro")
+                        # ---------------------------------
                         
                         st.markdown("---")
+                        
+                        # 2. Situación Familiar
                         c_fam1, c_fam2 = st.columns(2)
                         with c_fam1: 
                             estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Pareja de hecho", "Divorciado/Separado"], key="su_est")
@@ -2264,19 +2293,35 @@ with tabs[4]:
                             hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0, key="su_hij3")
                         
                         if st.button("💶 CALCULAR NETO EXACTO", key="btn_su_calc"):
-                            with st.spinner("Calculando IRPF 2025 según situación familiar..."):
+                            with st.spinner("Calculando IRPF 2025 según situación familiar y laboral..."):
                                 prompt_irpf = f"""
-                                Actúa como experto fiscal en España 2025. Calcula TIPO MEDIO IRPF (%) para:
-                                Bruto: {bruto}€. Región: {comunidad}. Edad: {edad}. Estado: {estado}.
-                                Pensiones (reducen base): Alimentos {pension_alim}, Compensatoria {pension_comp}.
-                                Hijos: {hijos} (<3 años: {hijos_menores_3}). Discapacidad: {discapacidad}.
-                                INSTRUCCIÓN: Responde SOLO con el número del porcentaje (ej: 14.20).
+                                Actúa como experto fiscal en España 2025 (Agencia Tributaria).
+                                Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) exacto para este perfil:
+                                
+                                DATOS LABORALES:
+                                - Salario Bruto: {bruto}€
+                                - Región: {comunidad}
+                                - Tipo Contrato: {tipo_contrato} (IMPORTANTE: Si es Temporal < 1 año, aplica mínimo legal del 2% si corresponde).
+                                - Categoría Profesional: {cat_pro}.
+
+                                DATOS PERSONALES:
+                                - Edad: {edad}
+                                - Estado Civil: {estado}.
+                                - Situación Pareja de Hecho con hijos en común: {hijos_comun_pareja}.
+                                - Cónyuge a cargo (si casado): {conyuge_cargo}
+                                - Hijos totales: {hijos}
+                                - Hijos < 3 años: {hijos_menores_3}
+                                - Pensiones por sentencia (reducen base): Alimentos {pension_alim}€, Compensatoria {pension_comp}€.
+                                - Discapacidad: {discapacidad}
+                                
+                                INSTRUCCIÓN: Responde SOLO con el número del porcentaje con dos decimales (ej: 14.20).
                                 """
                                 try:
                                     respuesta_ia = groq_engine(prompt_irpf, api_key, temp=0.0)
                                     import re
                                     match = re.search(r"(\d+[.,]\d+)", respuesta_ia)
-                                    tipo_irpf = float(match.group(1).replace(",", ".")) if match else 15.0
+                                    if match: tipo_irpf = float(match.group(1).replace(",", "."))
+                                    else: tipo_irpf = 15.0
                                 except: tipo_irpf = 15.0
 
                                 ss_anual = bruto * 0.0635
@@ -2302,6 +2347,7 @@ with tabs[4]:
                                     <div style="background: rgba(0,0,0,0.3); margin-top: 20px; padding: 10px; border-radius: 8px;">
                                         <div>IRPF: <span style="color:#f87171;">-{f_irpf} €/mes</span> (Tipo: {f_tipo}%)</div>
                                     </div>
+                                    <div style="margin-top:10px; font-size:10px; color:#aaa;">*Cálculo incluye retención SS estándar (6.35%).</div>
                                 </div>
                                 """
                                 st.session_state.generated_calc = html_nomina
@@ -2418,6 +2464,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
