@@ -1182,26 +1182,33 @@ with tabs[1]:
                                 # Guardamos en sesión para no perderlo
                                 st.session_state.contract_text = texto_extraido
 
-                                # 2. ANÁLISIS MEJORADO (Calcula fechas)
+                               # 2. ANÁLISIS MEJORADO (Detección + Datos + Informe)
                                 if modo == "CONTRATO":
+                                    # A. Detección de Categoría y Extracción de Datos (JSON oculto)
+                                    categoria_detectada = detectar_tipo_contrato(texto_extraido, api_key)
+                                    st.session_state.tipo_contrato_detectado = categoria_detectada
+                                    
+                                    datos_json = extraer_datos_universales(texto_extraido, categoria_detectada, api_key)
+                                    st.session_state.datos_estructurados = datos_json
+
+                                    # B. Generación del Informe Detallado (Markdown visible)
                                     prompt = f"""
-                                    Actúa como Abogado Experto. Analiza este contrato:
+                                    Actúa como Abogado Experto en España. Analiza este contrato de {categoria_detectada}:
                                     {texto_extraido[:15000]}... (truncado por longitud).
                                     
                                     GENERA UN INFORME CON ESTA ESTRUCTURA:
-                                    1. 📋 **RESUMEN EJECUTIVO**: De qué trata.
+                                    1. 📋 **RESUMEN EJECUTIVO**: De qué trata este contrato de {categoria_detectada}.
                                     2. 📅 **DURACIÓN Y FECHAS**: 
                                        - Fecha Inicio detectada.
                                        - Duración total.
                                        - Preaviso requerido (días/meses).
-                                    3. 💶 **ECONOMÍA**: Pagos, fianzas, actualizaciones IPC.
-                                    4. 🚨 **CLÁUSULAS PELIGROSAS**: Lo más importante.
+                                    3. 💶 **ECONOMÍA**: Pagos, precios, fianzas o actualizaciones.
+                                    4. 🚨 **CLÁUSULAS PELIGROSAS**: Riesgos específicos encontrados.
                                     5. ⚖️ **VEREDICTO**: ¿Es seguro firmar?
                                     
                                     🔴 CÁLCULO DE FECHA CLAVE (IMPORTANTE):
                                     Basándote en la fecha de inicio, la duración y el preaviso...
-                                    Calcula la **FECHA LÍMITE EXACTA** para avisar de la no renovación.
-                                    (Ejemplo: "Si acaba el 31/12 y preaviso es 1 mes, la fecha límite es 30/11").
+                                    Calcula la **FECHA LÍMITE EXACTA** para avisar de la no renovación o cancelación.
                                     Pónmelo en negrita así: **FECHA LÍMITE PREAVISO: DD/MM/AAAA**.
                                     """
                                     st.session_state.analisis_result = groq_engine(prompt, api_key)
@@ -1226,12 +1233,26 @@ with tabs[1]:
                                 st.error(f"Error al procesar: {e}. Intenta con un archivo más pequeño.")
 
 
-            # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
+        
             # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
             with c_ana_der:
                 
                 # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
                 if st.session_state.analisis_result:
+
+                    # --- VISOR DE MÉTRICAS (Ponlo justo antes del informe de texto) ---
+                if "datos_estructurados" in st.session_state and st.session_state.datos_estructurados:
+                    try:
+                        raw_json = st.session_state.datos_estructurados.strip().replace("```json", "").replace("```", "")
+                        data = json.loads(raw_json)
+                        st.markdown(f"### 📊 Ficha: {st.session_state.get('tipo_contrato_detectado', 'Contrato')}")
+                        cols_data = st.columns(len(data))
+                        for i, (clave, valor) in enumerate(data.items()):
+                            cols_data[i].metric(label=clave.replace("_", " ").title(), value=str(valor))
+                        st.markdown("---")
+                    except:
+                        pass
+                    
                     st.success("✅ Análisis Finalizado")
                     st.markdown(f"<div class='contract-box'>{st.session_state.analisis_result}</div>", unsafe_allow_html=True)
                     
@@ -2615,6 +2636,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
