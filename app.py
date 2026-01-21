@@ -2199,11 +2199,14 @@ with tabs[4]:
                                     
                                     # 4. LLAMADA Y LIMPIEZA
                                     raw_response = groq_engine(prompt_venta, api_key)
-                                    if raw_response:
-                                        clean_html = raw_response.replace("```html", "").replace("```", "")
-                                        if "<div" in clean_html:
-                                            start_idx = clean_html.find("<div")
-                                            clean_html = clean_html[start_idx:]
+                                    # --- LIMPIEZA REFORZADA ---
+                                        clean = raw_response.strip().replace("```html", "").replace("```", "")
+                                        # Buscamos el primer <div>
+                                        if "<div" in clean:
+                                            start = clean.find("<div")
+                                            # Buscamos el ÚLTIMO </div> y cortamos radicalmente ahí
+                                            end = clean.rfind("</div>") + 6
+                                            clean = clean[start:end]
                                         
                                         st.session_state.viv_res_venta = clean_html
                                         st.rerun()
@@ -2595,6 +2598,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
