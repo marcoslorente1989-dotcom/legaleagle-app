@@ -2139,7 +2139,7 @@ with tabs[4]:
                                     </div>
                                     """
                                     
-                                    #raw_response = groq_engine(prompt_venta, api_key)
+                                    raw_response = groq_engine(prompt_venta, api_key)
                                     
                                     # --- LIMPIEZA DE CÓDIGO BASURA (CRÍTICO) ---
                                     # 1. Quitamos bloques de markdown si la IA los pone
@@ -2540,6 +2540,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
