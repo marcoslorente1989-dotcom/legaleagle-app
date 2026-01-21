@@ -123,6 +123,22 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.markdown("""
+    <style>
+    /* Forzar estilo en las cajas de ayuda (Tooltips) */
+    div[data-testid="stTooltipContent"] {
+        background-color: #1e293b !important; /* Fondo azul oscuro/gris */
+        color: white !important;
+        border: 1px solid #3b82f6 !important;
+        border-radius: 5px;
+    }
+    /* Asegurar que el texto dentro del tooltip sea blanco */
+    div[data-testid="stTooltipContent"] p {
+        color: white !important;
+    }
+    </style>
+""", unsafe_allow_stdio=True)
+
 # --- B. ESTILOS CSS (SOLO DISEÑO) ---
 st.markdown("""
 <style>
@@ -2580,6 +2596,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
