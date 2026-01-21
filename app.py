@@ -661,28 +661,23 @@ END:VCALENDAR"""
     except Exception as e:
         return ""
 
-def extract_text_from_pdf(file, max_pages=15):
-    """
-    Lee PDF usando PyPDF2 (mucho más ligero que pdfplumber).
-    Lee solo las primeras 'max_pages' para evitar que el servidor corte la conexión.
-    """
+def extract_text_from_pdf(file, max_pages=30): # Aumentamos a 30 páginas
     try:
         pdf_reader = PyPDF2.PdfReader(file)
         text = ""
         num_pages = len(pdf_reader.pages)
-        # Limitamos la lectura para no saturar la memoria
         limit = min(num_pages, max_pages)
         
         for page_num in range(limit):
             page = pdf_reader.pages[page_num]
-            text += page.extract_text() or ""
-            
-        if num_pages > max_pages:
-            text += f"\n... [Texto truncado. Se han leído las primeras {limit} páginas para evitar errores de conexión] ..."
+            page_text = page.extract_text() or ""
+            # Limpieza básica para ahorrar tokens
+            page_text = " ".join(page_text.split()) 
+            text += f"[PÁGINA {page_num + 1}]: {page_text}\n\n"
             
         return text
     except Exception as e:
-        return f"Error leyendo PDF: {e}. Intenta con un archivo más pequeño."
+        return f"Error: {e}"
 
 def analyze_image_groq(uploaded_file, prompt, api_key):
     """
@@ -1290,7 +1285,7 @@ with tabs[1]:
                                 carta = groq_engine(p_cancel, api_key)
                                 st.markdown(f"<div class='contract-box'>{carta}</div>", unsafe_allow_html=True)
 
-                    # CHAT INTERACTIVO
+                   # CHAT INTERACTIVO MEJORADO
                     st.subheader("💬 Chat con el documento")
                     
                     # Historial visual
@@ -1298,19 +1293,32 @@ with tabs[1]:
                         clase = "chat-user" if msg["role"] == "user" else "chat-bot"
                         st.markdown(f"<div class='{clase}'>{msg['content']}</div>", unsafe_allow_html=True)
 
-                    # Input del usuario
                     if pregunta := st.chat_input("Pregunta algo sobre el archivo..."):
-                        # 1. Pintar usuario
                         st.session_state.chat_history.append({"role": "user", "content": pregunta})
-                        st.markdown(f"<div class='chat-user'>{pregunta}</div>", unsafe_allow_html=True)
                         
-                        # 2. Generar respuesta IA
-                        with st.spinner("Consultando el documento..."):
-                            contexto = st.session_state.contract_text[:12000] # Limitamos contexto para no saturar
-                            prompt_chat = f"Contexto del documento: {contexto}. Pregunta del usuario: {pregunta}. Responde de forma breve y precisa basándote solo en el texto."
+                        with st.spinner("Buscando en todas las páginas del documento..."):
+                            # ENVIAMOS MÁS CONTEXTO (Aumentamos de 12k a 30k caracteres si la API lo permite)
+                            # Y añadimos una instrucción de búsqueda para que no se pierda.
+                            contexto_completo = st.session_state.contract_text[:35000] 
+                            
+                            prompt_chat = f"""
+                            Eres un asistente legal experto. Tienes delante el texto íntegro de un documento dividido por etiquetas [PÁGINA X].
+                            
+                            TU TAREA:
+                            1. Lee TODO el contexto proporcionado abajo.
+                            2. Localiza la información específica solicitada.
+                            3. Si la información está en las páginas finales, búscala allí.
+                            
+                            TEXTO DEL DOCUMENTO:
+                            {contexto_completo}
+                            
+                            PREGUNTA DEL USUARIO: 
+                            {pregunta}
+                            
+                            RESPUESTA (Si citas un dato, indica en qué página lo has leído):
+                            """
                             respuesta = groq_engine(prompt_chat, api_key)
                         
-                        # 3. Pintar respuesta y guardar
                         st.session_state.chat_history.append({"role": "assistant", "content": respuesta})
                         st.rerun()
                 
@@ -2636,6 +2644,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
