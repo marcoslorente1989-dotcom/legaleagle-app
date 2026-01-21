@@ -2214,7 +2214,9 @@ with tabs[4]:
                                     
                                     # 4. LLAMADA Y LIMPIEZA
                                     raw_response = groq_engine(prompt_venta, api_key)
+                                    
                                     # --- LIMPIEZA REFORZADA ---
+                                    if raw_response:
                                         clean = raw_response.strip().replace("```html", "").replace("```", "")
                                         # Buscamos el primer <div>
                                         if "<div" in clean:
@@ -2223,7 +2225,7 @@ with tabs[4]:
                                             end = clean.rfind("</div>") + 6
                                             clean = clean[start:end]
                                         
-                                        st.session_state.viv_res_venta = clean_html
+                                        st.session_state.viv_res_venta = clean
                                         st.rerun()
                             else:
                                 st.warning("⚠️ Faltan datos del Valor Suelo.")
@@ -2613,6 +2615,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
