@@ -2049,7 +2049,7 @@ with tabs[4]:
                         st.success("⬅️ **RESULTADO DE LA VENTA**")
                         st.markdown(f"<div class='contract-box' style='font-size:13px;'>{st.session_state.viv_res_venta}</div>", unsafe_allow_html=True)
 
-                # --- COLUMNA DERECHA: INPUTS VENTA + VISOR COMPRA ---
+               # --- COLUMNA DERECHA: INPUTS VENTA + VISOR COMPRA ---
                 with col_der:
                     st.warning("💰 **DATOS VENTA** (Resultado saldrá 👈)")
                     with st.container(border=True):
@@ -2062,9 +2062,12 @@ with tabs[4]:
                         if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
                             if v_suelo > 0:
                                 with st.spinner("Calculando Plusvalía y 'Hachazo' de Hacienda..."):
+                                    # Limpiamos el resultado contrario para no confundir
                                     st.session_state.viv_res_compra = ""
+                                    
                                     anios = anio_actual - f_compra
                                     ganancia = p_venta - p_compra
+                                    
                                     prompt_venta = f"""
                                     Actúa como asesor fiscal en España.
                                     Calcula los impuestos por VENTA DE VIVIENDA en {municipio}.
@@ -2077,7 +2080,8 @@ with tabs[4]:
                                     2. IRPF (ESTATAL): Calcula la cuota a pagar por la Ganancia Patrimonial (Tramos del ahorro 19%-28%).
                                     3. TOTAL A PAGAR APROXIMADO.
                                     """
-                                    st.session_state.generated_calc = groq_engine(prompt_venta, api_key)
+                                    # --- CORRECCIÓN AQUÍ: Guardamos en viv_res_venta ---
+                                    st.session_state.viv_res_venta = groq_engine(prompt_venta, api_key)
                                     st.rerun()
                             else:
                                 st.warning("⚠️ Necesitas el Valor Catastral del Suelo (míralo en el IBI) para calcular la Plusvalía.")
@@ -2464,6 +2468,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
