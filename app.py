@@ -1235,19 +1235,26 @@ with tabs[1]:
                 # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
                 if st.session_state.analisis_result:
 
-                    # --- VISOR DE MÉTRICAS (Ponlo justo antes del informe de texto) ---
-                if "datos_estructurados" in st.session_state and st.session_state.datos_estructurados:
-                    try:
-                        raw_json = st.session_state.datos_estructurados.strip().replace("```json", "").replace("```", "")
-                        data = json.loads(raw_json)
-                        st.markdown(f"### 📊 Ficha: {st.session_state.get('tipo_contrato_detectado', 'Contrato')}")
-                        cols_data = st.columns(len(data))
-                        for i, (clave, valor) in enumerate(data.items()):
-                            cols_data[i].metric(label=clave.replace("_", " ").title(), value=str(valor))
-                        st.markdown("---")
-                    except:
-                        pass
+                   # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
+            with c_ana_der:
+                
+                # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
+                if st.session_state.analisis_result:
                     
+                    # --- VISOR DE MÉTRICAS (Dentro del IF del resultado) ---
+                    if "datos_estructurados" in st.session_state and st.session_state.datos_estructurados:
+                        try:
+                            raw_json = st.session_state.datos_estructurados.strip().replace("```json", "").replace("```", "")
+                            data = json.loads(raw_json)
+                            st.markdown(f"### 📊 Ficha: {st.session_state.get('tipo_contrato_detectado', 'Contrato')}")
+                            cols_data = st.columns(len(data))
+                            for i, (clave, valor) in enumerate(data.items()):
+                                cols_data[i].metric(label=clave.replace("_", " ").title(), value=str(valor))
+                            st.markdown("---")
+                        except:
+                            pass
+
+                    # Ahora el resto del informe que ya tenías
                     st.success("✅ Análisis Finalizado")
                     st.markdown(f"<div class='contract-box'>{st.session_state.analisis_result}</div>", unsafe_allow_html=True)
                     
@@ -1258,7 +1265,6 @@ with tabs[1]:
                     c_res_1, c_res_2, c_res_3 = st.columns([1.2, 0.8, 0.8], vertical_alignment="bottom")
                     
                     with c_res_1:
-                        # Por defecto ponemos 1 año, pero el usuario puede cambiarlo
                         fecha_aviso = st.date_input("📅 Fecha Vencimiento:", datetime.now().replace(year=datetime.now().year + 1), key="date_ana_remind")
                     
                     with c_res_2:
@@ -1266,9 +1272,8 @@ with tabs[1]:
                         st.download_button("⬇️ PDF", pdf_bytes, "Analisis.pdf", "application/pdf", use_container_width=True)
 
                     with c_res_3:
-                        # Generamos el evento de calendario con la fecha seleccionada
-                        ics_ana = create_ics(f"Vencimiento: {modo}", fecha_aviso, "Revisar condiciones, cancelar o renovar documento analizado en LegalApp.")
-                        st.download_button("📅 Agendar", ics_ana, "vencimiento.ics", "text/calendar", use_container_width=True, help="Guardar recordatorio en tu agenda")
+                        ics_ana = create_ics(f"Vencimiento: {modo}", fecha_aviso, "Revisar condiciones del documento analizado en LegalApp.")
+                        st.download_button("📅 Agendar", ics_ana, "vencimiento.ics", "text/calendar", use_container_width=True)
 
                     st.divider()
 
@@ -2644,6 +2649,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
