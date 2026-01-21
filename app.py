@@ -2120,22 +2120,22 @@ with tabs[4]:
                                     3. IRPF ESTATAL (Estimado):
                                        -> 19% hasta 6.000€ de ganancia, 21% de 6k a 50k, 23% de 50k a 200k.
                                     
-                                    UTPUT EXACTO (Solo rellena los corchetes, no toques las etiquetas):
+                                    OUTPUT EXACTO (Rellena LOS MARCADORES EN MAYÚSCULAS sin añadir corchetes):
                                     <div style="margin-bottom: 5px; border-bottom: 1px dashed #555; padding-bottom: 5px;">
                                         <span style="color: #cbd5e1;">Método Objetivo:</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">[RESULTADO_OBJETIVO] €</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">RESULTADO_OBJETIVO €</span>
                                     </div>
                                     <div style="margin-bottom: 15px;">
                                         <span style="color: #cbd5e1;">Método Real:</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">[RESULTADO_REAL] €</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">RESULTADO_REAL €</span>
                                     </div>
                                     <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4);">
                                         <div style="color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Opción más barata</div>
-                                        <div style="color: #60a5fa; font-size: 26px; font-weight: 900;">[MEJOR_OPCION] €</div>
+                                        <div style="color: #60a5fa; font-size: 26px; font-weight: 900;">MEJOR_OPCION €</div>
                                     </div>
-                                    <div style="border-top: 1px dashed #555; padding-top: 5px; text-align: right;">
-                                        <span style="color: #f87171; font-weight: bold; font-size: 16px;">[IRPF_ESTIMADO] €</span><br>
-                                        <span style="color: #94a3b8; font-size: 10px;">Estimación IRPF Estatal</span>
+                                    <div style="border-top: 1px dashed #555; margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-between;">
+                                        <span style="color: #cbd5e1;">Estimación IRPF Estatal:</span>
+                                        <span style="color: #f87171; font-weight: bold; font-size: 16px;">IRPF_ESTIMADO €</span>
                                     </div>
                                     """
                                     
@@ -2540,6 +2540,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
