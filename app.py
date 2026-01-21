@@ -2084,83 +2084,112 @@ with tabs[4]:
 
                         if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
                             if v_suelo > 0:
-                                with st.spinner("Aplicando normativa y generando tarjeta fiscal..."):
-                                    # Limpiamos el resultado contrario
+                                with st.spinner("Calculando impuestos con precisión matemática..."):
                                     st.session_state.viv_res_compra = ""
                                     
+                                    # A. CÁLCULO DE AÑOS
                                     anios = anio_actual - f_compra
                                     if anios < 1: anios = 0
-                                    if anios > 20: anios = 20 
                                     
                                     ganancia_real = p_venta - p_compra
+
+                                    # B. MATEMÁTICAS EXACTAS (PYTHON)
+                                    # 1. Método Objetivo (Tabla Estatal Oficial)
+                                    coeficientes = {
+                                        0: 0.15, 1: 0.15, 2: 0.14, 3: 0.14, 4: 0.16, 5: 0.18,
+                                        6: 0.19, 7: 0.20, 8: 0.19, 9: 0.15, 10: 0.12, 11: 0.10,
+                                        12: 0.09, 13: 0.09, 14: 0.09, 15: 0.09, 16: 0.10, 17: 0.13,
+                                        18: 0.17, 19: 0.23
+                                    }
+                                    # Si es >= 20 años, coeficiente es 0.40. Si no, buscamos en la tabla.
+                                    coef = 0.40 if anios >= 20 else coeficientes.get(anios, 0.15)
                                     
-                                    # PROMPT QUE GENERA HTML DIRECTAMENTE
+                                    base_obj = v_suelo * coef
+                                    cuota_obj = base_obj * (tipo_impositivo / 100)
+
+                                    # 2. Método Real (Estimación: Suelo es 60% del valor total)
+                                    # Si hay pérdidas, la plusvalía es 0.
+                                    if ganancia_real <= 0:
+                                        cuota_real = 0.0
+                                    else:
+                                        base_real = ganancia_real * 0.60 # Estimación estándar del peso del suelo
+                                        cuota_real = base_real * (tipo_impositivo / 100)
+
+                                    # Mejor opción (la más barata)
+                                    mejor_opcion = min(cuota_obj, cuota_real)
+
+                                    # 3. IRPF (Tramos del Ahorro 2024/25)
+                                    irpf_est = 0.0
+                                    if ganancia_real > 0:
+                                        base_ahorro = ganancia_real
+                                        
+                                        # Tramo 1: 19% hasta 6.000€
+                                        t1 = min(base_ahorro, 6000)
+                                        irpf_est += t1 * 0.19
+                                        resto = base_ahorro - t1
+                                        
+                                        if resto > 0:
+                                            # Tramo 2: 21% de 6.000 a 50.000€ (44.000 de ancho)
+                                            t2 = min(resto, 44000)
+                                            irpf_est += t2 * 0.21
+                                            resto = resto - t2
+                                        
+                                        if resto > 0:
+                                            # Tramo 3: 23% de 50.000 a 200.000€ (150.000 de ancho)
+                                            t3 = min(resto, 150000)
+                                            irpf_est += t3 * 0.23
+                                            resto = resto - t3
+                                            
+                                        if resto > 0:
+                                            # Tramo 4: 26% a partir de 200.000€
+                                            irpf_est += resto * 0.26
+
+                                    # C. FORMATEO DE NÚMEROS (Para que queden bonitos: 1.200,50)
+                                    f_obj = "{:,.2f}".format(cuota_obj).replace(",", "X").replace(".", ",").replace("X", ".")
+                                    f_real = "{:,.2f}".format(cuota_real).replace(",", "X").replace(".", ",").replace("X", ".")
+                                    f_mejor = "{:,.2f}".format(mejor_opcion).replace(",", "X").replace(".", ",").replace("X", ".")
+                                    f_irpf = "{:,.2f}".format(irpf_est).replace(",", "X").replace(".", ",").replace("X", ".")
+
+                                    # 3. PROMPT (YA SOLO PINTA, NO CALCULA)
                                     prompt_venta = f"""
-                                    Actúa como un Motor de Cálculo. NO HABLES. SOLO CALCULA Y DEVUELVE HTML.
+                                    Actúa como Maquetador Web. Tu ÚNICA tarea es devolver este código HTML rellenando los huecos.
+                                    NO HAGAS CÁLCULOS, USA LOS VALORES QUE TE DOY.
                                     
-                                    DATOS:
-                                    - Años tenencia: {anios}.
-                                    - Ganancia Real: {ganancia_real}€.
-                                    - Valor Suelo: {v_suelo}€.
-                                    - Tipo: {tipo_impositivo}%.
-                                    
-                                    CÁLCULOS (Mentalmente):
-                                    Usa EXACTAMENTE este coeficiente según los años ({anios}):
-                                       - < 1 año: 0,15 | 1 año: 0,15
-                                       - 2 años: 0,14  | 3 años: 0,14
-                                       - 4 años: 0,16  | 5 años: 0,18
-                                       - 6 años: 0,19  | 7 años: 0,20
-                                       - 8 años: 0,19  | 9 años: 0,15
-                                       - 10 años: 0,12 | 11 años: 0,10
-                                       - 12 años: 0,09 | 13 años: 0,09
-                                       - 14 años: 0,09 | 15 años: 0,09
-                                       - 16 años: 0,10 | 17 años: 0,13
-                                       - 18 años: 0,17 | 19 años: 0,23
-                                       - >= 20 años: 0,40
-                                       -> Base Objetivo = Valor Suelo * Coeficiente.
-                                       -> Cuota Objetivo = Base Objetivo * ({tipo_impositivo}/100).
-                                    
-                                    2. MÉTODO REAL:
-                                       -> Base Real = (Valor Suelo / Valor Catastral Total [Asume que Valor Suelo es 60% del total]) * Ganancia Real.
-                                       -> Cuota Real = Base Real * ({tipo_impositivo}/100).
-                                       -> SI HAY PÉRDIDA ({ganancia_real} < 0), LA CUOTA ES 0€.
-                                    
-                                    3. IRPF ESTATAL (Estimado):
-                                       -> 19% hasta 6.000€ de ganancia, 21% de 6k a 50k, 23% de 50k a 200k.
-                                    
-                                    OUTPUT EXACTO (Rellena LOS MARCADORES EN MAYÚSCULAS sin añadir corchetes):
+                                    VALORES A USAR:
+                                    - OBJETIVO: {f_obj}
+                                    - REAL: {f_real}
+                                    - MEJOR: {f_mejor}
+                                    - IRPF: {f_irpf}
+
+                                    PLANTILLA HTML (Rellena donde dice VALOR_X):
                                     <div style="margin-bottom: 5px; border-bottom: 1px dashed #555; padding-bottom: 5px;">
                                         <span style="color: #cbd5e1;">Método Objetivo:</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">RESULTADO_OBJETIVO €</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">VALOR_OBJETIVO €</span>
                                     </div>
                                     <div style="margin-bottom: 15px;">
-                                        <span style="color: #cbd5e1;">Método Real:</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">RESULTADO_REAL €</span>
+                                        <span style="color: #cbd5e1;">Método Real (Est.):</span>
+                                        <span style="color: #fff; font-weight: bold; float: right;">VALOR_REAL €</span>
                                     </div>
                                     <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4);">
                                         <div style="color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">Opción más barata</div>
-                                        <div style="color: #60a5fa; font-size: 26px; font-weight: 900;">MEJOR_OPCION €</div>
+                                        <div style="color: #60a5fa; font-size: 26px; font-weight: 900;">VALOR_MEJOR €</div>
                                     </div>
                                     <div style="border-top: 1px dashed #555; margin-top: 15px; padding-top: 15px; display: flex; justify-content: space-between;">
                                         <span style="color: #cbd5e1;">Estimación IRPF Estatal:</span>
-                                        <span style="color: #f87171; font-weight: bold; font-size: 16px;">IRPF_ESTIMADO €</span>
+                                        <span style="color: #f87171; font-weight: bold; font-size: 16px;">VALOR_IRPF €</span>
                                     </div>
                                     """
                                     
+                                    # 4. LLAMADA Y LIMPIEZA
                                     raw_response = groq_engine(prompt_venta, api_key)
-                                    
-                                    # --- LIMPIEZA DE CÓDIGO BASURA (CRÍTICO) ---
-                                    # 1. Quitamos bloques de markdown si la IA los pone
-                                    clean_html = raw_response.replace("```html", "").replace("```", "")
-                                    
-                                    # 2. Buscamos dónde empieza el primer div real
-                                    if "<div" in clean_html:
-                                        start_idx = clean_html.find("<div")
-                                        clean_html = clean_html[start_idx:] # Cortamos todo lo de antes
-                                    
-                                    # 3. Guardamos solo el HTML limpio
-                                    st.session_state.viv_res_venta = clean_html
-                                    st.rerun()
+                                    if raw_response:
+                                        clean_html = raw_response.replace("```html", "").replace("```", "")
+                                        if "<div" in clean_html:
+                                            start_idx = clean_html.find("<div")
+                                            clean_html = clean_html[start_idx:]
+                                        
+                                        st.session_state.viv_res_venta = clean_html
+                                        st.rerun()
                             else:
                                 st.warning("⚠️ Faltan datos del Valor Suelo.")
                     
@@ -2548,6 +2577,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
