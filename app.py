@@ -2105,10 +2105,18 @@ with tabs[4]:
                                     - Tipo: {tipo_impositivo}%.
                                     
                                     CÁLCULOS (Mentalmente):
-                                    1. COEFICIENTE ESTATAL (Objetivo):
-                                       - <1 año:0.15 | 1:0.15 | 2:0.14 | 3:0.16 | 4:0.18 | 5:0.19 | 6:0.20 
-                                       - 7:0.19 | 8:0.15 | 9:0.12 | 10:0.10 | 11:0.09 | 12:0.09 | 13:0.09
-                                       - 14:0.09 | 15:0.10 | 16:0.13 | 17:0.17 | 18:0.23 | 19:0.23 | >=20:0.40
+                                    Usa EXACTAMENTE este coeficiente según los años ({anios}):
+                                       - < 1 año: 0,15 | 1 año: 0,15
+                                       - 2 años: 0,14  | 3 años: 0,14
+                                       - 4 años: 0,16  | 5 años: 0,18
+                                       - 6 años: 0,19  | 7 años: 0,20
+                                       - 8 años: 0,19  | 9 años: 0,15
+                                       - 10 años: 0,12 | 11 años: 0,10
+                                       - 12 años: 0,09 | 13 años: 0,09
+                                       - 14 años: 0,09 | 15 años: 0,09
+                                       - 16 años: 0,10 | 17 años: 0,13
+                                       - 18 años: 0,17 | 19 años: 0,23
+                                       - >= 20 años: 0,40
                                        -> Base Objetivo = Valor Suelo * Coeficiente.
                                        -> Cuota Objetivo = Base Objetivo * ({tipo_impositivo}/100).
                                     
@@ -2540,6 +2548,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
