@@ -2047,17 +2047,28 @@ with tabs[4]:
                     if st.session_state.viv_res_venta:
                         st.write("")
                         st.info("⬅️ **RESULTADO DE LA VENTA**")
-                        # Renderizamos directo sin envolver en contract-box para respetar el diseño transparente
-                        st.markdown(st.session_state.viv_res_venta, unsafe_allow_html=True)
+                        
+                        # AQUÍ ESTÁ LA CLAVE: Ponemos el contenedor nosotros
+                        html_container = f"""
+                        <div style="
+                            background-color: rgba(255, 255, 255, 0.05); 
+                            padding: 20px; 
+                            border-radius: 15px; 
+                            border: 1px solid rgba(255, 255, 255, 0.1);
+                        ">
+                            {st.session_state.viv_res_venta}
+                        </div>
+                        """
+                        st.markdown(html_container, unsafe_allow_html=True)
 
                # --- COLUMNA DERECHA: INPUTS VENTA + CÁLCULO ---
                 with col_der:
                     st.warning("💰 **DATOS VENTA** (Resultado saldrá 👈)")
                     with st.container(border=True):
-                        p_venta = st.number_input("Venta (€)", value=180000.0, step=1000.0, key="viv_ven_pv")
-                        p_compra = st.number_input("Compra (€)", value=100000.0, step=1000.0, key="viv_ven_pc")
-                        f_compra = st.number_input("Año Adquisición", 1990, 2025, 2010, key="viv_ven_ac")
-                        v_suelo = st.number_input("Valor Suelo IBI (€)", 0.0, step=500.0, help="Casilla 'Valor Catastral Suelo' del recibo IBI.", key="viv_ven_vs")
+                        p_venta = st.number_input("Venta (€)", value=180000, step=1000.0, key="viv_ven_pv")
+                        p_compra = st.number_input("Compra (€)", value=100000, step=1000.0, key="viv_ven_pc")
+                        f_compra = st.number_input("Año Adquisición", 1920, 2025, 2010, key="viv_ven_ac")
+                        v_suelo = st.number_input("Valor Suelo IBI (€)", 0, step=500.0, help="Casilla 'Valor Catastral Suelo' del recibo IBI.", key="viv_ven_vs")
                         municipio = st.text_input("Municipio", key="viv_ven_mun")
                         
                         # Selector de Tipo Impositivo
@@ -2077,8 +2088,8 @@ with tabs[4]:
                                     
                                     # PROMPT QUE GENERA HTML DIRECTAMENTE
                                     prompt_venta = f"""
-                                    Actúa como Programador Web y Experto Fiscal.
-                                    Tu tarea NO es explicar, es CALCULAR y rellenar la siguiente plantilla HTML.
+                                    Actúa como Experto Fiscal. Calcula y devuelve SOLO el código HTML de las filas de datos.
+                                    NO pongas el contenedor principal (div con background), eso lo pongo yo.
                                     
                                     DATOS:
                                     - Años tenencia: {anios}.
@@ -2102,32 +2113,27 @@ with tabs[4]:
                                     3. IRPF ESTATAL (Estimado):
                                        -> 19% hasta 6.000€ de ganancia, 21% de 6k a 50k, 23% de 50k a 200k.
                                     
-                                    SALIDA OBLIGATORIA (CÓDIGO HTML):
-                                    Rellena esta plantilla con los números calculados (formato 1.234,56 €). 
-                                    Devuelve SOLO el código HTML, nada de markdown (```html).
+                                    PLANTILLA DE SALIDA (RELLENA LOS CORCHETES):
+                                    <div style="font-size: 16px; color:#ccc; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 5px;">📉 Plusvalía Municipal (Comparativa)</div>
                                     
-                                    <div style="background-color: rgba(255, 255, 255, 0.05); padding: 20px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
-                                        <div style="font-size: 16px; color:#ccc; margin-bottom: 10px;">📉 Plusvalía Municipal (Opciones)</div>
-                                        
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px dashed #444; padding-bottom: 5px;">
-                                            <span style="color: #aaa;">Método Objetivo (Coeficientes):</span>
-                                            <span style="color: #fff; font-weight: bold;">[RESULTADO_OBJETIVO] €</span>
-                                        </div>
-                                        
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                                            <span style="color: #aaa;">Método Real (Ganancia):</span>
-                                            <span style="color: #fff; font-weight: bold;">[RESULTADO_REAL] €</span>
-                                        </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                        <span style="color: #aaa;">Método Objetivo (Coeficientes):</span>
+                                        <span style="color: #fff; font-weight: bold;">[RESULTADO_OBJETIVO] €</span>
+                                    </div>
+                                    
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                                        <span style="color: #aaa;">Método Real (Ganancia):</span>
+                                        <span style="color: #fff; font-weight: bold;">[RESULTADO_REAL] €</span>
+                                    </div>
 
-                                        <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 20px;">
-                                            <div style="color: #93c5fd; font-size: 12px;">✅ OPCIÓN MÁS BARATA (A PAGAR)</div>
-                                            <div style="color: #38bdf8; font-size: 28px; font-weight: 900;">[MEJOR_OPCION] €</div>
-                                        </div>
+                                    <div style="background: rgba(59, 130, 246, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                                        <div style="color: #93c5fd; font-size: 12px; margin-bottom: 4px;">✅ A PAGAR (MÁS BARATO)</div>
+                                        <div style="color: #38bdf8; font-size: 24px; font-weight: 900;">[MEJOR_OPCION] €</div>
+                                    </div>
 
-                                        <div style="border-top: 1px solid #444; padding-top: 10px; text-align: right;">
-                                            <span style="color: #f87171; font-weight: bold; font-size: 18px;">[IRPF_ESTIMADO] €</span><br>
-                                            <span style="color: #aaa; font-size: 11px;">Hachazo Hacienda (IRPF Ahorro)</span>
-                                        </div>
+                                    <div style="border-top: 1px dashed #555; padding-top: 10px; text-align: right;">
+                                        <span style="color: #f87171; font-weight: bold; font-size: 18px;">[IRPF_ESTIMADO] €</span><br>
+                                        <span style="color: #aaa; font-size: 11px;">Hachazo Hacienda (IRPF Ahorro)</span>
                                     </div>
                                     """
                                     
@@ -2521,6 +2527,7 @@ with st.container():
                 if st.button("🔄 Reiniciar App"):
                     st.session_state.clear()
                     st.rerun()
+
 
 
 
