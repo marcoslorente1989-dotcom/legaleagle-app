@@ -874,6 +874,24 @@ def groq_engine(prompt, key, temp=0.2):
         ], temperature=temp).choices[0].message.content
     except Exception as e: return f"Error AI: {str(e)}"
 
+# --- COLOCAR AQUÍ, CERCA DEL PRINCIPIO DEL ARCHIVO ---
+def botones_compartir(texto_compartir):
+    url_app = "https://tu-app-en-render.com" 
+    # El quote sirve para que los espacios y símbolos no rompan el enlace
+    text_encoded = requests.utils.quote(texto_compartir)
+    
+    whatsapp_url = f"https://api.whatsapp.com/send?text={text_encoded}%20{url_app}"
+    twitter_url = f"https://twitter.com/intent/tweet?text={text_encoded}&url={url_app}"
+    linkedin_url = f"https://www.linkedin.com/sharing/share-offsite/?url={url_app}"
+
+    st.write("") # Espacio
+    st.markdown("<p style='text-align:center; color:#94a3b8; font-size:14px;'>📢 <b>¡Comparte este análisis con otros!</b></p>", unsafe_allow_html=True)
+    
+    c1, c2, c3 = st.columns(3)
+    with c1: st.link_button("WhatsApp", whatsapp_url, use_container_width=True)
+    with c2: st.link_button("X (Twitter)", twitter_url, use_container_width=True)
+    with c3: st.link_button("LinkedIn", linkedin_url, use_container_width=True)
+
 def detectar_tipo_contrato(texto_pdf, api_key):
     prompt_tipo = f"Analiza el inicio de este contrato y clasifícalo en una categoría única (Ej: Energía, Alquiler, Laboral, Seguro, Servicios). Responde SOLO con la categoría.\n\nTEXTO: {texto_pdf[:2000]}"
     return groq_engine(prompt_tipo, api_key)
@@ -2308,7 +2326,18 @@ with tabs[4]:
                     if st.session_state.viv_res_compra:
                         st.write("")
                         st.info("➡️ **RESULTADO DE LA COMPRA**")
-                        st.markdown(f"<div class='contract-box' style='font-size:13px;'>{st.session_state.viv_res_compra}</div>", unsafe_allow_html=True)
+                        st.markdown(f"""
+                             <div style="background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
+                                  <div style="font-size: 16px; color: #e2e8f0; margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                       🏠 Gastos e Impuestos Compra
+                                  </div>
+                                  {st.session_state.viv_res_compra}
+                             </div>
+                        """, unsafe_allow_html=True)
+
+                        AQUÍ LLAMAMOS A LOS BOTONES
+                        mensaje = f"He calculado los gastos de mi nueva casa en {ccaa_c} con LegalApp AI. ¡Muy útil!"
+                        botones_compartir(mensaje)
 
 
             # ==========================================================================
@@ -2697,6 +2726,7 @@ st.markdown("""
     Recurrir multas tráfico online gratis España | Simulador sueldo neto 2026
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
