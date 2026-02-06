@@ -64,11 +64,14 @@ st.set_page_config(
     page_title="LegalApp AI - Tu Abogado 24h",
     page_icon="🦅",
     layout="wide",
-    initial_sidebar_state="collapsed",
     menu_items={
-        'Get Help': None,
-        'Report a bug': None,
-        'About': "LegalApp AI"
+        'About': """
+        ### LegalApp AI
+        Herramienta gratuita para:
+        - Calcular gastos de compra de vivienda.
+        - Analizar contratos de alquiler y luz.
+        - Recurrir multas y generar documentos legales.
+        """
     }
 )
 
@@ -1096,7 +1099,27 @@ with tabs[0]:
         """)
       
     with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
-            st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).")    
+            st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).") 
+    st.write("---")
+st.markdown("## 📚 Guía Legal y Fiscal")
+
+col_seo1, col_seo2 = st.columns(2)
+
+with col_seo1:
+    with st.expander("¿Cómo calcular los gastos de compra de vivienda en 2026?"):
+        st.write("""
+        Para calcular los gastos de compra de una vivienda en España, debes tener en cuenta:
+        1. **ITP (Impuesto de Transmisiones Patrimoniales):** Varía entre el 4% y el 10% según la CCAA.
+        2. **IVA y AJD:** Si es obra nueva, pagas un 10% de IVA.
+        3. **Bonificaciones por edad:** Si eres menor de 35 años, puedes ahorrar hasta un 50% de impuestos en Madrid, Andalucía o Valencia.
+        """)
+
+with col_seo2:
+    with st.expander("¿Es legal que mi contrato de luz tenga permanencia?"):
+        st.write("""
+        En España, los contratos de luz para consumidores domésticos (menos de 15kW) no suelen tener permanencia de más de un año. 
+        Si te vas antes, la penalización no puede superar el 5% de la energía estimada pendiente.
+        """)    
     
 # --- TAB 1: ANALIZADOR INTELIGENTE (OPTIMIZADO Y BLINDADO) ---
 with tabs[1]:
@@ -2665,6 +2688,15 @@ with st.container():
                     st.session_state.clear()
                     st.rerun()
 
+st.markdown("""
+<div style="text-align: center; color: rgba(255, 255, 255, 0.1); font-size: 9px; margin-top: 30px; padding: 20px;">
+    <strong>Servicios Legales con IA en España:</strong> 
+    Calcular ITP Madrid menores 35 años | Gastos compra vivienda Cataluña 2026 | 
+    Analizador de contratos de luz y gas | Modelo contrato alquiler vivienda habitual PDF | 
+    Deducciones fiscales compra vivienda CCAA | Revisar facturas Visalia energía | 
+    Recurrir multas tráfico online gratis España | Simulador sueldo neto 2026
+</div>
+""", unsafe_allow_html=True)
 
 
 
