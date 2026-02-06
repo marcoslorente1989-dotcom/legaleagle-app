@@ -2335,7 +2335,7 @@ with tabs[4]:
                              </div>
                         """, unsafe_allow_html=True)
 
-                        AQUÍ LLAMAMOS A LOS BOTONES
+                        # AQUÍ LLAMAMOS A LOS BOTONES
                         mensaje = f"He calculado los gastos de mi nueva casa en {ccaa_c} con LegalApp AI. ¡Muy útil!"
                         botones_compartir(mensaje)
 
@@ -2726,6 +2726,7 @@ st.markdown("""
     Recurrir multas tráfico online gratis España | Simulador sueldo neto 2026
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
