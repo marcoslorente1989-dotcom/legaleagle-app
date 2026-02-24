@@ -9,7 +9,11 @@ requests
 python-docx
 reportlab
 PyPDF2       
-Pillow    
+Pillow
+fastapi
+uvicorn
+python-multipart
+
 
 
 
