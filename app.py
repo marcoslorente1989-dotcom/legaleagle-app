@@ -1,705 +1,89 @@
-import streamlit as st
 import os
-
-# ==============================================================================
-# 0. PARCHE DE EMERGENCIA PARA WHATSAPP/SEO (Sobrescribe el archivo físico)
-# ==============================================================================
-try:
-    # Buscamos dónde está instalado Streamlit en el servidor de Render
-    import streamlit
-    p = os.path.dirname(streamlit.__file__)
-    f_path = os.path.join(p, "static", "index.html")
-    
-    # Leemos el archivo original
-    with open(f_path, "r", encoding="utf-8") as f:
-        html_content = f.read()
-    
-    # Si sigue poniendo "Streamlit", lo cambiamos físicamente por "LegalApp"
-    if "<title>Streamlit</title>" in html_content:
-        new_content = html_content.replace(
-            "<title>Streamlit</title>", 
-            "<title>LegalApp AI - Tu Abogado 24h</title>"
-        )
-        # Añadimos metaetiquetas reales para que WhatsApp las lea sí o sí
-        meta_tags = """
-        <meta property="og:title" content="LegalApp AI - Tu Abogado 24h">
-        <meta property="og:description" content="Tu abogado virtual gratuito. Analiza contratos, calcula impuestos y reclama deudas con IA.">
-        <meta property="og:image" content="https://legalapp.es/logo.png">
-        """
-        new_content = new_content.replace("<head>", f"<head>{meta_tags}")
-        
-        # Guardamos el archivo hackeado
-        with open(f_path, "w", encoding="utf-8") as f:
-            f.write(new_content)
-except Exception as e:
-    print(f"Error parcheando SEO: {e}")
-
-# ==============================================================================
-# 1. IMPORTS Y CONFIGURACIÓN
-# ==============================================================================
-import streamlit.components.v1 as components
-from groq import Groq
-import pandas as pd
-from fpdf import FPDF
-import base64
-from datetime import datetime
-import json
-import gspread
-import requests 
-from oauth2client.service_account import ServiceAccountCredentials
-import re 
-from docx import Document # Para generar Word
-import urllib.parse
+# Force reload
 import io
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
+import json
+import base64
+import requests
+import re
 from datetime import datetime
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import Paragraph
-from reportlab.lib.enums import TA_JUSTIFY, TA_LEFT
+
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel
+
+from groq import Groq
 import PyPDF2
 from PIL import Image
+from docx import Document
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import Paragraph
+from reportlab.lib.enums import TA_JUSTIFY
+from dotenv import load_dotenv
 
-st.set_page_config(
-    page_title="LegalApp AI - Tu Abogado 24h",
-    page_icon="🦅",
-    layout="wide",
-    menu_items={
-        'About': """
-        ### LegalApp AI
-        Herramienta gratuita para:
-        - Calcular gastos de compra de vivienda.
-        - Analizar contratos de alquiler y luz.
-        - Recurrir multas y generar documentos legales.
-        """
-    }
+load_dotenv()
+
+app = FastAPI(title="LegalApp API")
+
+# Setup CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
-# ... después de st.set_page_config ...
+def get_api_key():
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY no configurada.")
+    return api_key
 
-# ANCLA INVISIBLE PARA EL SCROLL MÓVIL
-st.markdown("<div id='top-of-page'></div>", unsafe_allow_html=True)
+# ==============================================================================
+# CORE AI FUNCTIONS
+# ==============================================================================
 
-# ... aquí siguen tus claves api_key ...
-
-# Intentar leer de Variable de Entorno (Render) o Secrets (Local)
-api_key = os.getenv("GROQ_API_KEY")
-if not api_key:
+def groq_engine(prompt: str, key: str, temp: float = 0.2):
+    client = Groq(api_key=key)
     try:
-        from streamlit.runtime.secrets import secrets_singleton
-        if secrets_singleton.load_if_present():
-            api_key = st.secrets.get("GROQ_API_KEY")
-    except: pass
-
-# ==============================================================================
-# 2. SCRIPTS Y ESTILOS (SEPARADOS)
-# ==============================================================================
-
-# --- A. LÓGICA JAVASCRIPT (SOLO CÓDIGO) ---
-st.markdown(
-    """
-    <script>
-        // 1. Icono y Título
-        var link = window.parent.document.querySelector("link[rel*='icon']") || window.parent.document.createElement('link');
-        link.type = 'image/x-icon';
-        link.rel = 'shortcut icon';
-        link.href = 'https://legalapp.es/logo.png';
-        window.parent.document.getElementsByTagName('head')[0].appendChild(link);
-        window.parent.document.title = "LegalApp AI - Tu Abogado 24h";
-        
-        // 2. Función para sobreescribir los metadatos (WhatsApp)
-        function fixMeta() {
-            const metas = window.parent.document.getElementsByTagName('meta');
-            for (let i = 0; i < metas.length; i++) {
-                if (metas[i].getAttribute('property') === 'og:title' || metas[i].getAttribute('name') === 'title') {
-                    metas[i].content = "LegalApp AI - Tu Abogado 24h";
-                }
-                if (metas[i].getAttribute('property') === 'og:description' || metas[i].getAttribute('name') === 'description') {
-                    metas[i].content = "Analiza contratos y genera documentos legales gratis con IA en España.";
-                }
-            }
-        }
-        fixMeta();
-        setInterval(fixMeta, 500); 
-    </script>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# --- B. ESTILOS CSS (SOLO DISEÑO) ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
-
-    /* 1. ELIMINAR RESALTADO NEGRO/GRIS EN MÓVIL (CRÍTICO) */
-    * {
-        -webkit-tap-highlight-color: transparent !important;
-        -webkit-touch-callout: none !important;
-        outline: none !important;
-    }
-    
-    /* 2. SCROLLBAR INVISIBLE */
-    ::-webkit-scrollbar { display: none; }
-    .stApp { scrollbar-width: none; -ms-overflow-style: none; }
-
-    /* 3. LOGO Y ESPACIOS (AJUSTE FINAL) */
-    .block-container {
-        padding-top: 0rem !important; 
-        margin-top: -4.5rem !important; /* Subida agresiva */
-    }
-
-    [data-testid="stImage"] {
-        margin-top: 0px !important;
-        margin-bottom: -50px !important;
-        display: flex;
-        justify-content: center;
-        transform: scale(0.7); /* Logo un poco más pequeño para móviles */
-    }
-
-    
-      /* Forzar estilo en las cajas de ayuda (Tooltips) */
-    div[data-testid="stTooltipContent"] {
-        background-color: #1e293b !important; /* Fondo azul oscuro/gris */
-        color: white !important;
-        border: 1px solid #3b82f6 !important;
-        border-radius: 5px;
-    }
-      /* Asegurar que el texto dentro del tooltip sea blanco */
-    div[data-testid="stTooltipContent"] p {
-        color: white !important;
-    }
-
-    
-    /* Ocultar header nativo */
-    header, [data-testid="stHeader"] { display: none !important; }
-
-    /* 4. UNIFICAR BOTONES (AZULES Y GRANDES) */
-    div.stButton > button {
-        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        border: none !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-        font-weight: bold !important;
-        height: 50px !important;
-        width: 100% !important;
-        transition: 0.2s ease;
-    }
-    div.stButton > button:hover { transform: scale(1.02) !important; }
-
-    /* 5. ARREGLO PESTAÑAS MÓVIL (2x2) */
-    @media only screen and (max-width: 600px) {
-        .stApp, .main, .block-container { overflow-x: hidden !important; width: 100vw !important; }
-        div[data-baseweb="tab-list"] { 
-            display: grid !important; 
-            grid-template-columns: 1fr 1fr !important; 
-            gap: 10px !important; 
-            padding: 10px !important; 
-        }
-        button[data-baseweb="tab"]:first-child { 
-            grid-column: span 2 !important; 
-            width: 92% !important; 
-            margin: 0 auto 10px auto !important; 
-        }
-        button[data-baseweb="tab"] {
-            border-radius: 25px !important;
-            background-color: rgba(255, 255, 255, 0.12) !important;
-            font-size: 11px !important;
-        }
-    }
-
-    /* 6. ESTILOS GENERALES (FONDO Y TEXTO) */
-    .stApp { background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%); font-family: 'Inter', sans-serif; }
-    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stCaption { color: #ffffff !important; }
-
-    /* Inputs Blancos */
-    .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-        background-color: #ffffff !important; color: #000000 !important; border-radius: 12px;
-    }
-    ul[data-baseweb="menu"], div[data-baseweb="popover"] { background-color: #ffffff !important; }
-    ul[data-baseweb="menu"] li { color: #000000 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; }
-
-    /* 7. FAQ TRANSPARENTE */
-    .stExpander {
-        background-color: transparent !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px !important;
-    }
-    .stExpander details summary p { color: #ffffff !important; }
-    .stExpander details summary:hover { background-color: transparent !important; }
-    .stExpander details div { color: #ffffff !important; }
-
-    /* 8. CAJA CONTRATO */
-    .contract-box {
-        font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
-        padding: 30px; border-radius: 10px; color: #000000 !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    .contract-box * { color: #000000 !important; }
-</style>
-""", unsafe_allow_html=True)
-
-# Textos ocultos para SEO/Idioma
-st.markdown("""
-<div style="display:none; visibility:hidden; height:0;">
-    Hola, esto es una aplicación en español de España. Contrato laboral, nómina,
-    impuestos, seguridad social, irpf, sueldo neto, bruto, clausulas, legal,
-    abogado, leyes, estatuto de los trabajadores, españa, madrid, barcelona.
-    No traducir. Idioma español confirmado.
-</div>
-""", unsafe_allow_html=True)
-
-components.html("""
-    <script>
-        const doc = window.parent.document;
-        doc.documentElement.lang = 'es';
-        doc.documentElement.setAttribute('translate', 'no');
-        console.log("🦅 App lista en Render (Limpia).");
-    </script>
-""", height=0)
-
-# ==============================================================================
-# 2. ESTILOS CSS (V110: SOLUCIÓN FINAL CANDADO Y COLORES)
-# ==============================================================================
-st.markdown("""
-    <style>
-    /* Ocultar menú hamburguesa y footer de Streamlit */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-    
-    /* Reducir el espacio blanco excesivo de arriba */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
-    }
-    
-    /* Estilo botón WhatsApp (Verde) */
-    .stLinkButton a {
-        background-color: #25D366 !important;
-        color: white !important;
-        border: none !important;
-        font-weight: bold !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
-    /* 1. Cargamos Font Awesome para el logo de WhatsApp */
-    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css');
-
-    /* --- NUEVO: OCULTAR LA BARRA DE SCROLL LATERAL --- */
-    /* Esto la hace invisible pero permite seguir bajando con el ratón/dedo */
-    
-    /* Para Chrome, Safari y Edge */
-    ::-webkit-scrollbar {
-        display: none;
-    }
-    /* Para Firefox */
-    .stApp {
-        scrollbar-width: none;
-        -ms-overflow-style: none;  /* IE y Edge antiguo */
-    }
-
-    /* 1. ELIMINAR ESPACIO SUPERIOR TOTAL */
-    .block-container {
-        padding-top: 0rem !important; 
-        margin-top: -6rem !important; /* Forzamos la subida masiva */
-    }
-
-    /* 2. AJUSTE DEL LOGO PARA QUE NO OCUPE ESPACIO VERTICAL */
-    [data-testid="stImage"] {
-        margin-top: -30px !important;
-        margin-bottom: -50px !important; /* Quitamos el espacio que deja debajo */
-        display: flex;
-        justify-content: center;
-        transform: scale(0.8); /* Reducimos un poco el tamaño visual para ganar pantalla */
-    }
-
-    /* Ocultar elementos nativos que roban espacio arriba */
-    header, [data-testid="stHeader"] {
-        display: none !important;
-    }
-  
-    /* 2. PESTAÑAS EN 2x2 PARA MÓVIL */
-
-    @media only screen and (max-width: 600px) {
-        
-        /* 1. Bloqueo total de movimiento lateral en la raíz y contenedores */
-        .stApp, .main, .block-container { 
-            overflow-x: hidden !important; 
-            width: 100vw !important;
-            max-width: 100vw !important;
-        }
-
-        /* 2. Contenedor de pestañas: Ajuste de ancho exacto al 100% real */
-        div[data-baseweb="tab-list"] {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 10px !important;
-            padding: 10px !important;
-            width: 100% !important;
-            box-sizing: border-box !important;
-            overflow: hidden !important; /* Evita que las pestañas "empujen" hacia afuera */
-        }
-
-        /* 3. Botón INICIO: Forzamos limpieza de sombras y bordes */
-        button[data-baseweb="tab"]:first-child {
-            grid-column: span 2 !important;
-            width: 92% !important; 
-            margin: 0 auto 10px auto !important;
-            border-radius: 30px !important;
-            /* Eliminamos la sombra/brillo que causa la mancha negra lateral */
-            box-shadow: none !important; 
-            outline: none !important;
-            -webkit-tap-highlight-color: transparent !important;
-            border: 1px solid rgba(255,255,255,0.2) !important;
-            height: 45px !important;
-        }
-
-        /* 4. Botones 2x2: Ovalados y limpios */
-        button[data-baseweb="tab"] {
-            border-radius: 25px !important;
-            padding: 12px 5px !important;
-            background-color: rgba(255, 255, 255, 0.12) !important;
-            box-shadow: none !important;
-            outline: none !important;
-            font-size: 11px !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-        }
-
-        /* 5. Ajustes de Logo y Texto de Subida */
-        [data-testid="stImage"] img { max-width: 80% !important; }
-        
-        [data-testid="stFileUploader"] section > div > div::before {
-            content: "📂 Pulsa para subir PDF" !important;
-            font-size: 14px !important;
-        }
-
-        /* 6. Eliminación de márgenes de bloque que provocan desbordamiento */
-        .block-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-            padding-top: 0.5rem !important;
-        }
-
-        div[data-testid="stVerticalBlock"] > div {
-            padding-left: 0px !important;
-            padding-right: 0px !important;
-        }
-    }
-    
-    /* 1. FONDO GENERAL */
-    .stApp { 
-        background: linear-gradient(135deg, #1e40af 0%, #0f172a 100%);
-        font-family: 'Inter', sans-serif;
-    }
-
-    /* 2. TEXTOS GENERALES */
-    h1, h2, h3, h4, h5, h6, p, span, label, .stMarkdown, .stCaption { color: #ffffff !important; }
-
-    /* 3. --- EL CANDADO (TRANSPARENCIA FORZADA) --- */
-    /* Quitamos fondo, borde y sombra al botón del candado */
-    button[kind="secondary"] {
-         background: transparent !important;
-         border: none !important;
-         box-shadow: none !important;
-    }
-    div[data-testid="stPopover"] button {
-        background-color: transparent !important;
-        border: 0px solid transparent !important;
-        color: rgba(255, 255, 255, 0.7) !important;
-    }
-    /* Al pasar el ratón */
-    div[data-testid="stPopover"] button:hover {
-        background-color: transparent !important;
-        color: #ffffff !important;
-        transform: scale(1.1);
-    }
-
-    /* 4. --- CONTENIDO DENTRO DEL CANDADO Y LEGAL (LETRAS NEGRAS) --- */
-    /* Fondo blanco para los desplegables */
-    div[data-testid="stPopoverBody"], div[data-testid="stExpanderDetails"] {
-        background-color: #ffffff !important;
-        border: 1px solid #cbd5e1;
-    }
-    /* FORZAR COLOR NEGRO en todos los textos dentro de los desplegables */
-    div[data-testid="stPopoverBody"] p, div[data-testid="stPopoverBody"] span, 
-    div[data-testid="stPopoverBody"] div, div[data-testid="stPopoverBody"] h3,
-    div[data-testid="stExpanderDetails"] p, div[data-testid="stExpanderDetails"] span, 
-    div[data-testid="stExpanderDetails"] div, div[data-testid="stExpanderDetails"] li {
-        color: #000000 !important;
-    }
-
-    /* 5. INPUTS (Cajas blancas, letra negra) */
-    .stTextInput input, .stNumberInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-        background-color: #ffffff !important; 
-        color: #000000 !important;
-        caret-color: #000000;
-        border: 1px solid #cbd5e1;
-        border-radius: 12px;
-    }
-    ul[data-baseweb="menu"] { background-color: #ffffff !important; }
-    ul[data-baseweb="menu"] li { color: #000000 !important; }
-    div[data-baseweb="select"] span { color: #000000 !important; } 
-
-    /* 6. CAJA DE SUBIDA */
-    [data-testid="stFileUploader"] section {
-        background-color: #f1f5f9 !important;
-        border: 2px dashed #cbd5e1; border-radius: 15px; padding: 20px;
-    }
-    [data-testid="stFileUploader"] section > div > div > span, 
-    [data-testid="stFileUploader"] section > div > div > small { display: none !important; }
-    [data-testid="stFileUploader"] section > div > div::before {
-        content: "📂 Arrastra PDF para analizar";
-        display: block; text-align: center; color: #334155 !important; font-weight: 600; margin-bottom: 10px;
-    }
-    [data-testid="stFileUploader"] button {
-        border-radius: 20px !important; border: 1px solid #94a3b8 !important;
-        background-color: #e2e8f0 !important; color: transparent !important;
-        position: relative; width: 160px; height: 40px; margin: auto; display: block;
-    }
-    [data-testid="stFileUploader"] button::after {
-        content: "📄 Buscar Archivo"; color: #0f172a !important;
-        position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-        font-weight: 600; width: 100%; font-size: 14px;
-    }
-
-    /* 7. PESTAÑAS */
-    div[data-baseweb="tab-list"] { justify-content: center !important; gap: 10px; }
-    div[data-baseweb="tab-highlight"] { display: none !important; }
-    button[data-baseweb="tab"] {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: #ffffff !important; 
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 30px !important;
-        /* CAMBIA ESTA LÍNEA: Quita el 30px y ponlo así para que sea flexible */
-        padding: 10px 15px !important; 
-        min-width: 100px; /* Asegura un tamaño mínimo pero flexible */
-    }
-    button[data-baseweb="tab"][aria-selected="true"] {
-        background-color: #3b82f6 !important; font-weight: bold !important; border-color: #60a5fa !important; transform: scale(1.05);
-    }
-
-    /* 8. OTROS */
-    .contract-box {
-        font-family: 'Times New Roman', serif; background-color: #ffffff !important; 
-        padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        /* Bloqueo de copia en la previsualización */
-        }
-    .contract-box {
-        -webkit-user-select: none; /* Safari */
-        -ms-user-select: none; /* IE/Edge */
-        user-select: none; /* Estándar */
-        pointer-events: none; /* Evita que el ratón interactúe con el texto */
-    }
-
-    .contract-box * { color: #000000 !important; }
-    .chat-user { background-color: #bfdbfe; color: #000000 !important; padding: 10px; border-radius: 15px 15px 0 15px; text-align: right; margin-bottom: 5px; }
-    .chat-bot { background-color: #ffffff; color: #000000 !important; padding: 10px; border-radius: 15px 15px 15px 0; margin-bottom: 5px; }
-  
-   /* --- BOTÓN WHATSAPP VERDE PROFESIONAL --- */
-    /* --- BOTÓN WHATSAPP MÁS ESTRECHO Y ELEGANTE --- */
-    div.stLinkButton a[href*="wa.me"] {
-        background: linear-gradient(90deg, #25D366 0%, #128C7E 100%) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        border: 1px solid rgba(255,255,255,0.2) !important; /* Borde fino sugerido */
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-        font-weight: bold !important;
-        font-size: 14px !important; /* Texto un poco más pequeño para que quepa bien */
-        padding: 8px 15px !important; /* Menos relleno para hacerlo más fino */
-        display: flex !important;
-        justify-content: center !important;
-        text-decoration: none !important;
-    }
-
-    /* Estilo específico para el icono dentro del texto */
-    .fa-whatsapp-icon {
-        font-family: "Font Awesome 6 Brands" !important;
-        margin-right: 10px;
-        font-size: 20px;
-    }
-
-    /* --- BOTÓN CONTACTAR Y OTROS (AZUL) --- */
-    /* Usamos :not para que esta regla no afecte al de WhatsApp */
-    
-    div.stButton > button, .stLinkButton a:not([href*="wa.me"]) {
-        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%) !important;
-        color: white !important;
-        border-radius: 30px !important;
-        border: none !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
-        font-weight: bold !important;
-        height: 45px !important;
-        width: 100% !important;
-        transition: 0.2s ease;
-    }
-
-    /* Efecto al pasar el ratón (opcional pero recomendado) */
-    div.stButton > button:hover {
-        transform: scale(1.05) !important;
-        filter: brightness(1.1);
-    }
-    
-    /* 9. OCULTAR UI NATIVA */
-    header, [data-testid="stHeader"], [data-testid="stToolbar"] { display: none !important; }
-    footer, [data-testid="stFooter"] { display: none !important; height: 0px !important; }
-    section[data-testid="stSidebar"] { display: none !important; }
-
-    /* AÑADIR: Color blanco para el nombre del archivo subido */
-    [data-testid="stFileUploaderFileName"] {
-        color: #ffffff !important;
-    }
-
-    /* AÑADIR: Quitar bordes de cajas en el móvil para que no se vea el rastro blanco */
-    @media only screen and (max-width: 600px) {
-        [data-testid="stVerticalBlockBorderWrapper"] {
-            border: none !important;
-            padding: 0 !important;
-        }
-        .block-container {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
-        }
-        div[data-testid="stVerticalBlock"] > div {
-            padding-left: 0px !important;
-            padding-right: 0px !important;
-        }
-    }
-
-    /* --- DISEÑO FAQ PREMIUM: TRANSPARENTE Y BLANCO --- */
-    
-    /* 1. Fondo transparente para la caja principal y quitar bordes blancos */
-    .stExpander {
-        background-color: transparent !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        border-radius: 12px !important;
-        margin-bottom: 10px !important;
-    }
-
-    /* 2. Forzar letras BLANCAS en el título (Cerrado y Abierto) */
-    .stExpander details summary p {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        font-weight: 500 !important;
-    }
-
-    /* 3. Forzar letras BLANCAS en el contenido interior */
-    .stExpander details div {
-        color: #ffffff !important;
-    }
-
-    /* 4. Cambiar color del icono de la flecha a Blanco */
-    .stExpander details summary svg {
-        fill: #ffffff !important;
-    }
-
-    /* 5. Eliminar el color de fondo que Streamlit pone al pasar el ratón o hacer clic */
-    .stExpander details summary:hover, 
-    .stExpander details summary:active, 
-    .stExpander details summary:focus {
-        background-color: rgba(255, 255, 255, 0.1) !important;
-        color: #ffffff !important;
-    }
-
-</style>
-""", unsafe_allow_html=True)
-# ==============================================================================
-# 3. LÓGICA & FUNCIONES
-# ==============================================================================
-
-if "active_tab" not in st.session_state: 
-    st.session_state.active_tab = 0 # 0 es Inicio, 1 Analizar... 4 Impuestos
-keys = ["contract_text", "analysis_report", "generated_contract", "generated_claim", "generated_calc", "defense_text"]
-for k in keys:
-    if k not in st.session_state: st.session_state[k] = ""
-if "chat_history" not in st.session_state: st.session_state.chat_history = []
-if "analysis_done" not in st.session_state: st.session_state.analysis_done = False
-
-# --- FUNCIÓN DE LIMPIEZA AGRESIVA (PEGAR ARRIBA) ---
-def nukear_memoria_reclamacion():
-    """Borra cualquier rastro de texto generado en la pestaña 3"""
-    st.session_state.generated_claim = ""
-
-def limpiar_cache_reclamacion():
-    """Borra el resultado de la reclamación al cambiar de modo"""
-    st.session_state.generated_claim = "" 
-
-# --- AÑADIR EN LA SECCIÓN 3: FUNCIÓN GENERAR CALENDARIO ---
-def create_ics(title, date_obj, description):
-    """Genera el contenido de un archivo .ics estándar sin librerías extra."""
-    try:
-        # Formato de fecha requerido por iCalendar (YYYYMMDD)
-        dt_start = date_obj.strftime("%Y%m%d")
-        # Fecha fin = Fecha inicio + 1 día (evento de día completo)
-        from datetime import timedelta
-        dt_end = (date_obj + timedelta(days=1)).strftime("%Y%m%d")
-        
-        now = datetime.now().strftime("%Y%m%dT%H%M%SZ")
-        
-        # Estructura del archivo .ics
-        ics_content = f"""BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//LegalApp AI//España
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-BEGIN:VEVENT
-UID:legalapp-{now}
-DTSTAMP:{now}
-DTSTART;VALUE=DATE:{dt_start}
-DTEND;VALUE=DATE:{dt_end}
-SUMMARY:⚖️ {title}
-DESCRIPTION:{description}
-STATUS:CONFIRMED
-END:VEVENT
-END:VCALENDAR"""
-        return ics_content
+        sys_msg = "Eres LegalApp, abogado y asesor fiscal experto en España. Responde de forma directa, compacta y profesional. Cita leyes."
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": sys_msg},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=temp
+        )
+        return completion.choices[0].message.content
     except Exception as e:
-        return ""
+        raise HTTPException(status_code=500, detail=f"Error AI: {str(e)}")
 
-def extract_text_from_pdf(file, max_pages=30): # Aumentamos a 30 páginas
+def extract_text_from_pdf(file_bytes: bytes, max_pages: int = 30) -> str:
     try:
-        pdf_reader = PyPDF2.PdfReader(file)
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(file_bytes))
         text = ""
-        num_pages = len(pdf_reader.pages)
-        limit = min(num_pages, max_pages)
-        
+        limit = min(len(pdf_reader.pages), max_pages)
         for page_num in range(limit):
-            page = pdf_reader.pages[page_num]
-            page_text = page.extract_text() or ""
-            # Limpieza básica para ahorrar tokens
-            page_text = " ".join(page_text.split()) 
-            text += f"[PÁGINA {page_num + 1}]: {page_text}\n\n"
-            
+            page_text = pdf_reader.pages[page_num].extract_text() or ""
+            text += f"[PÁGINA {page_num + 1}]: {' '.join(page_text.split())}\n\n"
         return text
     except Exception as e:
-        return f"Error: {e}"
+        raise HTTPException(status_code=400, detail=f"Error leyendo PDF: {e}")
 
-def analyze_image_groq(uploaded_file, prompt, api_key):
-    """
-    Comprime la imagen antes de enviarla a la IA para evitar errores de red.
-    """
-    import base64
-    
+def analyze_image_groq(file_bytes: bytes, prompt: str, api_key: str):
     try:
-        # 1. Redimensionar imagen si es gigante (>1500px)
-        image = Image.open(uploaded_file)
+        image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
         if image.width > 1500 or image.height > 1500:
-            image.thumbnail((1500, 1500)) 
+            image.thumbnail((1500, 1500))
         
-        # 2. Convertir a Base64 ligero
         buffered = io.BytesIO()
-        image.save(buffered, format="JPEG", quality=85) 
+        image.save(buffered, format="JPEG", quality=85)
         base64_image = base64.b64encode(buffered.getvalue()).decode('utf-8')
 
-        # 3. Enviar a la IA
         client = Groq(api_key=api_key)
         completion = client.chat.completions.create(
             model="llama-3.2-11b-vision-preview",
@@ -717,2137 +101,426 @@ def analyze_image_groq(uploaded_file, prompt, api_key):
         )
         return completion.choices[0].message.content
     except Exception as e:
-        return f"Error Vision AI: {e}"    
-    
+        raise HTTPException(status_code=500, detail=f"Error Vision AI: {e}")
 
-@st.cache_data(ttl=3600) # Se actualiza cada hora
-def obtener_euribor_actual():
-    try:
-        # 1. Web objetivo
-        url = "https://www.euribor.com.es/"
-        
-        # 2. Navegador simulado
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        }
-        
-        response = requests.get(url, headers=headers, timeout=5)
-        
-        if response.status_code == 200:
-            import re
-            
-            # 3. ESTRATEGIA FRANCOTIRADOR: Buscamos "Euríbor hoy" y pillamos el número que le sigue
-            # (?i) hace que no importe si es mayúscula o minúscula
-            # Busca: "Euríbor hoy", luego cualquier cosa (espacios, dos puntos), y luego el número (d.ddd)
-            match_hoy = re.search(r"(?i)Euríbor hoy.*?:.*?(\d+[.,]\d+)", response.text)
-            
-            if match_hoy:
-                # Encontramos el dato exacto del día (ej: 2.248)
-                valor = match_hoy.group(1).replace(',', '.')
-                return float(valor)
-            
-            # 4. ESTRATEGIA DE RESPALDO: Si no encuentra "hoy", busca la "Media" del mes
-            match_media = re.search(r"(?i)Media.*?(\d+[.,]\d+)", response.text)
-            if match_media:
-                valor = match_media.group(1).replace(',', '.')
-                return float(valor)
+def detectar_tipo_contrato(texto_pdf: str, api_key: str):
+    prompt_tipo = f"Analiza el inicio del contrato y clasifícalo (Ej: Energía, Alquiler, Laboral, Seguro). Responde SOLO con la categoría.\n\nTEXTO: {texto_pdf[:2000]}"
+    return groq_engine(prompt_tipo, api_key)
 
-        return 2.248 # Valor fijo de tu captura (por si la web se cae)
-        
-    except Exception as e:
-        print(f"Error Euribor: {e}")
-        return 2.248 # Valor seguro
-        
-# --- FUNCIÓN GENERAR PDF PROFESIONAL (CON NEGRITAS Y ESTILOS) ---
-def create_pdf(text, title="Documento Legal"):
+def extraer_datos_universales(texto_pdf: str, categoria: str, api_key: str):
+    campos = "partes_firmantes, fecha_inicio, importe_o_valor, clausulas_clave"
+    if categoria == "Alquiler": campos = "arrendador, arrendatario, renta_mensual, fianza, duracion"
+    elif categoria == "Laboral": campos = "empresa, empleado, salario_bruto_anual, jornada, tipo_contrato"
+
+    prompt_dinamico = f"""
+    Actúa como extractor de datos. Contrato tipo: {categoria}.
+    INSTRUCCIONES:
+    1. Busca: {campos}.
+    2. Busca cifras junto a '€', '€/mes'.
+    4. Devuelve EXCLUSIVAMENTE formato JSON puro.
+    TEXTO:
+    {texto_pdf[:15000]}
+    """
+    return groq_engine(prompt_dinamico, api_key)
+
+# ==============================================================================
+# DOC GENERATION
+# ==============================================================================
+
+def create_pdf(text: str, title: str = "Documento Legal") -> bytes:
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     width, height = letter
+    margin_x, margin_y = 50, 50
+    max_width, cursor_y = width - 2 * margin_x, height - margin_y
     
-    # Márgenes
-    margin_x = 50
-    margin_y = 50
-    max_width = width - (2 * margin_x)
-    cursor_y = height - margin_y # Empezamos arriba
-    
-    # Preparar estilos
     styles = getSampleStyleSheet()
-    
-    # Estilo Normal (Cuerpo)
-    style_body = ParagraphStyle(
-        'JustifiedBody',
-        parent=styles['Normal'],
-        fontName='Helvetica',
-        fontSize=10,
-        leading=14, # Espaciado entre líneas
-        alignment=TA_JUSTIFY, # Justificado como contrato real
-        spaceAfter=6
-    )
-    
-    # Estilo Título (Cabeceras ##)
-    style_heading = ParagraphStyle(
-        'CustomHeading',
-        parent=styles['Heading2'],
-        fontName='Helvetica-Bold',
-        fontSize=12,
-        leading=16,
-        spaceAfter=10,
-        spaceBefore=10
-    )
+    style_body = ParagraphStyle('JustifiedBody', parent=styles['Normal'], fontName='Helvetica', fontSize=10, leading=14, alignment=TA_JUSTIFY, spaceAfter=6)
+    style_heading = ParagraphStyle('CustomHeading', parent=styles['Heading2'], fontName='Helvetica-Bold', fontSize=12, leading=16, spaceAfter=10, spaceBefore=10)
 
-    # 1. DIBUJAR EL TÍTULO DEL DOCUMENTO (Cabecera Principal)
     c.setFont("Helvetica-Bold", 14)
     c.drawCentredString(width / 2, cursor_y, title)
     c.setLineWidth(0.5)
     c.line(margin_x, cursor_y - 10, width - margin_x, cursor_y - 10)
-    cursor_y -= 40 # Bajamos el cursor
+    cursor_y -= 40
 
-    # 2. PROCESAR EL TEXTO LÍNEA A LÍNEA
-    # Reemplazamos los saltos de línea dobles para separar párrafos
-    paragraphs = text.split('\n')
-    
-    for para_text in paragraphs:
+    for para_text in text.split('\n'):
         para_text = para_text.strip()
         if not para_text:
-            cursor_y -= 10 # Espacio extra si hay línea vacía
+            cursor_y -= 10
             continue
-            
-        # --- LÓGICA DE DETECCIÓN DE FORMATO ---
-        
-        # A) Si es un título Markdown (## o ###)
         if para_text.startswith('#'):
-            # Quitamos las almohadillas
-            clean_text = para_text.replace('#', '').strip()
-            p = Paragraph(clean_text, style_heading)
-        
-        # B) Si es texto normal
+            p = Paragraph(para_text.replace('#', '').strip(), style_heading)
         else:
-            # MAGIA: Convertimos **texto** en <b>texto</b> para ReportLab
-            # Usamos Regex para reemplazar todas las ocurrencias
             formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', para_text)
             p = Paragraph(formatted_text, style_body)
 
-        # Calculamos cuánto ocupa este párrafo
         w, h = p.wrap(max_width, height)
-        
-        # Si no cabe en la página, creamos una nueva
         if cursor_y - h < margin_y:
             c.showPage()
             cursor_y = height - margin_y
-            # Si cambiamos de página, volvemos a calcular wrap por si acaso
             w, h = p.wrap(max_width, height)
-        
-        # Dibujamos el párrafo
         p.drawOn(c, margin_x, cursor_y - h)
-        cursor_y -= h # Bajamos el cursor lo que ocupe el párrafo
-
+        cursor_y -= h
     c.save()
-    buffer.seek(0)
-    return buffer
+    return buffer.getvalue()
+
+
+# ==============================================================================
+# ENDPOINTS
+# ==============================================================================
+
+@app.get("/")
+def read_root():
+    return {"status": "ok", "app": "LegalApp Backend API"}
+
+# --- 1. ANALÍTICA ---
+@app.post("/api/analyze/document")
+async def analyze_document(file: UploadFile = File(...), mode: str = Form("CONTRATO")):
+    api_key = get_api_key()
+    file_bytes = await file.read()
     
-# --- FUNCIÓN PARA GENERAR WORD (.docx) ---
-def create_docx(text, title="Documento"):
-    doc = Document()
-    doc.add_heading(title, 0)
-    for paragraph in text.split('\n'):
-        if paragraph.strip():
-            doc.add_paragraph(paragraph)
-    bio = io.BytesIO()
-    doc.save(bio)
-    bio.seek(0)
-    return bio
-
-# --- FUNCIÓN PARA ENLACE WHATSAPP ---
-def get_whatsapp_link(text):
-    # Cortamos el texto si es muy largo para que quepa en la URL
-    msg = f"Hola, aquí tienes el documento generado por AbogadoIA:\n\n{text[:500]}...\n(Ver documento completo adjunto)"
-    encoded_msg = urllib.parse.quote(msg)
-    return f"https://wa.me/?text={encoded_msg}"
-
-def groq_engine(prompt, key, temp=0.2):
-    client = Groq(api_key=key)
-    try:
-        sys_msg = "Eres LegalApp, abogado y asesor fiscal experto en España. Responde de forma directa, compacta y profesional. Cita leyes."
-        return client.chat.completions.create(model="llama-3.3-70b-versatile", messages=[
-            {"role":"system", "content": sys_msg},
-            {"role":"user","content":prompt}
-        ], temperature=temp).choices[0].message.content
-    except Exception as e: return f"Error AI: {str(e)}"
-
-# --- COLOCAR AQUÍ, CERCA DEL PRINCIPIO DEL ARCHIVO ---
-def botones_compartir(texto_compartir):
-    url_app = "https://tu-app-en-render.com" 
-    # El quote sirve para que los espacios y símbolos no rompan el enlace
-    text_encoded = requests.utils.quote(texto_compartir)
+    # 1. Extracción de texto
+    if file.filename.lower().endswith(".pdf"):
+        texto = extract_text_from_pdf(file_bytes)
+    else:
+        texto = analyze_image_groq(file_bytes, "Transcribe fielmente todo el texto visible.", api_key)
     
-    whatsapp_url = f"https://api.whatsapp.com/send?text={text_encoded}%20{url_app}"
-    twitter_url = f"https://twitter.com/intent/tweet?text={text_encoded}&url={url_app}"
-    linkedin_url = f"https://www.linkedin.com/sharing/share-offsite/?url={url_app}"
+    if not texto.strip():
+        raise HTTPException(status_code=400, detail="No se pudo extraer texto del documento.")
 
-    st.write("") # Espacio
-    st.markdown("<p style='text-align:center; color:#94a3b8; font-size:14px;'>📢 <b>¡Comparte este análisis con otros!</b></p>", unsafe_allow_html=True)
+    result = {}
     
-    c1, c2, c3 = st.columns(3)
-    with c1: st.link_button("WhatsApp", whatsapp_url, use_container_width=True)
-    with c2: st.link_button("X (Twitter)", twitter_url, use_container_width=True)
-    with c3: st.link_button("LinkedIn", linkedin_url, use_container_width=True)
+    # 2. Análisis Contextual Groq
+    if mode == "CONTRATO":
+        cat = detectar_tipo_contrato(texto, api_key)
+        datos = extraer_datos_universales(texto, cat, api_key)
+        prompt = f"""
+        Aplica para: Analizar Riesgos legales
+        TIPO: {cat}
+        
+        GENERA INFORME MARKDOWN DE 4 PUNTOS CON:
+        1. 📋 RESUMEN EJECUTIVO: Propósito y partes
+        2. 📅 DURACIÓN Y FECHAS (Preaviso, etc.)
+        3. 💶 ECONOMÍA
+        4. 🚨 CLÁUSULAS ABUSIVAS o PELIGROSAS
+        5. ⚖️ VEREDICTO FINAL
+        
+        TEXTO: {texto[:10000]}
+        """
+        informe = groq_engine(prompt, api_key)
+        result = {"categoria": cat, "datos_estructurados": datos, "informe": informe}
 
-def detectar_tipo_contrato(texto_pdf, api_key):
-    prompt_tipo = f"Analiza el inicio de este contrato y clasifícalo en una categoría única (Ej: Energía, Alquiler, Laboral, Seguro, Servicios). Responde SOLO con la categoría.\n\nTEXTO: {texto_pdf[:2000]}"
-    return groq_engine(prompt_tipo, api_key)
+    elif mode == "SEGURO":
+        prompt = f"Analiza esta póliza. 1. LO QUE CUBRE 2. EXCLUSIONES 3. LÍMITES 4. RESUMEN.\nTEXTO: {texto[:10000]}"
+        result = {"informe": groq_engine(prompt, api_key)}
+        
+    elif mode == "GENERICO":
+        result = {"informe": "✅ Documento procesado. Listo para chatear.", "texto_crudo": texto[:10000]}
 
-def extraer_datos_universales(texto_pdf, categoria, api_key):
-    config_campos = {
-        "Energía": "comercializadora, cups, precio_energia_kwh, potencia_facturada, permanencia",
-        "Alquiler": "arrendador, arrendatario, renta_mensual, fianza, duracion",
-        "Laboral": "empresa, empleado, salario_bruto_anual, jornada, tipo_contrato",
-        "Seguro": "aseguradora, prima_anual, cobertura_principal, numero_poliza"
-    }
-    campos = config_campos.get(categoria, "partes_firmantes, fecha_inicio, importe_o_valor, clausulas_clave")
-    
-    # PROMPT OPTIMIZADO: Búsqueda por patrones universales (€, kWh, Mes...)
-    prompt_dinamico = f"""
-    Actúa como un extractor de datos técnicos y económicos. 
-    Contrato tipo: {categoria}. 
+    return JSONResponse(content=result)
 
-    INSTRUCCIONES DE BÚSQUEDA UNIVERSAL:
-    1. Escanea el texto buscando los campos: {campos}.
-    2. Busca específicamente cifras junto a símbolos: '€', '€/kWh', '€/mes', '€/año' o '%'.
-    3. Si es un contrato de energía, busca en los anexos finales (término de potencia y energía).
-    4. Si un dato no aparece, pon "No indicado" en lugar de null.
-    5. Devuelve EXCLUSIVAMENTE el JSON puro.
+class ChatRequest(BaseModel):
+    pregunta: str
+    contexto: str
 
-    TEXTO DEL CONTRATO:
-    {texto_pdf}
+@app.post("/api/analyze/chat")
+async def chat_document(req: ChatRequest):
+    api_key = get_api_key()
+    prompt = f"ERES UN EXPERTO LEGAL.\nCONTEXTO: {req.contexto[:20000]}\nPREGUNTA USUARIO: {req.pregunta}\nResponde directo y claro."
+    respuesta = groq_engine(prompt, api_key)
+    return {"respuesta": respuesta}
+
+# --- 2. GENERACIÓN DE CONTRATOS ---
+class GenerateRequest(BaseModel):
+    modo: str
+    datos: str
+    ciudad: str
+
+@app.post("/api/generate/document")
+async def generate_document(req: GenerateRequest):
+    api_key = get_api_key()
+    prompt = f"""
+    Actúa como Abogado Experto en España.
+    Redacta un {req.modo} formal y válido legalmente.
+    DATOS CLAVE: {req.datos}
+    ESTRUCTURA OBLIGATORIA:
+    1. Encabezado (Lugar, Fecha, Reunidos).
+    2. Exponen.
+    3. ESTIPULACIONES (Cláusulas numeradas).
+    4. Cierre y Firmas. En {req.ciudad}.
+    Usa lenguaje jurídico. Formato Markdown.
     """
-    return groq_engine(prompt_dinamico, api_key)
+    contrato = groq_engine(prompt, api_key, temp=0.3)
+    return {"documento": contrato}
 
-def save_lead(email, action, details):
-    """Guarda el lead en Google Sheets"""
-    try:
-        json_creds = os.getenv("GOOGLE_CREDENTIALS")
-        if json_creds:
-            creds_dict = json.loads(json_creds)
-            scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-            client = gspread.authorize(creds)
-            
-            # Asegúrate de que esta hoja existe en tu Drive
-            sheet = client.open("Base de Datos LegalApp").sheet1 
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            sheet.append_row([timestamp, email, action, details])
-            print(f"✅ Guardado en Google: {email}")
+class PdfRequest(BaseModel):
+    texto: str
+    titulo: str = "Documento Legal"
+
+@app.post("/api/generate/pdf")
+async def get_pdf(req: PdfRequest):
+    pdf_bytes = create_pdf(req.texto, req.titulo)
+    return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={req.titulo.replace(' ', '_')}.pdf"})
+
+# --- 3. DEFENSA LEGAL ---
+@app.post("/api/defense/analyze")
+async def analyze_defense(file: UploadFile = File(None), modo: str = Form(...), mis_datos: str = Form(""), extras: str = Form("")):
+    api_key = get_api_key()
+    
+    file_txt = ""
+    if file:
+        file_bytes = await file.read()
+        if file.filename.lower().endswith(".pdf"):
+            file_txt = extract_text_from_pdf(file_bytes)
         else:
-            print("⚠️ No hay credenciales Google configuradas.")
+            file_txt = analyze_image_groq(file_bytes, "Lee el texto del requerimiento, multa o documento oficial.", api_key)
+
+    if modo == "MULTA_VIABILIDAD":
+        p = f"Analiza esta multa/carta: {file_txt[:4000]}. 1. ¿Recurrible? 2. Defectos forma 3. Probabilidad éxito. 4. Consejo."
+        return {"analisis": groq_engine(p, api_key)}
+        
+    elif modo == "MULTA_RECURSO":
+        p = f"Redacta PLIEGO DESCARGOS. MULTA: {file_txt[:4000]}. CLIENTE: {mis_datos}. Alega defectos de forma. Cita ley aplicable."
+        return {"documento": groq_engine(p, api_key)}
+        
+    elif modo == "BUROFAX":
+        p = f"Redacta Burofax. Datos: {mis_datos}. Contexto: {extras}. Tono formal."
+        return {"documento": groq_engine(p, api_key)}
+        
+    elif modo == "RESPONDER":
+        p = f"Redacta respuesta a esta carta: {file_txt[:4000]}. Mi argumento: {extras}. Tono formal."
+        return {"documento": groq_engine(p, api_key)}
+    
+    raise HTTPException(status_code=400, detail="Modo no soportado.")
+
+# --- 4. FINANZAS Y FISCALIDAD ---
+class FinanzasChatRequest(BaseModel):
+    pregunta: str
+
+@app.post("/api/finanzas/chat")
+async def chat_finanzas(req: FinanzasChatRequest):
+    api_key = get_api_key()
+    prompt = f"ERES UN ASESOR FISCAL ESPAÑOL EXPERTO. Responde breve y directo a esta duda tributaria:\nPREGUNTA USUARIO: {req.pregunta}"
+    respuesta = groq_engine(prompt, api_key)
+    return {"respuesta": respuesta}
+
+class TipRequest(BaseModel):
+    modo: str
+    datos: str
+
+@app.post("/api/finanzas/tip")
+async def generate_tip(req: TipRequest):
+    api_key = get_api_key()
+    prompt = f"Eres LegalApp, experto fiscal español. En base a este resultado de la calculadora de {req.modo}: '{req.datos}', da UN ÚNICO consejo o tip fiscal accionable en no más de 3 líneas para maximizar el ahorro del usuario. Tono profesional y animado."
+    return {"tip": groq_engine(prompt, api_key)}
+
+class HipotecaRequest(BaseModel):
+    capital: float
+    plazo: int
+    t_interes: str
+    interes_fijo: float
+    dif_banco: float
+
+@app.post("/api/finanzas/calculators/hipoteca")
+async def calculate_hipoteca(req: HipotecaRequest):
+    api_key = get_api_key()
+    interes_final = req.interes_fijo if req.t_interes == "Fijo" else (2.6 + req.dif_banco)
+    p_h = f"Calcula hipoteca. Capital: {req.capital}€. Interés total: {interes_final}%. Plazo: {req.plazo} años. Indica cuota mensual estricta y total intereses a pagar. Responde SOLO con un JSON válido con campos 'cuota_mensual', 'total_intereses', 'total_pagar' con números reales sin unidades."
+    try:
+        res_ia = groq_engine(p_h, api_key)
+        clean_json = res_ia.strip().replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_json)
+        return data
     except Exception as e:
-        print(f"❌ Error Google Sheets: {e}")
+        # Fallback simple math
+        r = (interes_final / 100) / 12
+        n = req.plazo * 12
+        if r > 0:
+            cuota = req.capital * r * (1 + r)**n / ((1 + r)**n - 1)
+        else:
+            cuota = req.capital / n
+        total_pagar = cuota * n
+        total_intereses = total_pagar - req.capital
+        return {
+            "cuota_mensual": round(cuota, 2),
+            "total_intereses": round(total_intereses, 2),
+            "total_pagar": round(total_pagar, 2)
+        }
 
-# ==============================================================================
-# 4. INTERFAZ PRINCIPAL
-# ==============================================================================
+class SueldoRequest(BaseModel):
+    bruto: float
+    edad: int
+    comunidad: str
+    movilidad: bool = False
+    tipo_contrato: str = "General / Indefinido"
+    cat_pro: str = "Ingenieros, licenciados y alta dirección"
+    estado: str = "Soltero/a"
+    conyuge_cargo: bool = False
+    hijos: int = 0
+    hijos_menores_3: int = 0
+    pension_alim: float = 0
+    pension_comp: float = 0
 
-# --- LOGO (SOLUCIÓN HTML PURO ANTI-FULLSCREEN) ---
-c_logo1, c_logo2, c_logo3 = st.columns([3, 2, 3]) 
-with c_logo2:
-    if os.path.isfile("logo.png"):
-        # 1. Leemos la imagen como bytes
-        with open("logo.png", "rb") as image_file:
-            encoded_string = base64.b64encode(image_file.read()).decode()
-        
-        # 2. La inyectamos como HTML con 'pointer-events: none' (INTOCABLE)
-        st.markdown(
-            f"""
-            <div style="display: flex; justify-content: center;">
-                <img src="data:image/png;base64,{encoded_string}" 
-                     style="width: 100%; max-width: 300px; pointer-events: none; user-select: none;">
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
-    else:
-        st.markdown("<h1 style='text-align: center; color: white;'>🦅 LegalApp AI</h1>", unsafe_allow_html=True)
-
-st.write("") 
-
-if not api_key:
-    st.error("⚠️ Falta API Key. Configura GROQ_API_KEY en Render.")
-    st.stop()
-
-# Sustituye tu línea de tabs por esta:
-tabs = st.tabs(["🏠 INICIO", "🔍 ANALIZAR", "✍️ CREAR CONTRATO", "⚖️ RECLAMAR/RECURRIR", "📊 IMPUESTOS"])
-
-# Esta línea es un truco para que Streamlit fuerce el cambio visual
-# (Se coloca justo después de definir los tabs)
-
-with tabs[0]:
-    st.markdown("<h1 style='display:none;'>LegalApp AI - Inteligencia Legal en España</h1>", unsafe_allow_html=True)
-    st.subheader("Bienvenido a LegalApp")
-    st.caption("Tu asistente jurídico inteligente disponible las 24 horas.")
+@app.post("/api/finanzas/calculators/sueldo")
+async def calculate_sueldo(req: SueldoRequest):
+    api_key = get_api_key()
+    p_s = f"""
+    Calcula sueldo neto anual y mensual en España 2026. 
+    Bruto: {req.bruto}€. CCAA: {req.comunidad}. Hijos: {req.hijos} (menores de 3: {req.hijos_menores_3}). 
+    Estado civil: {req.estado}. Cónyuge a cargo: {req.conyuge_cargo}.
+    Movilidad: {req.movilidad}. Pensión alimentos: {req.pension_alim}. Pensión compensatoria: {req.pension_comp}.
     
-    col1, col2, col3 = st.columns(3)
-
-    script_universal_scroll = """
-        <script>
-            function goToTab(index) {
-                // 1. Cambiar la pestaña
-                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-                if (tabs[index]) { tabs[index].click(); }
-                
-                // 2. BUSCAR EL ANCLA INVISIBLE Y SALTAR A ELLA
-                var topAnchor = window.parent.document.getElementById('top-of-page');
-                if (topAnchor) {
-                    topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
-                }
-
-                // 3. RESPALDO: Forzar también los contenedores internos
-                var mainView = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
-                if (mainView) { mainView.scrollTop = 0; }
-            }
-        </script>
+    Devuelve EXCLUSIVAMENTE un JSON válido sin texto adicional con los siguientes campos estrictamente en minúscula:
+    'irpf_mensual' (float positivo), 
+    'ss_mensual' (float positivo), 
+    'bruto_anual' (float), 
+    'tipo_irpf' (float %), 
+    'valores': [neto_total_anual, neto_mensual_14_pagas]
     """
-    
-    with col1:
-        st.markdown("#### 🔍 Analizar")
-        st.write("Detecta cláusulas abusivas y riesgos en tus contratos o nóminas.")
-        if st.button("Empezar Análisis", key="btn_ir_analizar"):
-            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
-        
-    with col2:
-        st.markdown("#### ✍️ Crear")
-        st.write("Genera contratos de alquiler, préstamos o trabajo listos para firmar.")
-        if st.button("Redactar Contrato", key="btn_ir_crear"):
-            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
-        
-    with col3:
-        st.markdown("#### 📊 Impuestos")
-        st.write("Calcula tu sueldo neto, hipoteca o impuestos por venta de vivienda.")
-        if st.button("Calcular ahora", key="btn_ir_impuestos"):
-            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
+    try:
+        res_ia = groq_engine(p_s, api_key)
+        clean_json = res_ia.strip().replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_json)
+        return data
+    except Exception as e:
+        # Fallback math estimativo
+        neto = req.bruto * 0.76
+        return {
+            "irpf_mensual": (req.bruto * 0.18) / 12,
+            "ss_mensual": (req.bruto * 0.06) / 12,
+            "bruto_anual": req.bruto,
+            "tipo_irpf": 18.0,
+            "valores": [neto, neto / 14]
+        }
 
-    st.write("---")
-    st.warning("⚠️ **Nota Importante:** Esta herramienta ofrece orientación basada en IA. Siempre recomendamos la revisión final por un profesional colegiado.")
+class ItpRequest(BaseModel):
+    precio: float
+    ccaa: str
+    salario_anual: float
+    edades: list[int]
+    es_habitual: bool
+    es_fam_num: bool
+    es_discap: bool
 
-    # Añadir después del st.warning en tabs[0]
-    st.write("")
-    st.markdown("### 🛠️ Soluciones Legales Populares")
-    c_serv1, c_serv2, c_serv3 = st.columns(3)
+@app.post("/api/finanzas/calculators/itp")
+async def calculate_itp(req: ItpRequest):
+    api_key = get_api_key()
+    p_s = f"""
+    Calcula ITP para vivienda de segunda mano. 
+    Precio de compra o referencia: {req.precio}€. 
+    CA (Autonomía): {req.ccaa}. 
+    Edades compradores: {req.edades}. Familia Numerosa: {req.es_fam_num}. Discapacidad: {req.es_discap}. Vivienda habitual: {req.es_habitual}.
     
-    with c_serv1:
-        st.info("**Préstamos Familiares**\n\nEvita multas de Hacienda con contratos de préstamo entre particulares (Modelo 600).")
-    with c_serv2:
-        st.info("**Revisión de Alquiler**\n\nAnalizamos tu contrato de vivienda para asegurar que cumple con la nueva Ley de Vivienda.")
-    with c_serv3:
-        st.info("**Euríbor al día**\n\nCalculamos tu hipoteca variable con el valor oficial del Euríbor en tiempo real.")
-    
-    
-# --- ACCESOS DIRECTOS A TRÁMITES (CORREGIDO Y UNIFICADO) ---
-    st.write("")
-    st.markdown("#### ⚡ Realiza tu trámite ahora gratis")
-    
-    c_acc1, c_acc2, c_acc3 = st.columns(3)
-    
-    # 1. Definimos la variable (Nombre: script_universal_scroll)
-    script_universal_scroll = """
-        <script>
-            function goToTab(index) {
-                // 1. Cambiar la pestaña
-                var tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-                if (tabs[index]) { tabs[index].click(); }
-                
-                // 2. BUSCAR EL ANCLA INVISIBLE Y SALTAR A ELLA
-                var topAnchor = window.parent.document.getElementById('top-of-page');
-                if (topAnchor) {
-                    // Usamos setTimeout para dar tiempo a que la pestaña cambie visualmente antes de saltar
-                    setTimeout(function() {
-                        topAnchor.scrollIntoView({behavior: "auto", block: "start", inline: "nearest"});
-                    }, 100);
-                }
-
-                // 3. RESPALDO: Forzar también el contenedor principal
-                var mainView = window.parent.document.querySelector('section[data-testid="stAppViewContainer"]');
-                if (mainView) { mainView.scrollTop = 0; }
-            }
-        </script>
+    Devuelve EXCLUSIVAMENTE un JSON válido sin Markdown con:
+    'porcentaje_aplicado' (string tipo "6%"), 
+    'valor_impuestos' (float, cantidad euros de ITP), 
+    'gastos_gestion_notaria' (float, estimación euros notaría y registro, aprox 1.5%), 
+    'ahorro_total_necesario' (float, impuestos + notaría + 20% entrada bancaria si lo fuera, sólo la suma de gastos), 
+    'explicacion_bonificacion' (string, breve tip si aplica a deducción en su CA).
     """
+    try:
+        res_ia = groq_engine(p_s, api_key)
+        clean_json = res_ia.strip().replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_json)
+        return data
+    except Exception as e:
+        return {
+            "porcentaje_aplicado": "10% (Est)",
+            "valor_impuestos": req.precio * 0.1,
+            "gastos_gestion_notaria": 1500,
+            "ahorro_total_necesario": (req.precio * 0.1) + 1500 + (req.precio * 0.2),
+            "explicacion_bonificacion": "No se pudieron calcular bonificaciones exactas en este momento."
+        }
 
-    # 2. Usamos la variable CORRECTA dentro de los botones
-    with c_acc1:
-        if st.button("💰 Préstamos", key="btn_q1_uni"):
-            # AQUÍ estaba el error: ahora usamos script_universal_scroll
-            components.html(script_universal_scroll + "<script>goToTab(2);</script>", height=0)
-            
-    with c_acc2:
-        if st.button("🏠 Alquiler", key="btn_q2_uni"):
-            components.html(script_universal_scroll + "<script>goToTab(1);</script>", height=0)
+class VentaRequest(BaseModel):
+    p_venta: float
+    p_compra: float
+    f_compra: int
+    v_suelo: float
+    tipo_impositivo: float
 
-    with c_acc3:
-        if st.button("📉 Hipoteca", key="btn_q3_uni"):
-            components.html(script_universal_scroll + "<script>goToTab(4);</script>", height=0)
+@app.post("/api/finanzas/calculators/venta")
+async def calculate_venta(req: VentaRequest):
+    api_key = get_api_key()
+    p_s = f"""
+    Calcula Plusvalía Municipal e IRPF por la venta de un Inmueble Urbano. 
+    Compra original: {req.p_compra}€ en el año {req.f_compra}. 
+    Venta actual: {req.p_venta}€ en el año actual. 
+    Valor Catastral del Suelo: {req.v_suelo}€. 
+    Tipo Impositivo del Ayuntamiento: {req.tipo_impositivo}%. 
     
-    # --- BOTÓN DE COMPARTIR (Asegúrate de que estas líneas estén indentadas) ---
-    st.write(""); st.write("") 
-    mensaje_share = "¡Mira esta herramienta legal con IA! Analiza contratos y redacta documentos al instante: https://legalapp.es"
-    url_wa = f"https://wa.me/?text={mensaje_share.replace(' ', '%20')}"
+    Devuelve EXCLUSIVAMENTE un JSON válido sin texto adicional con: 
+    'mejor_opcion' (float, importe plusvalía municipal si la hubiera, elige objetiva o real, la más barata), 
+    'irpf_estimado' (float, importe a pagar en IRPF por la ganancia neta en base al ahorro 19-28%), 
+    'ganancia_patrimonial' (float, venta - compra tributable).
+    """
+    try:
+        res_ia = groq_engine(p_s, api_key)
+        clean_json = res_ia.strip().replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean_json)
+        return data
+    except Exception as e:
+        ganancia = req.p_venta - req.p_compra
+        irpf = (ganancia * 0.19) if ganancia > 0 else 0
+        return {"mejor_opcion": 0, "irpf_estimado": irpf, "ganancia_patrimonial": ganancia}
 
-    # Centramos el botón en el medio (todo dentro del with tabs[0])
-    col_wa_1, col_wa_2, col_wa_3 = st.columns([3, 2, 3])
-    with col_wa_2:
-        st.link_button("📲Compartir por WhatsApp", url_wa, use_container_width=True)
+class IpcRequest(BaseModel):
+    renta: float
+    mes: str
 
-# --- FILA 4: PREGUNTAS FRECUENTES (FAQ) ---
-    st.write("")
-    st.markdown("### ❓ Preguntas Frecuentes")
+@app.post("/api/finanzas/calculators/ipc")
+async def calculate_ipc(req: IpcRequest):
+    api_key = get_api_key()
+    p = f"Actúa como asesor inmobiliario en España. Calcula la actualización de alquiler. Renta actual: {req.renta}€. Mes de renovación: {req.mes}. Explica brevemente el tope del 3% u otra limitación legal vigente si aplica, y da el resultado de la nueva renta final estimada. Responde en Markdown estructurado."
+    return {"informe": groq_engine(p, api_key)}
+
+class RentaRequest(BaseModel):
+    ccaa: str
+    estado_civil: str
+    discapacidad: bool
+    hijos: bool
+    num_hijos: int
+    ascendientes: bool
+    alquiler: bool
+    hipoteca: bool
+    otros: str
+
+@app.post("/api/finanzas/calculators/renta")
+async def calculate_renta(req: RentaRequest):
+    api_key = get_api_key()
+    pf = []
+    pf.append(f"ESTADO CIVIL: {req.estado_civil}.")
+    if req.discapacidad: pf.append("Con Discapacidad.")
+    if req.hijos: pf.append(f"Tiene {req.num_hijos} hijos.")
+    if req.ascendientes: pf.append("Ascendientes a cargo.")
+    if req.alquiler: pf.append("Vive de Alquiler.")
+    if req.hipoteca: pf.append("Paga hipoteca.")
+    if req.otros: pf.append(f"Otros: {req.otros}.")
     
-    with st.expander("¿Tienen validez legal los documentos generados?"):
-        st.write("""
-        Sí. Los documentos generados por LegalApp AI siguen la normativa vigente en España (LAU, Código Civil, Estatuto de los Trabajadores). 
-        Utilizamos modelos de lenguaje entrenados específicamente en derecho español para asegurar que todas las cláusulas necesarias estén presentes.
-        """)
-        
-    with st.expander("¿Cómo registro mi contrato ante las autoridades?"):
-        st.write("""
-        Dependiendo del contrato:
-        - **Alquiler:** Debe depositarse la fianza en el organismo autonómico correspondiente (ej. IVIMA en Madrid).
-        - **Préstamo:** Debe presentarse el Modelo 600 en Hacienda (está exento de pago).
-        """)
-
-    with st.expander("¿Es seguro subir mis documentos personales?"):
-        st.write("""
-        Totalmente. Los archivos se procesan de forma cifrada y efímera. Una vez analizados, no se guardan permanentemente en nuestros servidores ni se utilizan para entrenar modelos públicos de IA.
-        """)
-      
-    with st.expander("¿Qué es el Modelo 600 que mencionáis?"):
-            st.write("Es el impuesto de Transmisiones Patrimoniales. Para préstamos entre particulares es obligatorio presentarlo, aunque la cuota a pagar es 0€ (exento).") 
-    st.write("---")
-st.markdown("## 📚 Guía Legal y Fiscal")
-
-col_seo1, col_seo2 = st.columns(2)
-
-with col_seo1:
-    with st.expander("¿Cómo calcular los gastos de compra de vivienda en 2026?"):
-        st.write("""
-        Para calcular los gastos de compra de una vivienda en España, debes tener en cuenta:
-        1. **ITP (Impuesto de Transmisiones Patrimoniales):** Varía entre el 4% y el 10% según la CCAA.
-        2. **IVA y AJD:** Si es obra nueva, pagas un 10% de IVA.
-        3. **Bonificaciones por edad:** Si eres menor de 35 años, puedes ahorrar hasta un 50% de impuestos en Madrid, Andalucía o Valencia.
-        """)
-
-with col_seo2:
-    with st.expander("¿Es legal que mi contrato de luz tenga permanencia?"):
-        st.write("""
-        En España, los contratos de luz para consumidores domésticos (menos de 15kW) no suelen tener permanencia de más de un año. 
-        Si te vas antes, la penalización no puede superar el 5% de la energía estimada pendiente.
-        """)    
+    perfil_txt = " | ".join(pf)
     
-# --- TAB 1: ANALIZADOR INTELIGENTE (OPTIMIZADO Y BLINDADO) ---
-with tabs[1]:
-    # 1. GESTIÓN DEL ESTADO
-    if "nav_analizar" not in st.session_state: st.session_state.nav_analizar = "MENU"
-    if "chat_history" not in st.session_state: st.session_state.chat_history = []
-    if "contract_text" not in st.session_state: st.session_state.contract_text = ""
-    if "analisis_result" not in st.session_state: st.session_state.analisis_result = ""
+    prompt = f"""
+    Actúa como Asesor Fiscal experto en IRPF España (Campaña actual).
+    Analiza las deducciones Autonómicas de: {req.ccaa} y Estatales clave.
+    PERFIL: {perfil_txt}.
+    TAREA: Lista deducciones aplicables brevemente.
+    Responde el texto en Markdown.
+    """
+    return {"informe": groq_engine(prompt, api_key)}
 
-    # 2. CONTENEDOR PRINCIPAL
-    main_ana = st.empty()
-
-    # ==============================================================================
-    # VISTA A: MENÚ PRINCIPAL
-    # ==============================================================================
-    if st.session_state.nav_analizar == "MENU":
-        with main_ana.container():
-            st.subheader("Analizador de Documentos")
-            st.info("Selecciona qué quieres analizar:")
-            
-            c_menu1, c_menu2 = st.columns(2)
-            
-            # Función reset para limpiar memoria al cambiar de herramienta
-            def ir_ana(destino):
-                st.session_state.nav_analizar = destino
-                st.session_state.analisis_result = ""
-                st.session_state.contract_text = "" 
-                st.session_state.chat_history = []
-
-            with c_menu1:
-                st.button("📄\nANALIZAR\nCONTRATO", use_container_width=True, on_click=ir_ana, args=("CONTRATO",))
-                st.button("💬\nCHAT CON\nDOCUMENTO", use_container_width=True, on_click=ir_ana, args=("GENERICO",))
-
-            with c_menu2:
-                st.button("🛡️\nREVISAR\nSEGURO", use_container_width=True, on_click=ir_ana, args=("SEGURO",))
-                # Acceso directo a Nóminas (Tab 4)
-                if st.button("📊\nESCÁNER\nNÓMINAS", use_container_width=True):
-                    st.session_state.nav_impuestos = "ESCANER"
-                    # Hack JS para saltar de pestaña
-                    components.html("""<script>var tabs=window.parent.document.querySelectorAll('button[data-baseweb="tab"]');tabs[4].click();</script>""", height=0)
-
-    # ==============================================================================
-    # VISTA B: HERRAMIENTAS DE ANÁLISIS
-    # ==============================================================================
+@app.post("/api/finanzas/calculators/escaner")
+async def calculate_escaner(file: UploadFile = File(...)):
+    api_key = get_api_key()
+    file_bytes = await file.read()
+    if file.filename.lower().endswith(".pdf"):
+        txt = extract_text_from_pdf(file_bytes)
     else:
-        with main_ana.container():
-            # Layout: Herramienta (Izq) | Resultado/Chat (Der)
-            c_ana_izq, c_ana_der = st.columns([1, 1.3])
-            
-            # --- COLUMNA IZQUIERDA: SUBIDA Y PROCESAMIENTO ---
-            with c_ana_izq:
-                def volver_ana():
-                    st.session_state.nav_analizar = "MENU"
-                    st.session_state.analisis_result = ""
-                
-                st.button("⬅️ VOLVER", use_container_width=True, on_click=volver_ana)
-                st.markdown("---")
-                
-                modo = st.session_state.nav_analizar
-
-                # TÍTULOS Y DESCRIPCIONES
-                if modo == "CONTRATO":
-                    st.subheader("📄 Analizar Contrato")
-                    st.caption("Detecta cláusulas abusivas, fechas y riesgos.")
-                elif modo == "SEGURO":
-                    st.subheader("🛡️ Revisar Seguro")
-                    st.caption("Analiza coberturas, exclusiones y letra pequeña.")
-                elif modo == "GENERICO":
-                    st.subheader("💬 Chat Documental")
-                    st.caption("Sube cualquier PDF o Foto y pregunta lo que quieras.")
-
-                # UPLOADER UNIVERSAL (PDF + IMÁGENES)
-                f = st.file_uploader("Sube PDF o Foto (JPG/PNG)", type=["pdf", "jpg", "jpeg", "png"], key="u_ana_main")
-                
-                # BOTÓN DE ACCIÓN (Solo aparece si hay archivo)
-                if f:
-                    # Aviso si el archivo es grande (>10MB)
-                    if f.size > 10 * 1024 * 1024:
-                        st.warning("⚠️ Archivo pesado detectado. Se leerán solo las primeras páginas para evitar bloqueos.")
-                    btn_label = "🔍 ANALIZAR AHORA" if modo != "GENERICO" else "📂 PROCESAR ARCHIVO"
-                    
-                    if st.button(btn_label, use_container_width=True, key="btn_process_ana"):
-                        with st.spinner("⏳ Leyendo documento (esto puede tardar unos segundos)..."):
-                            try:
-                                # 1. EXTRACCIÓN DEL TEXTO (SEGÚN TIPO)
-                                texto_extraido = ""
-                                if f.type == "application/pdf":
-                                    texto_extraido = extract_text_from_pdf(f)
-                                else:
-                                    # Es una imagen -> Usamos Visión IA
-                                    texto_extraido = analyze_image_groq(f, "Transcribe todo el texto de esta imagen con precisión.", api_key)
-                                
-                                # Guardamos en sesión para no perderlo
-                                st.session_state.contract_text = texto_extraido
-
-                               # 2. ANÁLISIS MEJORADO (Detección + Datos + Informe)
-                                if modo == "CONTRATO":
-                                    # A. Detección de Categoría y Extracción de Datos (JSON oculto)
-                                    categoria_detectada = detectar_tipo_contrato(texto_extraido, api_key)
-                                    st.session_state.tipo_contrato_detectado = categoria_detectada
-                                    
-                                    datos_json = extraer_datos_universales(texto_extraido, categoria_detectada, api_key)
-                                    st.session_state.datos_estructurados = datos_json
-
-                                    # B. Generación del Informe Detallado (Markdown visible)
-                                    prompt = f"""
-                                    Actúa como Abogado Experto en España. Analiza este contrato de {categoria_detectada}:
-                                    {texto_extraido[:15000]}... (truncado por longitud).
-                                    
-                                    GENERA UN INFORME CON ESTA ESTRUCTURA:
-                                    1. 📋 **RESUMEN EJECUTIVO**: De qué trata este contrato de {categoria_detectada}.
-                                    2. 📅 **DURACIÓN Y FECHAS**: 
-                                       - Fecha Inicio detectada.
-                                       - Duración total.
-                                       - Preaviso requerido (días/meses).
-                                    3. 💶 **ECONOMÍA**: Pagos, precios, fianzas o actualizaciones.
-                                    4. 🚨 **CLÁUSULAS PELIGROSAS**: Riesgos específicos encontrados.
-                                    5. ⚖️ **VEREDICTO**: ¿Es seguro firmar?
-                                    
-                                    🔴 CÁLCULO DE FECHA CLAVE (IMPORTANTE):
-                                    Basándote en la fecha de inicio, la duración y el preaviso...
-                                    Calcula la **FECHA LÍMITE EXACTA** para avisar de la no renovación o cancelación.
-                                    Pónmelo en negrita así: **FECHA LÍMITE PREAVISO: DD/MM/AAAA**.
-                                    """
-                                    st.session_state.analisis_result = groq_engine(prompt, api_key)
-                                
-                                elif modo == "SEGURO":
-                                    prompt = f"""
-                                    Actúa como Corredor de Seguros. Analiza esta póliza:
-                                    {texto_extraido[:8000]}...
-                                    
-                                    INFORME DETALLADO:
-                                    1. ✅ **LO QUE CUBRE**: Resumen de garantías principales.
-                                    2. ❌ **EXCLUSIONES (IMPORTANTE)**: Qué NO te van a pagar.
-                                    3. 💶 **LÍMITES Y FRANQUICIAS**: Topes de dinero.
-                                    4. 💡 **CONCLUSIÓN**: ¿Es una buena póliza?
-                                    """
-                                    st.session_state.analisis_result = groq_engine(prompt, api_key)
-                                
-                                elif modo == "GENERICO":
-                                    st.success("✅ Documento leído correctamente. ¡Pregunta a la derecha!")
-
-                            except Exception as e:
-                                st.error(f"Error al procesar: {e}. Intenta con un archivo más pequeño.")
-
-
-        
-        
-                   # --- COLUMNA DERECHA: RESULTADOS Y CHAT ---
-            with c_ana_der:
-                
-                # A) SI HAY RESULTADO DEL ANÁLISIS (Contrato/Seguro)
-                if st.session_state.analisis_result:
-                    
-                    # --- VISOR DE MÉTRICAS (Dentro del IF del resultado) ---
-                    if "datos_estructurados" in st.session_state and st.session_state.datos_estructurados:
-                        try:
-                            raw_json = st.session_state.datos_estructurados.strip().replace("```json", "").replace("```", "")
-                            data = json.loads(raw_json)
-                            st.markdown(f"### 📊 Ficha: {st.session_state.get('tipo_contrato_detectado', 'Contrato')}")
-                            cols_data = st.columns(len(data))
-                            for i, (clave, valor) in enumerate(data.items()):
-                                cols_data[i].metric(label=clave.replace("_", " ").title(), value=str(valor))
-                            st.markdown("---")
-                        except:
-                            pass
-
-                    # Ahora el resto del informe que ya tenías
-                    st.success("✅ Análisis Finalizado")
-                    st.markdown(f"<div class='contract-box'>{st.session_state.analisis_result}</div>", unsafe_allow_html=True)
-                    
-                    st.write("")
-                    st.caption("📥 **Acciones y Recordatorios**")
-                    
-                    # Layout: Selector Fecha | PDF | Calendario
-                    c_res_1, c_res_2, c_res_3 = st.columns([1.2, 0.8, 0.8], vertical_alignment="bottom")
-                    
-                    with c_res_1:
-                        fecha_aviso = st.date_input("📅 Fecha Vencimiento:", datetime.now().replace(year=datetime.now().year + 1), key="date_ana_remind")
-                    
-                    with c_res_2:
-                        pdf_bytes = create_pdf(st.session_state.analisis_result, f"Analisis_{modo}")
-                        st.download_button("⬇️ PDF", pdf_bytes, "Analisis.pdf", "application/pdf", use_container_width=True)
-
-                    with c_res_3:
-                        ics_ana = create_ics(f"Vencimiento: {modo}", fecha_aviso, "Revisar condiciones del documento analizado en LegalApp.")
-                        st.download_button("📅 Agendar", ics_ana, "vencimiento.ics", "text/calendar", use_container_width=True)
-
-                    st.divider()
-
-                # B) ZONA DE CHAT / HERRAMIENTAS EXTRA (Siempre visible si hay texto cargado)
-                if st.session_state.contract_text:
-                    
-                    # Generador de Carta de Cancelación (Solo contratos)
-                    if modo == "CONTRATO":
-                        with st.expander("📅 Generar Carta de Cancelación/Baja"):
-                            email_rem = st.text_input("Tu Email", key="c_mail")
-                            fecha_baja = st.date_input("Fecha Baja", key="c_date")
-                            if st.button("Redactar Carta"):
-                                p_cancel = f"Redacta carta formal de cancelación para este contrato. Remitente: {email_rem}. Fecha: {fecha_baja}. Contexto: {st.session_state.contract_text[:3000]}"
-                                carta = groq_engine(p_cancel, api_key)
-                                st.markdown(f"<div class='contract-box'>{carta}</div>", unsafe_allow_html=True)
-
-                   # CHAT INTERACTIVO UNIVERSAL
-                    st.subheader("💬 Chat con el documento")
-                    
-                    for msg in st.session_state.chat_history:
-                        clase = "chat-user" if msg["role"] == "user" else "chat-bot"
-                        st.markdown(f"<div class='{clase}'>{msg['content']}</div>", unsafe_allow_html=True)
-
-                    if pregunta := st.chat_input("Pregunta algo sobre el archivo..."):
-                        st.session_state.chat_history.append({"role": "user", "content": pregunta})
-                        
-                        with st.spinner("Escaneando cláusulas y condiciones..."):
-                            # Aumentamos el contexto para cubrir documentos largos
-                            contexto_chat = st.session_state.contract_text[:45000] 
-                            
-                            prompt_chat = f"""
-                            Eres un experto en análisis de contratos y documentos legales. 
-                            Tu objetivo es extraer información precisa del texto proporcionado.
-
-                            REGLAS DE BÚSQUEDA UNIVERSAL:
-                            1. Si la pregunta es sobre DINERO, PRECIOS o COSTES: 
-                               - Escanea el texto buscando el símbolo '€', la palabra 'Precio', 'Tarifa', 'Canon', 'Importe', 'IVA' o 'Comisión'.
-                               - Revisa especialmente los ANEXOS o las CLÁUSULAS ECONÓMICAS que suelen estar al principio o al final.
-                            2. Si la pregunta es sobre TIEMPOS o PLAZOS:
-                               - Busca 'Duración', 'Vigencia', 'Prórroga', 'Preaviso' o 'Meses'.
-                            3. Siempre indica en qué PÁGINA (si aparece la etiqueta [PÁGINA X]) has encontrado el dato.
-
-                            TEXTO DEL DOCUMENTO:
-                            {contexto_chat}
-                            
-                            PREGUNTA DEL USUARIO: 
-                            {pregunta}
-                            
-                            RESPUESTA (Limpia, directa y sin código HTML):
-                            """
-                            respuesta = groq_engine(prompt_chat, api_key)
-                            
-                            # Limpieza para evitar el error de "pantalla en blanco"
-                            respuesta_limpia = respuesta.replace("<div", "").replace("</div>", "").strip()
-                        
-                        st.session_state.chat_history.append({"role": "assistant", "content": respuesta_limpia})
-                        st.rerun()    
-                
-                # Mensaje de bienvenida si no hay nada
-                elif not st.session_state.analisis_result:
-                    st.info("👈 Sube un archivo en la columna izquierda para comenzar.")
-                    
-# --- TAB 2: GENERADOR DE CONTRATOS (VERSIÓN RESTAURADA Y BLINDADA) ---
-with tabs[2]:
-    # 1. CONTENEDOR MÁGICO (Evita que se mezclen menús y formularios)
-    # Todo lo que pintemos, lo haremos dentro de este 'placeholder'. 
-    # Al cambiar de vista, el placeholder se vacía automáticamente.
-    main_placeholder = st.empty()
-
-    # 2. GESTIÓN DEL ESTADO
-    if "nav_crear" not in st.session_state:
-        st.session_state.nav_crear = "MENU"
-        
-    # Variables de seguridad
-    tipo_texto = "Documento Legal" 
-    data_p = "Datos generales"
-
-    # ==============================================================================
-    # ESCENA A: EL MENÚ DE BOTONES
-    # ==============================================================================
-    if st.session_state.nav_crear == "MENU":
-        # Usamos .container() para pintar DENTRO del placeholder
-        with main_placeholder.container():
-            st.subheader("Generador de Contratos")
-            st.info("👆 Selecciona el documento que necesitas crear:")
-            
-            c1, c2, c3 = st.columns(3)
-            
-            # Función para cambiar de pantalla y limpiar rastros
-            def ir_a(destino):
-                st.session_state.nav_crear = destino
-                st.session_state.generated_contract = ""
-            
-            with c1:
-                st.button("🏠\nALQUILER\nVIVIENDA", use_container_width=True, on_click=ir_a, args=("ALQUILER",))
-                st.button("💼\nCONTRATO\nTRABAJO", use_container_width=True, on_click=ir_a, args=("TRABAJO",))
-                st.button("🏡\nCOMPRAVENTA\nVIVIENDA", use_container_width=True, on_click=ir_a, args=("C_VIVIENDA",))
-
-            with c2:
-                st.button("💰\nPRÉSTAMO\nPARTICULARES", use_container_width=True, on_click=ir_a, args=("PRESTAMO",))
-                st.button("🤝\nSERVICIOS\nFREELANCE", use_container_width=True, on_click=ir_a, args=("SERVICIOS",))
-                st.button("📝\nCONTRATO\nDE ARRAS", use_container_width=True, on_click=ir_a, args=("ARRAS",))
-
-            with c3:
-                st.button("🚗\nCOMPRAVENTA\nVEHÍCULO", use_container_width=True, on_click=ir_a, args=("VEHICULO",))
-                st.button("🤫\nNDA\nCONFIDENCIALIDAD", use_container_width=True, on_click=ir_a, args=("NDA",))
-                st.button("❌\nCANCELACIÓN\nCONTRATO", use_container_width=True, on_click=ir_a, args=("CANCELACION",))
-
-    # ==============================================================================
-    # ESCENA B: EL FORMULARIO (Se activa si NO estamos en MENU)
-    # ==============================================================================
-    else:
-        # Al entrar aquí, el 'main_placeholder' SE VACÍA. Adiós botones antiguos.
-        with main_placeholder.container():
-            
-            # Layout: Botón volver (izq) y Formulario (der)
-            c_izq, c_der = st.columns([1, 1.3])
-            
-            # --- COLUMNA IZQUIERDA: DATOS DEL CONTRATO ---
-            with c_izq:
-                # Botón volver
-                def volver():
-                    st.session_state.nav_crear = "MENU"
-                    st.session_state.generated_contract = ""
-                
-                st.button("⬅️ VOLVER AL MENÚ", use_container_width=True, on_click=volver)
-                st.markdown("---")
-                
-                modo = st.session_state.nav_crear
-                
-                # 1. ALQUILER (Con cálculo de fechas automático)
-                if modo == "ALQUILER":
-                    st.subheader("🏠 Alquiler Vivienda")
-                    tipo_texto = "Contrato de Alquiler de Vivienda Habitual (LAU)"
-                    
-                    prop = st.text_input('Propietario (Nombre y DNI)', key="alq_prop")
-                    inq = st.text_input('Inquilino (Nombre y DNI)', key="alq_inq")
-                    dir_piso = st.text_input('Dirección completa', key="alq_dir")
-                    
-                    c1, c2 = st.columns(2)
-                    with c1: ref_cat = st.text_input('Ref. Catastral', key="alq_ref")
-                    with c2: renta = st.number_input('Renta (€/mes)', value=800.0, step=50.0, key="alq_renta")
-                    
-                    c3, c4 = st.columns(2)
-                    with c3: f_inicio = st.date_input("Fecha Inicio", value=datetime.now(), key="alq_ini")
-                    with c4: duracion = st.number_input("Años", 1, 20, 5, key="alq_dur")
-                    
-                    # Lógica fechas
-                    try: f_fin = f_inicio.replace(year=f_inicio.year + duracion)
-                    except: f_fin = f_inicio.replace(year=f_inicio.year + duracion, month=3, day=1)
-                    st.caption(f"📅 Finaliza el: **{f_fin.strftime('%d/%m/%Y')}**")
-                    
-                    clausulas = st.text_area("Cláusulas Extra", placeholder="Ej: No mascotas.", key="alq_clau")
-                    data_p = f"Propietario: {prop}. Inquilino: {inq}. Piso: {dir_piso}. Ref: {ref_cat}. Renta: {renta}. Inicio: {f_inicio}. Duración: {duracion} años (Fin: {f_fin}). Extras: {clausulas}."
-
-                # 2. PRÉSTAMO (Con calculadora de intereses recuperada)
-                elif modo == "PRESTAMO":
-                    st.subheader("💰 Préstamo Dinero")
-                    tipo_texto = "Contrato de Préstamo entre Particulares"
-                    
-                    c1, c2 = st.columns(2)
-                    with c1: 
-                        pres_nom = st.text_input("Prestamista (Deja dinero)", key="pre_pres")
-                        pres_dni = st.text_input("DNI Prestamista", key="pre_dnip")
-                    with c2: 
-                        pret_nom = st.text_input("Prestatario (Recibe dinero)", key="pre_pret")
-                        pret_dni = st.text_input("DNI Prestatario", key="pre_dnir")
-                    
-                    c3, c4 = st.columns(2)
-                    with c3: importep = st.number_input("Importe (€)", 100.0, step=100.0, key="pre_imp")
-                    with c4: plazop = st.number_input("Plazo (Meses)", 1, 120, 12, key="pre_pla")
-                    
-                    # Lógica intereses recuperada
-                    interes = st.checkbox("¿Con Intereses?", key="pre_int")
-                    detalles = "Sin intereses (Tipo 0%)"
-                    
-                    if interes:
-                        tipo_int = st.number_input("Interés Anual (%)", 1.0, step=0.5, key="pre_tint")
-                        # Calculadora Sistema Francés
-                        i = (tipo_int / 100) / 12
-                        c_men = importep * (i * (1 + i)**plazop) / ((1 + i)**plazop - 1)
-                        total_dev = c_men * plazop
-                        st.success(f"🧮 Cuota: **{c_men:.2f}€/mes**. Total a devolver: {total_dev:.2f}€")
-                        detalles = f"Con interés del {tipo_int}% anual. Cuota mensual: {c_men:.2f}€."
-                    
-                    data_p = f"Prestamista: {pres_nom} ({pres_dni}). Prestatario: {pret_nom} ({pret_dni}). Importe: {importep}€. Plazo: {plazop} meses. {detalles}."
-
-               # 4. TRABAJO (COMPLETO: HORARIOS, CIF, REPRESENTANTE)
-                elif modo == "TRABAJO":
-                    st.subheader("💼 Contrato Laboral")
-                    tipo_texto = "Contrato de Trabajo"
-                    
-                    st.caption("🏢 Empresa y Representante")
-                    c_emp1, c_emp2 = st.columns(2)
-                    with c_emp1:
-                        empresa_nom = st.text_input("Nombre Empresa", key="tra_emp_nom")
-                    with c_emp2:
-                        empresa_cif = st.text_input("CIF Empresa", key="tra_emp_cif")
-                    
-                    empresa_rep = st.text_input("Representante Legal (Quien firma)", placeholder="Ej: Administrador único", key="tra_rep")
-
-                    st.caption("👤 Trabajador")
-                    c_trab1, c_trab2 = st.columns(2)
-                    with c_trab1:
-                        trab_nom = st.text_input("Nombre Trabajador", key="tra_trab_nom")
-                    with c_trab2:
-                        trab_dni = st.text_input("DNI/NIE Trabajador", key="tra_trab_dni")
-
-                    st.caption("⏰ Jornada y Horario")
-                    c_hor1, c_hor2 = st.columns(2)
-                    with c_hor1:
-                        horas_sem = st.number_input("Horas Semanales", min_value=1.0, max_value=40.0, value=40.0, step=0.5, key="tra_horas")
-                    with c_hor2:
-                        es_flexible = st.checkbox("¿Horario Flexible?", key="tra_flex")
-                    
-                    if es_flexible:
-                        horario_txt = st.text_input("Detalle Flexibilidad", placeholder="Ej: Entrada 8-9h, Salida 17-18h", key="tra_hor_txt")
-                        texto_horario = f"Horario Flexible: {horario_txt}"
-                    else:
-                        horario_txt = st.text_input("Horario Fijo", placeholder="Ej: L-V de 9:00 a 18:00", key="tra_hor_txt")
-                        texto_horario = f"Horario Fijo: {horario_txt}"
-
-                    st.caption("📋 Condiciones Económicas")
-                    puesto = st.text_input("Puesto / Categoría", key="tra_pue")
-                    
-                    c_cond1, c_cond2 = st.columns(2)
-                    with c_cond1:
-                        modalidad = st.selectbox("Modalidad", ["Indefinido", "Temporal", "Prácticas"], key="tra_mod")
-                    with c_cond2:
-                        salario = st.number_input("Salario Bruto Anual (€)", 15000.0, step=500.0, key="tra_sal")
-                    
-                    duracion_txt = "Indefinida"
-                    if modalidad != "Indefinido":
-                        duracion_txt = st.text_input("Duración / Fecha Fin", placeholder="Ej: 6 meses", key="tra_dur")
-
-                    tiene_variable = st.checkbox("¿Incluye Bonus/Variable?", key="tra_var_check")
-                    variable_txt = "Sin variable"
-                    if tiene_variable:
-                        variable_txt = st.text_input("Detalle del Bonus", key="tra_var_txt")
-
-                    # PROMPT ACTUALIZADO CON TODOS LOS DATOS
-                    data_p = f"""
-                    EMPRESA: {empresa_nom} (CIF: {empresa_cif}).
-                    REPRESENTANTE LEGAL: {empresa_rep}.
-                    TRABAJADOR: {trab_nom} (DNI: {trab_dni}).
-                    PUESTO: {puesto}. MODALIDAD: {modalidad}. DURACIÓN: {duracion_txt}.
-                    JORNADA: {horas_sem} horas/semana. {texto_horario}.
-                    SALARIO: {salario}€ Brutos/Año. VARIABLE: {variable_txt}.
-                    """
-                    
-                elif modo == "VEHICULO":
-                     st.subheader("🚗 Compraventa Vehículo")
-                     st.caption("👤 Intervinientes")
-                     vendedor = st.text_input("Vendedor (Nombre y DNI)")
-                     comprador = st.text_input("Comprador (Nombre y DNI)")
-                     st.caption("🚗 Datos del Vehículo")
-                     col_coche1, col_coche2 = st.columns(2)
-                     with col_coche1:
-                          marca = st.text_input("Marca y Modelo", placeholder="Ej: Ford Focus 1.5")
-                          matricula = st.text_input("Matrícula")
-                     with col_coche2:
-                          bastidor = st.text_input("Nº Bastidor (VIN)")
-                          st.caption("ℹ️ Fundamental para la validez legal")
-                          kms = st.number_input("Kilómetros", min_value=0, step=1000)
-                     precio = st.number_input("Precio Venta (€)", min_value=0.0, step=50.0)
-                     data_p = f"Compraventa Vehículo. Vendedor: {vendedor}. Comprador: {comprador}. Vehículo: {marca}. Matrícula: {matricula}. Nº Bastidor: {bastidor}. Kilometraje actual: {kms} Km. Precio: {precio} euros. Se declara libre de cargas y al corriente de ITV."
- 
-                # 5. SERVICIOS
-                elif modo == "SERVICIOS":
-                    st.subheader("🤝 Servicios Freelance")
-                    tipo_texto = "Contrato Prestación Servicios"
-                    cli = st.text_input("Cliente", key="ser_cli")
-                    pro = st.text_input("Profesional", key="ser_pro")
-                    desc = st.text_area("Descripción Servicios", key="ser_des")
-                    hon = st.text_input("Honorarios y Pagos", key="ser_hon")
-                    data_p = f"Cliente: {cli}. Profesional: {pro}. Servicios: {desc}. Pago: {hon}."
-
-                # === ARRAS ===
-                elif modo == "ARRAS":
-                     st.subheader("📝 Contrato de Arras")
-                     st.caption("📝 Datos para Arras")
-                     vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
-                     comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
-                     st.caption("🏠 Inmueble y Condiciones")
-                     inmueble = st.text_input('Dirección Inmueble')
-                     ref_catastral = st.text_input('Referencia Catastral')
-                     col_arras1, col_arras2 = st.columns(2)
-                     with col_arras1: precio = st.number_input('Precio Total Venta (€)', step=1000.0)
-                     with col_arras2: senal = st.number_input('Señal/Arras (€)', step=500.0)
-                     plazo = st.date_input('Fecha Límite Escritura')
-                     data_p = f"Contrato de Arras. Vendedor: {vendedor}. Comprador: {comprador}. Inmueble: {inmueble}. Ref. Catastral: {ref_catastral}. Precio Total: {precio}. Señal entregada: {senal}. Fecha límite: {plazo}. Tipo: Arras Penitenciales (Art 1454 CC)."
-
-                # 7. C_VIVIENDA
-                elif modo == "C_VIVIENDA":
-                    st.subheader("🏡 Compraventa Vivienda")
-                    st.caption("👤 Intervinientes")
-                    vendedor = st.text_input('Vendedor (Nombre y DNI/CIF)')
-                    comprador = st.text_input('Comprador (Nombre y DNI/CIF)')
-                    st.caption("🏠 Inmueble")
-                    inmueble = st.text_input('Dirección Completa')
-                    ref_catastral = st.text_input('Referencia Catastral')
-                    st.caption("ℹ️ Código de 20 caracteres")
-                    precio = st.number_input('Precio Venta (€)', step=1000.0)
-                    data_p = f"Compraventa Inmueble. Vendedor: {vendedor}. Comprador: {comprador}. Dirección: {inmueble}. Referencia Catastral: {ref_catastral}. Precio: {precio} euros. Se vende libre de cargas."
-            
-                # 8. NDA
-                elif modo == "NDA":
-                    st.subheader("🤫 Confidencialidad")
-                    tipo_texto = "Acuerdo de Confidencialidad (NDA)"
-                    rev = st.text_input("Revelador", key="nda_rev")
-                    rec = st.text_input("Receptor", key="nda_rec")
-                    motivo = st.text_area("Información a proteger", key="nda_mot")
-                    data_p = f"Revelador: {rev}. Receptor: {rec}. Info protegida: {motivo}."
-
-                # === CANCELACIÓN ===
-                elif modo == "CANCELACION":
-                     st.subheader("❌ Acuerdo de Terminación")
-                     tipo_texto = "Acuerdo de Terminación de Contrato"
-                     contrato_origen = st.text_input("¿Qué contrato se cancela?")
-                     partes = st.text_input("Partes implicadas")
-                     fecha_efecto = st.date_input("Fecha Efectiva")
-                     motivo = st.text_input("Motivo (Opcional)")
-                     data_p = f"Terminación Contrato. Origen: {contrato_origen}. Partes: {partes}. Fecha fin: {fecha_efecto}. Motivo: {motivo}."
-
-
-
-            # --- COLUMNA DERECHA: GENERACIÓN (COMÚN) ---
-            with c_der:
-                st.info("👇 **Generar Documento**")
-                # Ciudad común para todos los contratos
-                ciudad = st.text_input("📍 Ciudad de firma", value="Madrid", key="common_city_tab2")
-                
-                # BOTÓN REDACTAR (Con manejo de errores integrado)
-                if st.button("✨ REDACTAR CONTRATO", use_container_width=True, key="btn_redactar_main"):
-                    with st.spinner("La IA está redactando tu contrato..."):
-                        try:
-                            fecha_hoy = datetime.now().strftime("%d/%m/%Y")
-                            prompt_final = f"""
-                            Actúa como Abogado Experto en España.
-                            Redacta un {tipo_texto} formal y válido legalmente.
-                            
-                            DATOS CLAVE:
-                            - DETALLES DEL ACUERDO: {data_p}
-                            
-                            ESTRUCTURA OBLIGATORIA:
-                            1. Encabezado (Lugar, Fecha, Reunidos con DNI).
-                            2. Exponen (Antecedentes).
-                            3. ESTIPULACIONES (Cláusulas numeradas).
-                            4. Cierre y Firmas.
-                            5. Lugar y Fecha: En {ciudad}, a {fecha_hoy}.
-                            
-                            Usa lenguaje jurídico preciso. Formato Markdown.
-                            Usa negritas (**) para títulos y partes clave.
-                            """
-                            st.session_state.generated_contract = groq_engine(prompt_final, api_key, 0.3)
-                        except Exception as e:
-                            st.error(f"Error al conectar con la IA: {e}")
-
-                # VISOR DE RESULTADOS Y DESCARGAS
-                if st.session_state.generated_contract:
-                    st.markdown("---")
-                    # Visor con caja gris
-                    st.markdown(f"<div class='contract-box'>{st.session_state.generated_contract}</div>", unsafe_allow_html=True)
-                    
-                    st.write("")
-                    st.markdown("### 📥 Exportar Documento")
-                    
-                    # Email ocupa todo el ancho
-                    mail_user = st.text_input("Email para copia (Opcional)", key="mail_down_tab2")
-                    st.write("")
-                    
-                    # 3 Columnas para botones (PDF, Word, WhatsApp)
-                    c_btn1, c_btn2, c_btn3 = st.columns(3)
-                    
-                    # BOTÓN PDF
-                    with c_btn1:
-                        if st.button("📄 PDF", key="btn_pdf_gen_2", use_container_width=True):
-                            if mail_user: save_lead(mail_user, "CONTRATO", modo)
-                            st.session_state.pdf_buffer = create_pdf(st.session_state.generated_contract, tipo_texto)
-                        
-                        if "pdf_buffer" in st.session_state:
-                            st.download_button("⬇️ Bajar", st.session_state.pdf_buffer, f"{modo}.pdf", "application/pdf", key="dl_pdf_2", use_container_width=True)
-
-                    # BOTÓN WORD
-                    with c_btn2:
-                        docx_file = create_docx(st.session_state.generated_contract, tipo_texto)
-                        st.download_button("📝 Word", docx_file, f"{modo}.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", key="dl_word_2", use_container_width=True)
-
-                    # BOTÓN WHATSAPP
-                    with c_btn3:
-                        link_wa = get_whatsapp_link(st.session_state.generated_contract)
-                        st.link_button("📲 WhatsApp", link_wa, use_container_width=True)
-
-                    # 4. CALENDARIO INTELIGENTE (Cálculo Exacto)
-                    with c_btn4:
-                        # Inicializamos variables por seguridad
-                        fecha_evento = datetime.now()
-                        titulo_evento = "Recordatorio Legal"
-                        desc_evento = "Revisar vencimiento del contrato generado."
-
-                        # LÓGICA DE CÁLCULO EXACTO
-                        try:
-                            if modo == "ALQUILER":
-                                # Usamos las variables del formulario de la izquierda: f_inicio (date) y duracion (int)
-                                # Convertimos a datetime de Pandas para sumar años fácilmente
-                                fecha_inicio_dt = pd.to_datetime(f_inicio)
-                                fecha_evento = fecha_inicio_dt + pd.DateOffset(years=duracion)
-                                titulo_evento = "Fin Contrato Alquiler"
-                                desc_evento = f"Se cumplen los {duracion} años del contrato. Revisar renovación o devolución de llaves."
-
-                            elif modo == "PRESTAMO":
-                                # Usamos la variable 'plazop' (meses) del formulario
-                                fecha_evento = datetime.now() + pd.DateOffset(months=plazop)
-                                titulo_evento = "Vencimiento Préstamo"
-                                desc_evento = f"Se cumple el plazo de {plazop} meses para la devolución del dinero."
-                            
-                            elif modo == "TRABAJO":
-                                if modalidad != "Indefinido":
-                                    # Si es temporal, intentamos parsear la duración si el usuario puso una fecha
-                                    titulo_evento = "Fin Contrato Temporal"
-                                    # Por defecto +6 meses si no detectamos fecha clara, ya que es texto libre
-                                    fecha_evento = datetime.now() + pd.DateOffset(months=6)
-
-                        except Exception as e:
-                            pass # Si falla el cálculo, se queda la fecha de hoy por seguridad
-
-                        # Generamos el archivo .ics
-                        ics_data = create_ics(titulo_evento, fecha_evento, desc_evento)
-                        
-                        # Mostramos la fecha calculada en el botón para que el usuario sepa qué está bajando
-                        label_cal = f"📅 Fin: {fecha_evento.strftime('%d/%m/%y')}"
-                        st.download_button(label_cal, ics_data, "vencimiento.ics", "text/calendar", key="btn_cal_2", use_container_width=True, help="Agendar fecha exacta de vencimiento")
-
-
-
-                    
-# --- TAB 3: RECLAMAR / RECURRIR (ESTRUCTURA IDÉNTICA A TAB 2) ---
-with tabs[3]:
+        txt = analyze_image_groq(file_bytes, "Transcribe conceptos y retenciones.", api_key)
     
-    # 1. GESTIÓN DEL ESTADO DE NAVEGACIÓN
-    if "nav_reclamar" not in st.session_state:
-        st.session_state.nav_reclamar = "MENU"
-        
-    # ... debajo de if "nav_reclamar" ...
-    if "multa_viability" not in st.session_state: st.session_state.multa_viability = ""
-    if "temp_multa_txt" not in st.session_state: st.session_state.temp_multa_txt = ""    
-
-    # --- VISTA A: MENÚ PRINCIPAL (GRID DE BOTONES) ---
-    if st.session_state.nav_reclamar == "MENU":
-        st.subheader("Centro de Reclamaciones")
-        st.caption("Selecciona qué trámite quieres iniciar:")
-        
-        # Definimos columnas AQUÍ (no fuera)
-        c_nav1, c_nav2, c_nav3 = st.columns(3)
-        
-        with c_nav1:
-            if st.button("✍️\nREDACTAR BUROFAX\n(Reclamar Deudas)", use_container_width=True):
-                st.session_state.nav_reclamar = "BUROFAX"
-                st.session_state.generated_claim = "" 
-                st.rerun()
-        with c_nav2:
-            if st.button("🛡️\nRESPONDER CARTA\n(Vecinos, Seguros...)", use_container_width=True):
-                st.session_state.nav_reclamar = "RESPONDER"
-                st.session_state.generated_claim = ""
-                st.rerun()
-        with c_nav3:
-            if st.button("👮\nRECURRIR MULTA\n(Tráfico/Ayto)", use_container_width=True):
-                st.session_state.nav_reclamar = "MULTA"
-                st.session_state.generated_claim = ""
-                st.session_state.multa_viability = "" # <--- AÑADIR
-                st.session_state.temp_multa_txt = ""  # <--- AÑADIR
-                st.rerun()
-
-    # --- VISTA B: FORMULARIO ESPECÍFICO ---
-    else:
-        # Definimos columnas NUEVAS para el formulario (Igual que en Tab 2)
-        c_rec, c_doc = st.columns([1, 1.3])
-        
-        with c_rec:
-            # Botón Volver DENTRO de la columna
-            if st.button("⬅️ VOLVER AL MENÚ DE RECLAMACIONES"):
-                st.session_state.nav_reclamar = "MENU"
-                st.session_state.generated_claim = ""
-                st.rerun()
-            
-            st.markdown("---")
-            
-            # Recuperamos el modo
-            modo = st.session_state.nav_reclamar
-
-            # === HERRAMIENTA 1: BUROFAX ===
-            if modo == "BUROFAX":
-                with st.container(border=False):
-                    st.info("Generador de Burofax")
-                    remitente = st.text_input("Tus Datos (Nombre, DNI, Dirección)", key="bf_remitente")
-                    dest = st.text_input("Destinatario (Empresa/Persona)", key="bf_destinatario")
-                    st.markdown("---")
-                    
-                    motivo = st.selectbox("Motivo", [
-                        "Cobro Indebido / Facturas", "Seguros", "Fianza Alquiler", 
-                        "Banca", "Transporte", "Otro"
-                    ], key="bf_motivo")
-                    
-                    datos_clave = ""
-                    
-                    if "Facturas" in motivo:
-                        c_fac1, c_fac2 = st.columns(2)
-                        with c_fac1: num_fac = st.text_input("Nº Factura / Contrato", key="bf_num")
-                        with c_fac2: importe = st.number_input("Importe Reclamado (€)", min_value=0.0, key="bf_imp")
-                        fecha_fac = st.date_input("Fecha de la factura", key="bf_date")
-                        datos_clave = f"Reclamación de Cantidad. Factura Nº: {num_fac}. Importe: {importe}€. Fecha: {fecha_fac}. Motivo: Cobro indebido o servicio no prestado."
-                    
-                    elif "Seguros" in motivo:
-                        c_seg1, c_seg2 = st.columns(2)
-                        with c_seg1: num_poliza = st.text_input("Nº Póliza (Obligatorio)", key="bf_pol")
-                        with c_seg2: num_siniestro = st.text_input("Nº Siniestro (Opcional)", key="bf_sin")
-                        fecha_sin = st.date_input("Fecha del Siniestro", key="bf_date_sin")
-                        datos_clave = f"Reclamación a Aseguradora. Póliza Nº: {num_poliza}. Siniestro Nº: {num_siniestro}. Fecha Ocurrencia: {fecha_sin}. Exigencia de cumplimiento de contrato y cobertura."
-                    
-                    elif "Fianza" in motivo:
-                        direccion = st.text_input("Dirección del Inmueble alquilado", key="bf_dir")
-                        fecha_llaves = st.date_input("Fecha devolución llaves", key="bf_date_llaves")
-                        importe_fianza = st.number_input("Importe Fianza (€)", min_value=0.0, key="bf_fianza")
-                        datos_clave = f"Reclamación de Fianza. Inmueble: {direccion}. Fecha fin contrato: {fecha_llaves}. Importe retenido: {importe_fianza}€. Aplicación de la LAU."
-                    
-                    elif "Banca" in motivo:
-                        producto = st.text_input("Producto (Cuenta/Tarjeta)", key="bf_prod")
-                        concepto = st.text_input("Concepto reclamado (Ej: Comisión mantenimiento)", key="bf_con")
-                        importe = st.number_input("Importe (€)", min_value=0.0, key="bf_imp_banca")
-                        datos_clave = f"Reclamación Bancaria. Producto: {producto}. Concepto: {concepto}. Importe: {importe}€. Solicitud de retrocesión."
-                    
-                    elif "Transporte" in motivo:
-                        vuelo = st.text_input("Nº Vuelo / Localizador", key="bf_vuelo")
-                        incidencia = st.selectbox("Incidencia", ["Retraso > 3h", "Cancelación", "Pérdida Equipaje"], key="bf_incid")
-                        datos_clave = f"Reclamación Transporte. Referencia: {vuelo}. Incidencia: {incidencia}. Solicitud de indemnización según Reglamento Europeo 261/2004."
-                    
-                    else: 
-                        asunto = st.text_input("Asunto", key="bf_asunto")
-                        datos_clave = f"Reclamación Genérica. Asunto: {asunto}."
-
-                    st.write("")
-                    hechos = st.text_area("Hechos / Detalles", placeholder="Explica qué ha pasado...", key="bf_hechos")
-                    
-                    if st.button("🔥 GENERAR BUROFAX", key="btn_bf_gen"):
-                        with st.spinner("Redactando..."):
-                            p = f"Actúa como abogado. Redacta Burofax. De: {remitente}. A: {dest}. Contexto: {datos_clave}. Hechos: {hechos}. Tono formal."
-                            st.session_state.generated_claim = groq_engine(p, api_key)
-
-            # === HERRAMIENTA 2: RESPONDER ===
-            elif modo == "RESPONDER":
-                with st.container(border=False):
-                    st.info("📂 Sube la carta recibida.")
-                    uploaded_gen = st.file_uploader("Sube PDF/Foto", type=["pdf", "jpg", "png"], key="rc_upload")
-                    mis_argumentos = st.text_area("¿Qué quieres responder?", key="rc_argumentos")
-                    
-                    if st.button("📝 GENERAR RESPUESTA", key="btn_rc_gen"):
-                        if uploaded_gen and mis_argumentos:
-                            with st.spinner("Analizando..."):
-                                if uploaded_gen.type == "application/pdf": txt = extract_text_from_pdf(uploaded_gen)
-                                else: txt = analyze_image_groq(uploaded_gen, "Lee carta", api_key)
-                                
-                                p = f"Abogado. Recibido: {txt[:4000]}. Responder: {mis_argumentos}. Redacta carta."
-                                st.session_state.generated_claim = groq_engine(p, api_key)
-                        else: st.warning("Faltan datos.")
-
-            # === HERRAMIENTA 3: MULTAS (NUEVO FLUJO FREEMIUM) ===
-            elif modo == "MULTA":
-                
-                 with st.container(border=False):
-                      st.info("👮 Sube la multa para analizarla.")
-                      uploaded_multa = st.file_uploader("Sube la Multa (PDF/Foto)", type=["pdf", "jpg", "png"], key="mul_upload")
-                      tipo_m = st.selectbox("Tipo", ["Tráfico", "Hacienda", "Otros"], key="mul_tipo")
-                      mis_datos = st.text_input("Tus Datos", key="mul_datos")
-                    
-                      # PASO 1: ANÁLISIS DE VIABILIDAD (GRATIS)
-                      if st.button("🔍 ANALIZAR VIABILIDAD (GRATIS)", key="btn_mul_via"):
-                         if uploaded_multa:
-                            with st.spinner("Buscando defectos de forma..."):
-                                # Leemos el archivo
-                                if uploaded_multa.type == "application/pdf": txt = extract_text_from_pdf(uploaded_multa)
-                                else: txt = analyze_image_groq(uploaded_multa, "Lee multa", api_key)
-                                
-                                # Guardamos el texto en memoria para no re-leerlo luego
-                                st.session_state.temp_multa_txt = txt 
-                                
-                                # Prompt de Diagnóstico
-                                p_viabilidad = f"""
-                                Actúa como abogado experto en multas. Analiza este texto:
-                                ---
-                                {txt[:4000]}
-                                ---
-                                NO REDACTES EL RECURSO AÚN. Solo dime:
-                                1. ¿Es recurrible? (Sí/No/Difícil)
-                                2. Probabilidad de éxito estimada (%).
-                                3. Posibles defectos de forma detectados (fechas, falta de foto, márgenes, competencia, etc).
-                                4. Veredicto breve: ¿Aconsejas recurrir o pagar con descuento?
-                                """
-                                st.session_state.multa_viability = groq_engine(p_viabilidad, api_key)
-                         else:
-                            st.warning("Por favor, sube el archivo de la multa.")
-
-                    # MOSTRAR RESULTADO VIABILIDAD (Si ya se hizo)
-                      if st.session_state.multa_viability:
-                         st.success("✅ Análisis Completado")
-                         st.markdown(f"<div style='background:rgba(255,255,255,0.1); padding:15px; border-radius:10px; border-left:4px solid #facc15; font-size:14px;'>{st.session_state.multa_viability}</div>", unsafe_allow_html=True)
-                         st.write("")
-                        
-                        # PASO 2: REDACCIÓN DEL RECURSO (PREMIUM - BOTÓN DESBLOQUEADO)
-                         st.markdown("👇 **¿Quieres que redacte el recurso legal?**")
-                         if st.button("⚖️ REDACTAR RECURSO AHORA", key="btn_mul_gen"):
-                            if mis_datos and st.session_state.temp_multa_txt:
-                                with st.spinner("Redactando Pliego de Descargos..."):
-                                    p_recurso = f"""
-                                    Actúa como Abogado. Redacta el PLIEGO DE DESCARGOS para recurrir la multa analizada anteriormente.
-                                    MULTA: {st.session_state.temp_multa_txt[:4000]}
-                                    CLIENTE: {mis_datos}.
-                                    INSTRUCCIONES: 
-                                    - Formato legal formal para presentar ante la administración.
-                                    - Alega todos los defectos posibles (indefensión, falta de pruebas, márgenes de error radar, etc).
-                                    - Cita leyes y sentencias aplicables.
-                                    """
-                                    st.session_state.generated_claim = groq_engine(p_recurso, api_key)
-                            else:
-                                st.warning("Faltan tus datos personales para completar el escrito.")
-            
-            
-                      if st.session_state.generated_claim:
-                       st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-                       st.write(""); pdf = create_pdf(st.session_state.generated_claim, "Recurso"); st.download_button("⬇️ PDF", pdf, "recurso.pdf")
-
-       # --- VISOR DE RESULTADOS (TAB 3) ---
-        with c_doc:
-            if st.session_state.generated_claim:
-                # 1. Mostrar texto
-                st.markdown(f"<div class='contract-box'>{st.session_state.generated_claim}</div>", unsafe_allow_html=True)
-                st.write("")
-                
-                # 2. Bloque de Acciones (Email + PDF)
-                with st.container(border=False):
-                    ce2, cb2 = st.columns([2, 1])
-                    
-                    with ce2: 
-                        m2 = st.text_input("Email (Opcional)", key="mr_tab3")
-                    
-                    with cb2:
-                        st.write(""); st.write("") # Espacio para alinear con el input
-                        
-                        # Generamos el PDF en memoria
-                        pdf_data = create_pdf(st.session_state.generated_claim, "Documento Legal")
-                        
-                        # Callback para guardar el lead al descargar
-                        def guardar_y_bajar():
-                            if m2: save_lead(m2, "RECLAMACION", st.session_state.nav_reclamar)
-
-                        st.download_button(
-                            label="📄 Bajar PDF",
-                            data=pdf_data,
-                            file_name="Legal.pdf",
-                            mime="application/pdf",
-                            key="dl_btn_tab3",
-                            on_click=guardar_y_bajar,
-                            use_container_width=True
-                        )
-
-                # 3. Bloque Calendario (Seguimiento) - Separado para que se vea bien
-                st.write("")
-                st.caption("📅 **No te olvides de los plazos**")
-                
-                # Calculamos fecha: 15 días desde hoy
-                fecha_seguimiento = datetime.now() + pd.Timedelta(days=15)
-                
-                ics_reclama = create_ics(
-                    f"Seguimiento: {st.session_state.nav_reclamar}", 
-                    fecha_seguimiento, 
-                    "Verificar si han contestado al Burofax/Recurso enviado con LegalApp."
-                )
-                
-                st.download_button(
-                    label=f"📅 Agendar Seguimiento ({fecha_seguimiento.strftime('%d/%m')})", 
-                    data=ics_reclama, 
-                    file_name="seguimiento.ics", 
-                    mime="text/calendar", 
-                    use_container_width=True,
-                    help="Añade un recordatorio en tu agenda para comprobar si te han respondido."
-                )    
-                            
-# --- TAB 4: IMPUESTOS (ARQUITECTURA CORREGIDA Y DEFINITIVA) ---
-with tabs[4]:
-    # 1. GESTIÓN DEL ESTADO
-    if "nav_impuestos" not in st.session_state:
-        st.session_state.nav_impuestos = "MENU"
-
-    main_container_imp = st.empty()
-
-    # ==============================================================================
-    # ESCENA A: MENÚ PRINCIPAL
-    # ==============================================================================
-    if st.session_state.nav_impuestos == "MENU":
-        with main_container_imp.container():
-            st.subheader("Calculadora Fiscal")
-            st.caption("Selecciona una herramienta:")
-        
-            c_nav1, c_nav2 = st.columns(2)
-            
-            # Grid de botones (Izquierda)
-            with c_nav1: 
-                if st.button("💰\nDeducciones\nRenta", use_container_width=True): 
-                    st.session_state.nav_impuestos = "RENTA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("🔍\nEscáner\nNómina", use_container_width=True): 
-                    st.session_state.nav_impuestos = "ESCANER"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📈\nIPC\nAlquiler", use_container_width=True): 
-                    st.session_state.nav_impuestos = "IPC"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-
-            # Grid de botones (Derecha)
-            with c_nav2: 
-                if st.button("💶\nSimulador\nSueldo Neto", use_container_width=True): 
-                    st.session_state.nav_impuestos = "SUELDO"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📝\nImpuestos\nVivienda", use_container_width=True): 
-                    st.session_state.nav_impuestos = "VIVIENDA_TOTAL"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-                if st.button("📉\nCuota\nHipoteca", use_container_width=True): 
-                    st.session_state.nav_impuestos = "HIPOTECA"
-                    st.session_state.generated_calc = ""
-                    st.rerun()
-
-    # ==============================================================================
-    # ESCENA B: LAS HERRAMIENTAS
-    # ==============================================================================
-    else:
-        with main_container_imp.container():
-            
-            # 1. BOTÓN VOLVER (Común para todos)
-            def volver_imp():
-                st.session_state.nav_impuestos = "MENU"
-                st.session_state.generated_calc = ""
-            
-            st.button("⬅️ VOLVER AL MENÚ", use_container_width=True, on_click=volver_imp)
-            st.markdown("---")
-            
-            modo = st.session_state.nav_impuestos
-            anio_actual = datetime.now().year
-
-            # ==========================================================================
-            # CASO ESPECIAL: VIVIENDA TOTAL (ANCHO COMPLETO + VISUALIZACIÓN CRUZADA)
-            # ==========================================================================
-            if modo == "VIVIENDA_TOTAL":
-                st.subheader("🏡 Gestión Inmobiliaria")
-                st.caption("Calculadora Cruzada: Compra (Izq) y Venta (Der). Los resultados aparecen en el lado opuesto.")
-                
-                # Variables de memoria específicas
-                if "viv_res_compra" not in st.session_state: st.session_state.viv_res_compra = ""
-                if "viv_res_venta" not in st.session_state: st.session_state.viv_res_venta = ""
-
-                # DOS COLUMNAS DE ANCHO COMPLETO
-                col_izq, col_der = st.columns(2, gap="small")
-
-               # --- COLUMNA IZQUIERDA: INPUTS COMPRA + VISOR VENTA ---
-                with col_izq:
-                    st.info("🛒 **DATOS COMPRA** (Resultado saldrá 👉)")
-                    with st.container(border=True):
-                        # 1. DATOS ECONÓMICOS
-                        c_p1, c_p2 = st.columns(2)
-                        with c_p1: precio_c = st.number_input("Precio (€)", value=150000.0, step=1000.0, key="viv_com_pre")
-                        with c_p2: tipo_c = st.selectbox("Tipo", ["Segunda Mano", "Obra Nueva"], key="viv_com_tipo")
-                        
-                        ccaa_c = st.selectbox("CCAA", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "Castilla-La Mancha", "Castilla y León", "Canarias", "Otras"], key="viv_com_ccaa")
-                        
-                        st.markdown("---")
-                        
-                        # 2. PERFIL COMPRADORES (DINÁMICO)
-                        st.markdown("👇 **Perfil Compradores:**")
-                        
-                        # Fila 1: Nº Compradores y Checkboxes generales
-                        c_num, c_check = st.columns([1, 1.5])
-                        with c_num:
-                            num_compradores = st.number_input("Nº Compradores", 1, 5, 1, key="viv_com_num")
-                        with c_check:
-                            es_habitual = st.checkbox("Vivienda Habitual", value=True, key="viv_com_hab")
-                            es_fam_num = st.checkbox("Familia Numerosa", key="viv_com_fn")
-                            es_discap = st.checkbox("Algún comprador Discapacitado", key="viv_com_dis")
-
-                        # Fila 2: EDADES DINÁMICAS (Se crean tantas cajas como compradores)
-                        st.caption("🎂 Edades (Vital para reducción ITP Joven):")
-                        cols_edades = st.columns(num_compradores)
-                        lista_edades = []
-                        
-                        for i in range(num_compradores):
-                            with cols_edades[i]:
-                                edad = st.number_input(f"Edad C{i+1}", 18, 99, 30, key=f"viv_edad_{i}")
-                                lista_edades.append(edad)
-
-                        # 3. BOTÓN Y PROMPT DETALLADO
-                        if st.button("CALCULAR GASTOS ➡️", key="btn_viv_com", use_container_width=True):
-                            with st.spinner("Analizando bonificaciones por edad y perfil..."):
-                                st.session_state.viv_res_venta = "" # Limpiar visor opuesto
-                                
-                                # Convertimos la lista de edades a texto para la IA
-                                txt_edades = ", ".join([f"Comprador {i+1}: {e} años" for i, e in enumerate(lista_edades)])
-                                
-                                prompt = f"""
-                                Actúa como Gestor Inmobiliario Experto en {ccaa_c}.
-                                Calcula los GASTOS DE COMPRAVENTA para esta operación:
-                                
-                                DATOS OPERACIÓN:
-                                - Precio: {precio_c}€. 
-                                - Tipo: {tipo_c}.
-                                
-                                PERFIL COMPRADORES:
-                                - Son {num_compradores} compradores.
-                                - Edades exactas: [{txt_edades}].
-                                - ¿Es Vivienda Habitual?: {es_habitual}.
-                                - ¿Familia Numerosa?: {es_fam_num}.
-                                - ¿Discapacidad?: {es_discap}.
-                                
-                                TAREA CRÍTICA (IMPUESTOS):
-                                1. Si es SEGUNDA MANO (ITP): Revisa la normativa de {ccaa_c}.
-                                   - Si hay reducción por JOVEN (<35 o <32 años), comprueba las edades.
-                                   - ¡OJO! Si solo algunos compradores cumplen la edad, aplica la reducción SOLO a su parte proporcional (prorrateo).
-                                   - Revisa reducciones por Familia Numerosa o Discapacidad si están marcadas.
-                                2. Si es OBRA NUEVA: Aplica IVA (10%) + AJD (busca si el AJD tiene reducción por perfil).
-                                
-                                DESGLOSE REQUERIDO:
-                                - Notaría y Registro (Estimación).
-                                - Gestoría (Aprox 350€).
-                                - IMPUESTOS (Detalla el cálculo: Tipo aplicado y base).
-                                
-                                RESULTADO FINAL: TOTAL AHORRADO NECESARIO.
-                                """
-                                st.session_state.viv_res_compra = groq_engine(prompt, api_key)
-                                st.rerun()
-
-                    # Visor de Venta (viene de la derecha) - DISEÑO FINAL TRANSPARENTE
-                    if st.session_state.viv_res_venta:
-                        st.write("")
-                        st.info("⬅️ **RESULTADO DE LA VENTA**")
-                        
-                        # Contenedor con FONDO TRANSPARENTE (Glassmorphism)
-                        html_container = f"""
-                        <div style="
-                            background-color: rgba(0, 0, 0, 0.4); 
-                            backdrop-filter: blur(5px);
-                            color: white;
-                            padding: 25px; 
-                            border-radius: 15px; 
-                            border: 1px solid rgba(255, 255, 255, 0.15);
-                            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                        ">
-                            <div style="font-size: 16px; color: #e2e8f0; margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                                📉 Análisis Fiscal (Plusvalía)
-                            </div>
-                            {st.session_state.viv_res_venta}
-                        </div>
-                        """
-                        st.markdown(html_container, unsafe_allow_html=True)
-
-               # --- COLUMNA DERECHA: INPUTS VENTA + CÁLCULO ---
-                with col_der:
-                    st.warning("💰 **DATOS VENTA** (Resultado saldrá 👈)")
-                    with st.container(border=True):
-                        p_venta = st.number_input("Venta (€)", value=180000, step=1000, key="viv_ven_pv")
-                        p_compra = st.number_input("Compra (€)", value=100000, step=1000, key="viv_ven_pc")
-                        f_compra = st.number_input("Año Adquisición", 1920, 2025, 2010, key="viv_ven_ac")
-                        v_suelo = st.number_input("Valor Suelo IBI (€)", 0, step=500, key="viv_ven_vs")
-                        st.caption("ℹ️ Mira la casilla **'Valor Catastral Suelo'** en tu recibo IBI.")
-                        municipio = st.text_input("Municipio", key="viv_ven_mun")
-                        
-                        # Selector de Tipo Impositivo
-                        tipo_impositivo = st.number_input("Tipo Impositivo (%)", 0.0, 30.0, 30.0, step=1.0, key="viv_ven_tipo")
-                        st.caption("ℹ️ Máximo legal 30%.")
-
-                        if st.button("🧮 CALCULAR IMPUESTOS VENTA", key="btn_viv_ven"):
-                            if v_suelo > 0:
-                                with st.spinner("Calculando impuestos con precisión matemática..."):
-                                    st.session_state.viv_res_compra = ""
-                                    
-                                    # A. CÁLCULO DE AÑOS
-                                    anios = anio_actual - f_compra
-                                    if anios < 1: anios = 0
-                                    
-                                    ganancia_real = p_venta - p_compra
-
-                                    # B. MATEMÁTICAS EXACTAS (PYTHON)
-                                    # 1. Método Objetivo (Tabla Estatal Oficial)
-                                    coeficientes = {
-                                        0: 0.15, 1: 0.15, 2: 0.14, 3: 0.14, 4: 0.16, 5: 0.18,
-                                        6: 0.19, 7: 0.20, 8: 0.19, 9: 0.15, 10: 0.12, 11: 0.10,
-                                        12: 0.09, 13: 0.09, 14: 0.09, 15: 0.09, 16: 0.10, 17: 0.13,
-                                        18: 0.17, 19: 0.23
-                                    }
-                                    # Si es >= 20 años, coeficiente es 0.40. Si no, buscamos en la tabla.
-                                    coef = 0.40 if anios >= 20 else coeficientes.get(anios, 0.15)
-                                    
-                                    base_obj = v_suelo * coef
-                                    cuota_obj = base_obj * (tipo_impositivo / 100)
-
-                                    # 2. Método Real (Estimación: Suelo es 60% del valor total)
-                                    # Si hay pérdidas, la plusvalía es 0.
-                                    if ganancia_real <= 0:
-                                        cuota_real = 0.0
-                                    else:
-                                        base_real = ganancia_real * 0.60 # Estimación estándar del peso del suelo
-                                        cuota_real = base_real * (tipo_impositivo / 100)
-
-                                    # Mejor opción (la más barata)
-                                    mejor_opcion = min(cuota_obj, cuota_real)
-
-                                    # 3. IRPF (Tramos del Ahorro 2024/25)
-                                    irpf_est = 0.0
-                                    if ganancia_real > 0:
-                                        base_ahorro = ganancia_real
-                                        
-                                        # Tramo 1: 19% hasta 6.000€
-                                        t1 = min(base_ahorro, 6000)
-                                        irpf_est += t1 * 0.19
-                                        resto = base_ahorro - t1
-                                        
-                                        if resto > 0:
-                                            # Tramo 2: 21% de 6.000 a 50.000€ (44.000 de ancho)
-                                            t2 = min(resto, 44000)
-                                            irpf_est += t2 * 0.21
-                                            resto = resto - t2
-                                        
-                                        if resto > 0:
-                                            # Tramo 3: 23% de 50.000 a 200.000€ (150.000 de ancho)
-                                            t3 = min(resto, 150000)
-                                            irpf_est += t3 * 0.23
-                                            resto = resto - t3
-                                            
-                                        if resto > 0:
-                                            # Tramo 4: 26% a partir de 200.000€
-                                            irpf_est += resto * 0.26
-
-                                    # C. FORMATEO DE NÚMEROS (Para que queden bonitos: 1.200,50)
-                                    f_obj = "{:,.2f}".format(cuota_obj).replace(",", "X").replace(".", ",").replace("X", ".")
-                                    f_real = "{:,.2f}".format(cuota_real).replace(",", "X").replace(".", ",").replace("X", ".")
-                                    f_mejor = "{:,.2f}".format(mejor_opcion).replace(",", "X").replace(".", ",").replace("X", ".")
-                                    f_irpf = "{:,.2f}".format(irpf_est).replace(",", "X").replace(".", ",").replace("X", ".")
-
-                                    # 3. PROMPT (YA SOLO PINTA, NO CALCULA)
-                                    prompt_venta = f"""
-                                    Actúa como Maquetador Web. Tu ÚNICA tarea es devolver este código HTML rellenando los huecos.
-                                    NO HAGAS CÁLCULOS, USA LOS VALORES QUE TE DOY.
-                                    
-                                    VALORES A USAR:
-                                    - OBJETIVO: {f_obj}
-                                    - REAL: {f_real}
-                                    - MEJOR: {f_mejor}
-                                    - IRPF: {f_irpf}
-
-                                    ESTRUCTURA:
-                                    <div style="margin-bottom: 5px; border-bottom: 1px dashed #555; padding-bottom: 5px;">
-                                        <span style="color: #cbd5e1;">Método Objetivo:</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">{f_obj}</span>
-                                    </div>
-                                    <div style="margin-bottom: 15px;">
-                                        <span style="color: #cbd5e1;">Método Real (Est.):</span>
-                                        <span style="color: #fff; font-weight: bold; float: right;">{f_real}</span>
-                                    </div>
-                                    <div style="background: rgba(59, 130, 246, 0.2); padding: 20px; border-radius: 8px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.4);">
-                                        <div style="color: #93c5fd; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Opción más barata</div>
-                                        <div style="color: #60a5fa; font-size: 32px; font-weight: 900;">{f_mejor}</div>
-                                    </div>
-                                    <div style="border-top: 1px dashed #555; margin-top: 20px; padding-top: 15px; display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="color: #cbd5e1;">Estimación IRPF Estatal:</span>
-                                        <span style="color: #f87171; font-weight: bold; font-size: 18px;">{f_irpf}</span>
-                                    </div>
-                                    """
-                                    
-                                    # 4. LLAMADA Y LIMPIEZA
-                                    raw_response = groq_engine(prompt_venta, api_key)
-                                    
-                                    # --- LIMPIEZA REFORZADA ---
-                                    if raw_response:
-                                        clean = raw_response.strip().replace("```html", "").replace("```", "")
-                                        # Buscamos el primer <div>
-                                        if "<div" in clean:
-                                            start = clean.find("<div")
-                                            # Buscamos el ÚLTIMO </div> y cortamos radicalmente ahí
-                                            end = clean.rfind("</div>") + 6
-                                            clean = clean[start:end]
-                                        
-                                        st.session_state.viv_res_venta = clean
-                                        st.rerun()
-                            else:
-                                st.warning("⚠️ Faltan datos del Valor Suelo.")
-                    
-                    # (Aquí debajo va el visor inverso de compra si lo tuvieras, ese no cambia)
-
-                    # Visor de Compra (viene de la izquierda) - ESTE TROZO NO CAMBIA
-                    if st.session_state.viv_res_compra:
-                        st.write("")
-                        st.info("➡️ **RESULTADO DE LA COMPRA**")
-                        st.markdown(f"""
-                             <div style="background-color: rgba(0, 0, 0, 0.4); backdrop-filter: blur(10px); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);">
-                                  <div style="font-size: 16px; color: #e2e8f0; margin-bottom: 20px; font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
-                                       🏠 Gastos e Impuestos Compra
-                                  </div>
-                                  {st.session_state.viv_res_compra}
-                             </div>
-                        """, unsafe_allow_html=True)
-
-                        # AQUÍ LLAMAMOS A LOS BOTONES
-                        mensaje = f"He calculado los gastos de mi nueva casa en {ccaa_c} con LegalApp AI. ¡Muy útil!"
-                        botones_compartir(mensaje)
-
-
-            # ==========================================================================
-            # CASO GENERAL: RESTO DE HERRAMIENTAS (LAYOUT DIVIDIDO 1 | 1.3)
-            # ==========================================================================
-            else:
-                # Creamos columnas solo para estas herramientas
-                c_cal, c_res = st.columns([1, 1.3])
-                
-                # COLUMNA IZQUIERDA (FORMULARIOS)
-                with c_cal:
-                    
-                    # === RENTA (COMPLETO) ===
-                    if modo == "RENTA":
-                        st.subheader("💰 Deducciones Renta")
-                        st.info("💡 **Buscador de Ahorro:** Detecta deducciones por familia, alquiler, vivienda y personas a cargo.")
-                        
-                        ccaa = st.selectbox("📍 Tu Comunidad Autónoma", ["Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria", "Castilla-La Mancha", "Castilla y León", "Cataluña", "Extremadura", "Galicia", "Madrid", "Murcia", "La Rioja", "Valencia"], key="ren_ccaa")
-                        
-                        # Situación Personal
-                        st.markdown("👇 **Tu Situación Personal:**")
-                        c_est1, c_est2 = st.columns(2)
-                        with c_est1:
-                            estado_civil = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Pareja de Hecho", "Divorciado/Separado", "Viudo/a"], key="ren_ec")
-                        
-                        info_civil_extra = ""
-                        with c_est2:
-                            discapacidad_propia = st.checkbox("Tengo Discapacidad (>33%)", key="ren_dis")
-                            if estado_civil == "Casado/a":
-                                if st.checkbox("¿Declaración Conjunta?", key="ren_conj"):
-                                    info_civil_extra += " Opción Declaración Conjunta. "
-                            elif estado_civil == "Pareja de Hecho":
-                                if st.checkbox("¿Hijos en común?", key="ren_ph_hijos"):
-                                    info_civil_extra += " Pareja de Hecho con Hijos (Valorar Monoparental). "
-                            elif estado_civil == "Divorciado/Separado":
-                                paga_comp = st.checkbox("Pago Pensión Compensatoria (Ex-cónyuge)", key="ren_div_comp")
-                                paga_alim = st.checkbox("Pago Anualidades Alimentos (Hijos)", key="ren_div_alim")
-                                if paga_comp: info_civil_extra += " Paga Pensión Compensatoria (Reduce Base). "
-                                if paga_alim: info_civil_extra += " Paga Alimentos a Hijos (Escala especial). "
-
-                        st.markdown("---")
-                        # Familia
-                        st.markdown("👇 **Familia y Personas a Cargo:**")
-                        hijos = st.checkbox("👶 Tengo hijos (< 25 años)", key="ren_hijos")
-                        detalles_familia = ""
-                        
-                        if hijos:
-                            st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #3b82f6; margin-bottom: 10px;"><small>📝 Hijos / Descendientes:</small></div>""", unsafe_allow_html=True)
-                            anios_hijos = st.text_input("Año nacimiento hijos (ej: 2021, 2024)", key="ren_ah")
-                            
-                            c_h1, c_h2 = st.columns(2)
-                            with c_h1:
-                                guarderia = st.checkbox("Gastos Guardería (0-3 años)", key="ren_guar")
-                                material = st.checkbox("Gastos Material Escolar", key="ren_mat")
-                            with c_h2:
-                                fam_num = st.checkbox("Familia Numerosa", key="ren_fam")
-                                discap_hijo = st.checkbox("Hijo con Discapacidad", key="ren_dis_h")
-                            
-                            if estado_civil != "Casado/a":
-                                if st.checkbox("¿Tienes la Custodia Exclusiva?", key="ren_custodia"):
-                                    info_civil_extra += " Familia Monoparental (Custodia Exclusiva). "
-
-                            detalles_familia += f"Hijos nacidos en: {anios_hijos}. "
-                            if guarderia: detalles_familia += "Paga Guardería. "
-                            if material: detalles_familia += "Paga Material Escolar. "
-                            if fam_num: detalles_familia += "Es Familia Numerosa. "
-                            if discap_hijo: detalles_familia += "Tiene hijos con Discapacidad (Aumenta mínimo). "
-
-                        # Ascendientes
-                        ascendientes = st.checkbox("👵 Ascendientes a cargo (>65 años o discapacidad)", key="ren_asc")
-                        if ascendientes:
-                            st.markdown("""<div style="background-color: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; border-left: 3px solid #f59e0b; margin-bottom: 10px;"><small>📝 Padres/Abuelos que conviven contigo:</small></div>""", unsafe_allow_html=True)
-                            c_asc1, c_asc2 = st.columns(2)
-                            with c_asc1:
-                                num_asc = st.number_input("Nº Ascendientes", 1, 4, 1, key="ren_num_asc")
-                            with c_asc2:
-                                asc_discap = st.checkbox("¿Tienen discapacidad > 33%?", key="ren_asc_dis")
-                            
-                            detalles_familia += f"Convive con {num_asc} ascendientes (>65 años). "
-                            if asc_discap: detalles_familia += "Ascendientes con Discapacidad (Deducción muy alta). "
-
-                        st.markdown("---")
-                        # Gastos Deducibles
-                        st.markdown("👇 **Gastos Deducibles:**")
-                        c1, c2 = st.columns(2)
-                        with c1:
-                            alquiler = st.checkbox("Vivo de alquiler (Inquilino)", key="ren_alq")
-                            if alquiler:
-                                edad_inquilino = st.number_input("Tu edad", 18, 99, 30, key="ren_edad_inq")
-                                detalles_familia += f" Inquilino de {edad_inquilino} años. "
-                            hipoteca = st.checkbox("Hipoteca (Anterior 2013)", key="ren_hip")
-                        with c2:
-                            donaciones = st.checkbox("Hago Donaciones (ONG/Partidos)", key="ren_don")
-                            idiomas = st.checkbox("Gastos Idiomas / Extraescolares", key="ren_idio")
-                            rural = st.checkbox("Vivo en Zona Rural / Despoblada", key="ren_rur")
-                        
-                        otros = st.text_input("Otros gastos (Ej: Eficiencia energética, Transporte...)", key="ren_otr")
-
-                        if st.button("🔍 BUSCAR DEDUCCIONES", key="btn_ren"):
-                            with st.spinner(f"Analizando normativa de {ccaa} y estatal..."):
-                                situaciones = []
-                                situaciones.append(f"ESTADO CIVIL: {estado_civil}. {info_civil_extra}")
-                                if detalles_familia: situaciones.append(f"SITUACIÓN FAMILIAR: {detalles_familia}")
-                                else: situaciones.append("Sin cargas familiares declaradas.")
-                                
-                                if alquiler: situaciones.append("Vive de Alquiler")
-                                if hipoteca: situaciones.append("Paga Hipoteca (Deducción estatal antigua)")
-                                if discapacidad_propia: situaciones.append("Contribuyente con Discapacidad")
-                                if donaciones: situaciones.append("Hace Donaciones")
-                                if idiomas: situaciones.append("Gastos Educación/Idiomas")
-                                if rural: situaciones.append("Residencia en zona Rural (Despoblación)")
-                                if otros: situaciones.append(f"Otros: {otros}")
-                                
-                                perfil_txt = " | ".join(situaciones)
-                                
-                                prompt_renta = f"""
-                                Actúa como Asesor Fiscal experto en IRPF España (Campaña actual).
-                                Analiza las deducciones Autonómicas de: {ccaa} y Estatales clave.
-                                PERFIL: {perfil_txt}.
-                                TAREA: Lista deducciones aplicables (Hijos, Alquiler, Discapacidad, Ascendientes, Pensiones, etc).
-                                FORMATO: ### ✅ DEDUCCIONES DETECTADAS.
-                                """
-                                st.session_state.generated_calc = groq_engine(prompt_renta, api_key)
-
-
-                    # === ESCÁNER NÓMINA ===
-                    elif modo == "ESCANER":
-                        st.subheader("🔍 Escáner de Nómina")
-                        st.info("📸 Sube una foto o PDF de tu nómina. La IA revisará si el IRPF es correcto y si cumples con el SMI 2026.")
-                        file_nomina = st.file_uploader("Subir Nómina", type=["pdf", "jpg", "png"], key="u_nomina")
-                        if file_nomina:
-                            if st.button("🚀 ANALIZAR MI NÓMINA", key="btn_scan_nom"):
-                                with st.spinner("Revisando conceptos salariales y retenciones..."):
-                                    if file_nomina.type == "application/pdf": txt = extract_text_from_pdf(file_nomina)
-                                    else: txt = analyze_image_groq(file_nomina, "Transcribe conceptos y retenciones.", api_key)
-                                    p_nomina = f"Analiza esta nómina: {txt}. Verifica SMI 2026, IRPF correcto y Bases Cotización."
-                                    st.session_state.generated_calc = groq_engine(p_nomina, api_key)
-
-
-                    # === SUELDO NETO (COMPLETO) ===
-                    elif modo == "SUELDO":
-                        st.subheader("💶 Simulador Sueldo Neto")
-                        st.caption("Simulador Nómina (IA Fiscal + Precisión Matemática)")
-                        
-                        # 1. Datos Económicos y Laborales
-                        bruto = st.number_input("Bruto Anual (€)", value=24000.0, step=500.0, key="su_bru")
-                        
-                        c_dat1, c_dat2 = st.columns(2)
-                        with c_dat1:
-                            edad = st.number_input("Edad", 18, 70, 30, key="su_edad")
-                        with c_dat2:
-                            comunidad = st.selectbox("CCAA (Define el IRPF)", ["Madrid", "Cataluña", "Andalucía", "Valencia", "Galicia", "País Vasco", "Canarias", "Resto"], key="su_ccaa")
-                        
-                        movilidad = st.checkbox("¿Movilidad Geográfica?", key="su_mov")
-
-                        # --- NUEVOS CAMPOS SOLICITADOS ---
-                        c_lab1, c_lab2 = st.columns(2)
-                        with c_lab1:
-                            tipo_contrato = st.selectbox("Tipo de Contrato", ["General / Indefinido", "Temporal (inferior a 1 año)"], key="su_tipo_con")
-                        with c_lab2:
-                            categorias_prof = [
-                                "Ingenieros, licenciados y alta dirección",
-                                "Ingenieros técnicos, peritos y ayudantes titulados",
-                                "Jefes administrativos y de taller",
-                                "Ayudantes no titulados",
-                                "Oficiales administrativos",
-                                "Personal subalterno",
-                                "Auxiliares administrativos",
-                                "Oficiales de primera y segunda",
-                                "Oficiales de tercera y especialistas",
-                                "Peones",
-                                "Trabajadores menores de 18 años"
-                            ]
-                            cat_pro = st.selectbox("Categoría Profesional", categorias_prof, key="su_cat_pro")
-                        # ---------------------------------
-                        
-                        st.markdown("---")
-                        
-                        # 2. Situación Familiar
-                        c_fam1, c_fam2 = st.columns(2)
-                        with c_fam1: 
-                            estado = st.selectbox("Estado Civil", ["Soltero/a", "Casado/a", "Pareja de hecho", "Divorciado/Separado"], key="su_est")
-                            conyuge_cargo = False
-                            pension_alim = 0.0
-                            pension_comp = 0.0
-                            hijos_comun_pareja = False
-                            
-                            if estado == "Casado/a": 
-                                conyuge_cargo = st.checkbox("¿Cónyuge gana < 1.500€/año?", key="su_con")
-                            elif estado == "Pareja de hecho":
-                                hijos_comun_pareja = st.checkbox("¿Tenéis hijos en común?", key="su_pareja_hijos")
-                                st.caption("ℹ️ Importante para prorratear la deducción por descendientes.")
-                            elif estado == "Divorciado/Separado":
-                                paga_pension = st.checkbox("¿Pagas pensión por sentencia?", key="su_pen_check")
-                                if paga_pension:
-                                    pension_alim = st.number_input("Pensión Alimentos Hijos (€/año)", 0.0, step=500.0, key="su_pen_alim")
-                                    pension_comp = st.number_input("Pensión Compensatoria Cónyuge (€/año)", 0.0, step=500.0, key="su_pen_comp")
-
-                        with c_fam2: 
-                            discapacidad = st.selectbox("Discapacidad", ["Ninguna", "33%-65%", ">65%"], key="su_dis")
-                        
-                        hijos = st.number_input("Nº Hijos (<25 años)", 0, 10, 0, key="su_hij")
-                        hijos_menores_3 = 0
-                        if hijos > 0: 
-                            hijos_menores_3 = st.number_input(f"De los {hijos}, ¿cuántos < 3 años?", 0, hijos, 0, key="su_hij3")
-                        
-                        if st.button("💶 CALCULAR NETO EXACTO", key="btn_su_calc"):
-                            with st.spinner("Calculando IRPF 2025 según situación familiar y laboral..."):
-                                prompt_irpf = f"""
-                                Actúa como experto fiscal en España 2025 (Agencia Tributaria).
-                                Calcula el TIPO MEDIO DE RETENCIÓN IRPF (%) exacto para este perfil:
-                                
-                                DATOS LABORALES:
-                                - Salario Bruto: {bruto}€
-                                - Región: {comunidad}
-                                - Tipo Contrato: {tipo_contrato} (IMPORTANTE: Si es Temporal < 1 año, aplica mínimo legal del 2% si corresponde).
-                                - Categoría Profesional: {cat_pro}.
-
-                                DATOS PERSONALES:
-                                - Edad: {edad}
-                                - Estado Civil: {estado}.
-                                - Situación Pareja de Hecho con hijos en común: {hijos_comun_pareja}.
-                                - Cónyuge a cargo (si casado): {conyuge_cargo}
-                                - Hijos totales: {hijos}
-                                - Hijos < 3 años: {hijos_menores_3}
-                                - Pensiones por sentencia (reducen base): Alimentos {pension_alim}€, Compensatoria {pension_comp}€.
-                                - Discapacidad: {discapacidad}
-                                
-                                INSTRUCCIÓN: Responde SOLO con el número del porcentaje con dos decimales (ej: 14.20).
-                                """
-                                try:
-                                    respuesta_ia = groq_engine(prompt_irpf, api_key, temp=0.0)
-                                    import re
-                                    match = re.search(r"(\d+[.,]\d+)", respuesta_ia)
-                                    if match: tipo_irpf = float(match.group(1).replace(",", "."))
-                                    else: tipo_irpf = 15.0
-                                except: tipo_irpf = 15.0
-
-                                ss_anual = bruto * 0.0635
-                                irpf_anual = bruto * (tipo_irpf / 100)
-                                neto_anual = bruto - ss_anual - irpf_anual
-                                mes_12 = neto_anual / 12
-                                mes_14 = neto_anual / 14 
-                                
-                                # Formateo visual
-                                f_mes_12 = "{:,.2f}".format(mes_12).replace(",", "X").replace(".", ",").replace("X", ".")
-                                f_mes_14 = "{:,.2f}".format(mes_14).replace(",", "X").replace(".", ",").replace("X", ".")
-                                f_irpf = "{:,.2f}".format(irpf_anual/12).replace(",", "X").replace(".", ",").replace("X", ".")
-                                f_tipo = "{:,.2f}".format(tipo_irpf).replace(",", "X").replace(".", ",").replace("X", ".")
-
-                                html_nomina = f"""
-                                <div style="background-color: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 15px; border: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
-                                    <div style="font-size: 14px; font-weight: bold; color:#ccc;">Neto Mensual (12 pagas)</div>
-                                    <div style="color: #38bdf8; font-size: 48px; font-weight: 900;">{f_mes_12} €</div>
-                                    <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
-                                        <div style="font-size: 14px; color:#ccc;">Neto Mensual (14 pagas)</div>
-                                        <div style="color: #fff; font-size: 28px; font-weight: 700;">{f_mes_14} €</div>
-                                    </div>
-                                    <div style="background: rgba(0,0,0,0.3); margin-top: 20px; padding: 10px; border-radius: 8px;">
-                                        <div>IRPF: <span style="color:#f87171;">-{f_irpf} €/mes</span> (Tipo: {f_tipo}%)</div>
-                                    </div>
-                                    <div style="margin-top:10px; font-size:10px; color:#aaa;">*Cálculo incluye retención SS estándar (6.35%).</div>
-                                </div>
-                                """
-                                st.session_state.generated_calc = html_nomina
-
-                    # === IPC ===
-                    elif modo == "IPC":
-                        st.subheader("📈 Actualizar IPC")
-                        renta = st.number_input("Renta (€)", 800.0, key="ipc_ren")
-                        mes = st.selectbox("Mes", ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"], key="ipc_mes")
-                        if st.button("📈 ACTUALIZAR", key="btn_ipc"):
-                            st.session_state.generated_calc = groq_engine(f"Actualiza renta {renta} con IPC {mes}.", api_key)
-
-                    # === HIPOTECA ===
-                    elif modo == "HIPOTECA":
-                        st.subheader("📉 Cuota Hipoteca")
-                        st.caption("Calculadora Cuota Mensual Inteligente")
-                        capital_h = st.number_input("Capital Pendiente (€)", value=150000.0, key="hip_cap")
-                        plazo_h = st.number_input("Plazo (Años)", value=25, key="hip_pla")
-                        t_interes = st.radio("Tipo de Interés", ["Fijo", "Variable"], horizontal=True, key="hip_tip")
-                        
-                        if t_interes == "Fijo":
-                            interes_final = st.number_input("Interés Nominal Anual (%)", value=3.0, key="hip_int")
-                        else:
-                            eur_actual = 2.6 # Simulado
-                            st.success(f"📈 Euríbor hoy: **{eur_actual}%**")
-                            dif_banco = st.number_input("Diferencial del banco (%)", value=0.75, key="hip_dif")
-                            interes_final = eur_actual + dif_banco
-                            st.caption(f"Interés total aplicado: {interes_final}%")
-
-                        if st.button("🧮 CALCULAR CUOTA", key="btn_hip"):
-                            p_h = f"Calcula hipoteca. Capital: {capital_h}€. Interés total: {interes_final}%. Plazo: {plazo_h} años. Indica cuota mensual y total intereses."
-                            st.session_state.generated_calc = groq_engine(p_h, api_key)
-
-
-                # COLUMNA DERECHA (RESULTADOS COMUNES)
-                with c_res:
-                    if st.session_state.generated_calc:
-                        if "<div" in st.session_state.generated_calc and "rgba" in st.session_state.generated_calc:
-                            st.markdown(st.session_state.generated_calc, unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"<div class='contract-box' style='background:#f0f9ff; border-color:#bae6fd;'>{st.session_state.generated_calc}</div>", unsafe_allow_html=True)
-                        st.write("")
-                        with st.container(border=False):
-                            ce3, cb3 = st.columns([2,1])
-                            with ce3: m3 = st.text_input("Email", key="mf_tab4")
-                            with cb3: 
-                                st.write(""); st.write("")
-                                if st.button("PDF RESULTADO", key="btn_pdf_tab4"):
-                                    pdf_calc = create_pdf(st.session_state.generated_calc, "Informe Fiscal")
-                                    if m3: save_lead(m3, "CALCULO", "Fiscalidad")
-                                    st.download_button("⬇️ Bajar PDF", data=pdf_calc, file_name="Calculo.pdf", mime="application/pdf")
-# --- PIE DE PÁGINA (FOOTER) ALINEADO Y CORREGIDO ---
-st.write(""); st.write(""); st.write("") 
-
-with st.container():
-    st.markdown("---") 
-    
-    # Alineación vertical centrada
-    c_legal, c_coffee, c_contact, c_admin = st.columns([3, 1.2, 1.2, 0.5], vertical_alignment="center")
-    
-    # 1. DATOS LEGALES (Tus datos)
-    with c_legal:
-        st.caption("⚖️ **legalapp.es** | Inteligencia Jurídica para España.")
-        with st.expander("📜 Avisos Legales, Privacidad y Cookies"):
-            st.markdown("""
-            **Información Legal (LSSI):**
-            Responsable: Marcos Lorente Diaz-Guerra | DNI: 46994385A 
-            Email: marcoslorente@legalapp.es
-            
-            **Política de Privacidad (RGPD):**
-            1. **Finalidad:** Los datos y documentos se procesan exclusivamente para generar el informe o contrato solicitado.
-            2. **Conservación:** No almacenamos documentos personales de forma permanente. Los textos se procesan de forma efímera a través de la API de Groq (anónima).
-            3. **Derechos:** Puede ejercer sus derechos de acceso, rectificación o supresión escribiendo a nuestro email de contacto.
-            
-            **Términos de Uso:**
-            Esta herramienta utiliza Inteligencia Artificial. Los resultados son orientativos y no constituyen un consejo legal vinculante. Se recomienda la revisión por un abogado colegiado para procesos judiciales.
-            """)
-
-    # 2. BUY ME A COFFEE (Botón HTML Amarillo - Tooltip Nativo)
-    with c_coffee:
-        # Usamos HTML 'title' que el navegador muestra correctamente siempre
-        st.markdown(
-            """
-            <a href="https://www.buymeacoffee.com/TU_USUARIO" target="_blank" style="text-decoration:none;" title="☕ Apoya el mantenimiento de la App">
-                <div style="
-                    background-color: #FFDD00; 
-                    color: #000000; 
-                    padding: 7px 15px; 
-                    border-radius: 8px; 
-                    text-align: center; 
-                    font-weight: bold;
-                    font-size: 14px;
-                    border: 1px solid #eab308;
-                    box-shadow: 0px 2px 0px 0px #c29606;
-                    transition: 0.2s;
-                    display: flex; align-items: center; justify-content: center;
-                ">
-                    ☕ Invitar Café
-                </div>
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
-
-    # 3. CONTACTO (Botón Streamlit Estándar)
-    with c_contact:
-        st.link_button("✉️ Soporte", "mailto:marcoslorente@legalapp.es", use_container_width=True)
-            
-    # 4. ADMIN
-    with c_admin:
-        with st.popover("🔐"):
-            pass_admin = st.text_input("Clave", type="password")
-            if pass_admin == "admin123": 
-                if st.button("🔄 Reiniciar App"):
-                    st.session_state.clear()
-                    st.rerun()
-
-st.markdown("""
-<div style="text-align: center; color: rgba(255, 255, 255, 0.1); font-size: 9px; margin-top: 30px; padding: 20px;">
-    <strong>Servicios Legales con IA en España:</strong> 
-    Calcular ITP Madrid menores 35 años | Gastos compra vivienda Cataluña 2026 | 
-    Analizador de contratos de luz y gas | Modelo contrato alquiler vivienda habitual PDF | 
-    Deducciones fiscales compra vivienda CCAA | Revisar facturas Visalia energía | 
-    Recurrir multas tráfico online gratis España | Simulador sueldo neto 2026
-</div>
-""", unsafe_allow_html=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    p = f"Analiza esta nómina: {txt[:4000]}. Verifica SMI 2026, IRPF correcto y Bases Cotización en un informe markdown."
+    return {"informe": groq_engine(p, api_key)}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
