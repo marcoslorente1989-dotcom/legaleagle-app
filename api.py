@@ -6,6 +6,7 @@ import base64
 import requests
 import re
 from datetime import datetime
+from typing import List, Optional
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -220,6 +221,62 @@ async def analyze_document(file: UploadFile = File(...), mode: str = Form("CONTR
 
     return JSONResponse(content=result)
 
+# --- 1.B ANALÍTICA DE CONTRATOS (SEMÁFORO) ---
+@app.post("/api/analyze/contract")
+async def analyze_contract_clauses(file: UploadFile = File(...)):
+    api_key = get_api_key()
+    file_bytes = await file.read()
+    
+    if file.filename.lower().endswith(".pdf"):
+        texto = extract_text_from_pdf(file_bytes)
+    else:
+        texto = analyze_image_groq(file_bytes, "Transcribe fielmente todo el texto visible.", api_key)
+    
+    if not texto.strip():
+        raise HTTPException(status_code=400, detail="No se pudo extraer texto del documento.")
+
+    prompt = f"""
+    Eres un abogado experto en la Ley de Arrendamientos Urbanos (LAU) de España.
+    Analiza rigurosamente este contrato de alquiler de vivienda.
+    Busca cláusulas y clasifícalas en tres categorías de gravedad.
+    
+    Responde ÚNICAMENTE con un JSON válido con esta estructura exacta, sin texto adicional antes ni después:
+    {{
+      "rojo": [
+        {{"clausula": "texto original breve", "motivo": "Por qué es ilegal según la LAU", "gravedad": "Alta"}}
+      ],
+      "naranja": [
+        {{"clausula": "texto original breve", "motivo": "Por qué es dudosa o perjudicial", "gravedad": "Media"}}
+      ],
+      "verde": [
+        {{"clausula": "texto original breve", "motivo": "Condición estándar y correcta", "gravedad": "Baja"}}
+      ]
+    }}
+
+    TEXTO DEL CONTRATO:
+    {texto[:15000]}
+    """
+    
+    try:
+        resultado = groq_engine(prompt, api_key, temp=0.1)
+        # Limpiar posible markdown en la respuesta
+        if resultado.startswith("```json"):
+            resultado = resultado[7:-3]
+        elif resultado.startswith("```"):
+            resultado = resultado[3:-3]
+            
+        json_data = json.loads(resultado.strip())
+        return JSONResponse(content=json_data)
+    except Exception as e:
+        print("Error parseando JSON de Groq:", e)
+        print("Respuesta cruda:", resultado if 'resultado' in locals() else "N/A")
+        # Fallback de seguridad si Groq no respeta el JSON
+        return JSONResponse(content={
+            "rojo": [], "naranja": [], "verde": [], 
+            "error": "La IA no pudo formatear la respuesta correctamente. Intenta de nuevo."
+        })
+
+
 class ChatRequest(BaseModel):
     pregunta: str
     contexto: str
@@ -263,6 +320,37 @@ async def get_pdf(req: PdfRequest):
     pdf_bytes = create_pdf(req.texto, req.titulo)
     return Response(content=pdf_bytes, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename={req.titulo.replace(' ', '_')}.pdf"})
 
+class EmailGenerateRequest(BaseModel):
+    problema: str
+    destinatario: str
+    tono: str
+
+@app.post("/api/generate/email")
+async def generate_email(req: EmailGenerateRequest):
+    api_key = get_api_key()
+    prompt = f"""
+    Eres LegalApp, un abogado táctico y negociador experto en España.
+    Redacta un correo electrónico persuasivo y estratégico para lograr el mejor resultado posible.
+    
+    Tono requerido: {req.tono} (Ej. Formal asertivo, amistoso pero firme, ultimátum legal, etc.).
+    Destinatario: {req.destinatario}
+    Problema a resolver: {req.problema}
+    
+    INSTRUCCIONES:
+    1. Incluye un Asunto (Subject) claro e impactante al principio.
+    2. Redacta el cuerpo del mensaje de forma directa.
+    3. Si es pertinente, cita sutilmente la legislación vigente (Estatuto de los Trabajadores, Código Civil, etc.) para demostrar conocimiento, sin sonar completamente como una demanda judicial, a menos que sea un ultimátum.
+    4. Cierra con una llamada a la acción clara para la otra parte (ej. "Espero su respuesta antes del viernes").
+    5. No incluyas explicaciones previas, solo el correo final listo para enviar.
+    """
+    
+    try:
+        email_text = groq_engine(prompt, api_key, temp=0.5)
+        return {"email": email_text.strip()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # --- 3. DEFENSA LEGAL ---
 @app.post("/api/defense/analyze")
 async def analyze_defense(file: UploadFile = File(None), modo: str = Form(...), mis_datos: str = Form(""), extras: str = Form("")):
@@ -293,6 +381,46 @@ async def analyze_defense(file: UploadFile = File(None), modo: str = Form(...), 
         return {"documento": groq_engine(p, api_key)}
     
     raise HTTPException(status_code=400, detail="Modo no soportado.")
+
+@app.post("/api/defense/voice")
+async def analyze_voice(audio: UploadFile = File(...)):
+    api_key = get_api_key()
+    
+    try:
+        client = Groq(api_key=api_key)
+        file_bytes = await audio.read()
+        
+        transcription = client.audio.transcriptions.create(
+            file=(audio.filename, file_bytes),
+            model="whisper-large-v3",
+            response_format="json"
+        )
+        texto_usuario = transcription.text
+        
+        prompt = f"Eres LegalApp, un abogado virtual experto en España. Un cliente te acaba de enviar esta consulta por mensaje de voz:\n'{texto_usuario}'.\n\nResponde de manera muy concisa, empática y profesional, diciéndole cuáles son sus derechos resumidamente y qué debería hacer a continuación."
+        respuesta = groq_engine(prompt, api_key)
+        
+        return {"transcripcion": texto_usuario, "respuesta": respuesta}
+    except Exception as e:
+        print("Error Whisper:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/voice/transcribe")
+async def transcribe_only(audio: UploadFile = File(...)):
+    api_key = get_api_key()
+    try:
+        client = Groq(api_key=api_key)
+        file_bytes = await audio.read()
+        
+        transcription = client.audio.transcriptions.create(
+            file=(audio.filename, file_bytes),
+            model="whisper-large-v3",
+            response_format="json"
+        )
+        return {"transcripcion": transcription.text}
+    except Exception as e:
+        print("Error Whisper Transcribe:", e)
+        raise HTTPException(status_code=500, detail=str(e))
 
 # --- 4. FINANZAS Y FISCALIDAD ---
 class FinanzasChatRequest(BaseModel):
@@ -520,6 +648,80 @@ async def calculate_escaner(file: UploadFile = File(...)):
     
     p = f"Analiza esta nómina: {txt[:4000]}. Verifica SMI 2026, IRPF correcto y Bases Cotización en un informe markdown."
     return {"informe": groq_engine(p, api_key)}
+
+@app.post("/api/nomina/analyze")
+async def analyze_payslip(file: UploadFile = File(...)):
+    api_key = get_api_key()
+    file_bytes = await file.read()
+    
+    if file.filename.lower().endswith(".pdf"):
+        texto = extract_text_from_pdf(file_bytes)
+    else:
+        texto = analyze_image_groq(file_bytes, "Extrae fielmente toda la información numérica y todos los conceptos de esta nómina.", api_key)
+        
+    prompt = f"""
+    Eres un auditor laboral en España. Revisa minuciosamente esta nómina.
+    
+    Extrae los datos numéricos y realiza una evaluación rápida para comprobar si el salario base + pagas prorrateadas cumple con el Salario Mínimo Interprofesional (SMI 2026: aprox 1134€ x 14 pagas o 1323€ x 12).
+    
+    Devuelve ÚNICAMENTE un JSON válido (sin código markdown extra):
+    {{
+      "empresa": "Nombre Empresa",
+      "categoria": "Categoría Profesional",
+      "salario_base": 1200.50,
+      "complementos": 150.0,
+      "bruto_total": 1350.50,
+      "deducciones": 100.0,
+      "irpf": 150.0,
+      "neto": 1100.50,
+      "smi_ok": true o false,
+      "analisis": "Comentario muy rápido sobre si el bruto es legal u otras observaciones raras"
+    }}
+    
+    TEXTO:
+    {texto[:10000]}
+    """
+    try:
+        resultado = groq_engine(prompt, api_key, temp=0.1)
+        if resultado.startswith("```json"): resultado = resultado[7:-3]
+        elif resultado.startswith("```"): resultado = resultado[3:-3]
+        return json.loads(resultado.strip())
+    except Exception as e:
+        print("Error Nómina JSON:", e)
+        return {"error": "El documento no parece una nómina válida o ilegible."}
+
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    messages: List[ChatMessage]
+    system_prompt: Optional[str] = "Eres LegalApp, un asesor legal y fiscal experto en España. Responde de forma clara y precisa."
+    temperature: Optional[float] = 0.3
+
+@app.post("/api/chat")
+async def chat_endpoint(req: ChatRequest):
+    api_key = get_api_key()
+    try:
+        client = Groq(api_key=api_key)
+        
+        # Build messages array for Groq
+        groq_messages = [{"role": "system", "content": req.system_prompt}]
+        for msg in req.messages:
+            groq_messages.append({"role": msg.role, "content": msg.content})
+            
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=groq_messages,
+            temperature=req.temperature,
+            max_tokens=2048
+        )
+        return {"respuesta": completion.choices[0].message.content}
+    except Exception as e:
+        print("Error en Chat:", e)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
